@@ -146,16 +146,15 @@
         let fgImg = null;
         let fgState = { x: 0, y: 0, scale: 1.0, rotate: 0, baseWidth: 0, baseHeight: 0 };
 
-        // Baseline fallback dimensions
+        // Fallback default rendering dimensions
         canvas.width = 1200;
         canvas.height = 800;
 
-        // FIXED: Using URL.createObjectURL instead of FileReader handles immediate caching cleanly
+        // FIXED: Added [0] targeting to fetch raw data streams directly from the selection pool
         document.getElementById('bgUpload').addEventListener('change', function(e) {
             if (e.target.files && e.target.files[0]) {
                 bgImg = new Image();
                 bgImg.onload = function() {
-                    // Match the canvas size directly to the user's background image asset
                     canvas.width = bgImg.width;
                     canvas.height = bgImg.height;
                     
@@ -179,7 +178,6 @@
             if (e.target.files && e.target.files[0]) {
                 fgImg = new Image();
                 fgImg.onload = function() {
-                    // System Requirement Rule: Set foreground overlay strictly 50% smaller than background workspace limits
                     const scaleFactor = (canvas.width * 0.5) / fgImg.width;
                     fgState.baseWidth = fgImg.width * scaleFactor;
                     fgState.baseHeight = fgImg.height * scaleFactor;
@@ -220,3 +218,8 @@
                 ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
             } else {
                 ctx.fillStyle = "transparent";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = "#ffffff";
+                ctx.font = "32px Arial";
+                ctx.textBaseline = "middle";
+                ctx.textAlign = "center";
