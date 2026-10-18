@@ -3,138 +3,424 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Full Screen Image Processing Studio</title>
+    <title>Pro Image Processing Studio</title>
     <style>
+        :root {
+            --bg-dark: #121418;
+            --sidebar-bg: #1c2026;
+            --panel-bg: #262b33;
+            --border-color: #343b46;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --danger: #ef4444;
+            --success: #10b981;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+        }
+        * { box-sizing: border-box; }
         body {
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
             margin: 0;
             padding: 0;
             overflow: hidden;
-            background-color: #1a1a1a;
+            background-color: var(--bg-dark);
             display: flex;
             width: 100vw;
             height: 100vh;
+            user-select: none;
+            color: var(--text-main);
         }
+
+        /* Sidebar Styling */
         .controls-sidebar {
-            width: 320px;
-            background: #2c3e50;
-            color: #ecf0f1;
-            padding: 20px;
-            box-sizing: border-box;
-            box-shadow: 4px 0 15px rgba(0,0,0,0.3);
+            width: 356px;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            padding: 16px;
+            box-shadow: 6px 0 25px rgba(0,0,0,0.45);
             z-index: 10;
             height: 100vh;
             overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
-        h2 { margin-top: 0; color: #fff; font-size: 20px; border-bottom: 2px solid #34495e; padding-bottom: 10px; }
-        .control-group {
-            margin-bottom: 18px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid #34495e;
-        }
-        label {
-            display: block;
-            font-weight: 600;
-            font-size: 13px;
-            margin-bottom: 6px;
-            color: #bdc3c7;
-        }
-        input[type="range"], input[type="text"], input[type="color"], select {
-            width: 100%;
-            box-sizing: border-box;
-            padding: 8px;
-            border-radius: 4px;
-            border: 1px solid #34495e;
-            background: #34495e;
-            color: #fff;
-            margin-bottom: 5px;
-        }
-        .btn-stack { display: flex; gap: 8px; margin-bottom: 10px; }
-        .action-btn {
-            flex: 1; color: white; border: none; padding: 10px 12px; border-radius: 5px;
-            cursor: pointer; font-weight: bold; font-size: 13px; text-align: center;
-        }
-        .upload-bg-btn { background-color: #3498db; }
-        .upload-fg-btn { background-color: #e74c3c; }
-        .download-btn { background-color: #2ecc71; margin-top: 15px; width: 100%; font-size: 15px; padding: 12px; }
-        .disabled { opacity: 0.3; pointer-events: none; }
+        .controls-sidebar::-webkit-scrollbar { width: 6px; }
+        .controls-sidebar::-webkit-scrollbar-thumb { background: #3e4652; border-radius: 3px; }
 
+        .studio-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+        .studio-header h2 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            background: linear-gradient(90deg, #60a5fa, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .history-bar {
+            display: flex;
+            gap: 6px;
+        }
+        .history-btn {
+            background: #2b313b;
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 5px 10px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.15s ease;
+        }
+        .history-btn:hover:not(:disabled) {
+            background: #3a4250;
+            border-color: #556070;
+        }
+        .history-btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        .target-banner {
+            background: rgba(59, 130, 246, 0.12);
+            border: 1px solid rgba(59, 130, 246, 0.35);
+            border-radius: 6px;
+            padding: 7px 10px;
+            font-size: 11px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #bfdbfe;
+        }
+        .target-banner strong { color: #fff; }
+
+        .control-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+        }
+        .section-title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .btn-grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+        }
+
+        .action-btn {
+            background: #323944;
+            color: var(--text-main);
+            border: 1px solid #434c59;
+            padding: 8px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 12px;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .action-btn:hover { background: #3e4756; border-color: #556070; }
+        .action-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+        .action-btn.primary:hover { background: var(--accent-hover); }
+        .action-btn.accent-red { background: #e11d48; border-color: #e11d48; color: #fff; }
+        .action-btn.accent-red:hover { background: #be123c; }
+        .action-btn.active-tool {
+            background: linear-gradient(135deg, rgba(96, 165, 250, 0.28), rgba(192, 132, 252, 0.28));
+            border-color: #a78bfa;
+            color: #e9d5ff;
+            box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.25);
+        }
+
+        .slider-row { margin-bottom: 8px; }
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #d1d5db;
+            margin-bottom: 3px;
+        }
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--accent);
+            height: 5px;
+            background: #181b20;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        input[type="text"], select {
+            width: 100%;
+            padding: 8px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background: #181b20;
+            color: var(--text-main);
+            font-size: 12px;
+            margin-bottom: 8px;
+            outline: none;
+        }
+        input[type="text"]:focus, select:focus { border-color: var(--accent); }
+
+        .color-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 4px;
+        }
+        .color-row label { font-size: 11px; color: #d1d5db; flex: 1; }
+        input[type="color"] {
+            width: 48px;
+            height: 28px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: #181b20;
+            cursor: pointer;
+            padding: 1px;
+        }
+
+        .hint-box {
+            font-size: 11px;
+            color: #e9d5ff;
+            background: rgba(167, 139, 250, 0.14);
+            border: 1px solid rgba(167, 139, 250, 0.35);
+            padding: 8px 10px;
+            border-radius: 6px;
+            margin-top: 8px;
+            line-height: 1.4;
+            display: none;
+        }
+
+        .layer-bar {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+        }
+
+        .download-btn {
+            background: var(--success);
+            border-color: var(--success);
+            color: #fff;
+            width: 100%;
+            font-size: 14px;
+            padding: 12px;
+            margin-top: auto;
+        }
+        .download-btn:hover { background: #059669; }
+
+        /* Workspace Canvas Area */
         .canvas-container {
             flex: 1;
             height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            background-image: linear-gradient(45deg, #242424 25%, transparent 25%), 
-                              linear-gradient(-45deg, #242424 25%, transparent 25%), 
-                              linear-gradient(45deg, transparent 75%, #242424 75%), 
-                              linear-gradient(-45deg, transparent 75%, #242424 75%);
-            background-size: 20px 20px;
-            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
-            background-color: #1e1e1e;
+            background-image: linear-gradient(45deg, #1b1e24 25%, transparent 25%), 
+                              linear-gradient(-45deg, #1b1e24 25%, transparent 25%), 
+                              linear-gradient(45deg, transparent 75%, #1b1e24 75%), 
+                              linear-gradient(-45deg, transparent 75%, #1b1e24 75%);
+            background-size: 24px 24px;
+            background-position: 0 0, 0 12px, 12px -12px, -12px 0px;
+            background-color: #121418;
             position: relative;
+            overflow: hidden;
         }
         canvas {
-            max-width: 95%;
-            max-height: 95%;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            max-width: 94%;
+            max-height: 92%;
+            box-shadow: 0 18px 50px rgba(0,0,0,0.65);
             background-color: transparent;
+        }
+
+        .floating-status {
+            position: absolute;
+            top: 16px;
+            right: 20px;
+            background: rgba(28, 32, 38, 0.88);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border-color);
+            padding: 7px 13px;
+            border-radius: 99px;
+            font-size: 12px;
+            color: #d1d5db;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #60a5fa;
         }
     </style>
 </head>
 <body>
 
     <div class="controls-sidebar">
-        <h2>Image Studio</h2>
-        
-        <div class="control-group">
-            <label>1. Media Import</label>
-            <div class="btn-stack">
-                <button class="action-btn upload-bg-btn" onclick="document.getElementById('bgUpload').click()">Set Background</button>
-                <button class="action-btn upload-fg-btn" onclick="document.getElementById('fgUpload').click()">Add Overlay</button>
+        <div class="studio-header">
+            <h2>Image Studio Pro</h2>
+            <div class="history-bar">
+                <button class="history-btn" id="undoBtn" disabled title="Undo (Ctrl+Z / Cmd+Z)">↶ Undo</button>
+                <button class="history-btn" id="redoBtn" disabled title="Redo (Ctrl+Y / Cmd+Shift+Z)">↷ Redo</button>
+            </div>
+        </div>
+
+        <div class="target-banner">
+            <span>Editing Target: <strong id="activeTargetLabel">Background Layer</strong></span>
+            <span id="deselectLink" style="cursor:pointer; text-decoration:underline; display:none;" onclick="selectObject(null); renderCompositeBoard();">Select BG</span>
+        </div>
+
+        <!-- 1. Media Import -->
+        <div class="control-card">
+            <div class="section-title">1. Media & Layer Import</div>
+            <div class="btn-grid">
+                <button class="action-btn primary" onclick="document.getElementById('bgUpload').click()">Set Background</button>
+                <button class="action-btn accent-red" onclick="document.getElementById('fgUpload').click()">+ Add Overlay</button>
             </div>
             <input type="file" id="bgUpload" accept="image/*" style="display:none;">
             <input type="file" id="fgUpload" accept="image/*" style="display:none;">
+            <div class="layer-bar">
+                <button class="action-btn" style="flex:1" id="bringFrontBtn" title="Bring Selected Forward">Bring Front</button>
+                <button class="action-btn" style="flex:1; color:#fca5a5;" id="deleteObjBtn" title="Delete Selected Layer (Del)">Delete Layer</button>
+            </div>
         </div>
 
-        <div id="fgControls" class="control-group disabled">
-            <label>2. Overlay Layer Transformation</label>
-            <label style="font-size:11px; font-weight:normal;">Scale (Size Factor)</label>
-            <input type="range" id="fgScale" min="10" max="200" value="100">
-            
-            <label style="font-size:11px; font-weight:normal;">Rotation Angle (Degrees)</label>
-            <input type="range" id="fgRotate" min="0" max="360" value="0">
-            
-            <label style="font-size:11px; font-weight:normal;">Position X Coordinate</label>
-            <input type="range" id="fgX" min="0" max="1200" value="600">
-            
-            <label style="font-size:11px; font-weight:normal;">Position Y Coordinate</label>
-            <input type="range" id="fgY" min="0" max="800" value="400">
+        <!-- 2. Smart AI & Retouch Tools (Isolated to Active Target) -->
+        <div class="control-card">
+            <div class="section-title">
+                <span>2. Apple-Style Clean Up & AI</span>
+                <span id="layerBlurTag" style="color:#60a5fa; font-weight:normal;"></span>
+            </div>
+            <div class="btn-grid">
+                <button class="action-btn" id="removeBgBtn" title="Auto-cutout background only on the active target layer">Remove BG</button>
+                <button class="action-btn" id="blurBgBtn" title="Toggle blur only on the active target layer">Blur Layer / BG</button>
+                <button class="action-btn" id="removeObjToolBtn" title="Apple Clean Up style: Paint or circle over an object to seamlessly reconstruct the background">✨ Clean Up Object</button>
+                <button class="action-btn" id="blurObjToolBtn" title="Brush over areas on active layer to blur them">Blur Object</button>
+            </div>
+
+            <div id="brushControls" style="display:none; margin-top:10px; padding-top:8px; border-top:1px solid var(--border-color);">
+                <div class="slider-header">
+                    <span>Clean Up / Brush Size</span>
+                    <span id="brushSizeVal">38 px</span>
+                </div>
+                <input type="range" id="brushSize" min="8" max="130" value="38">
+                <div style="display:flex; gap:6px; margin-top:6px;">
+                    <button class="action-btn" style="flex:1" id="exitBrushBtn">Done Brushing</button>
+                    <button class="action-btn" style="flex:1" id="clearRetouchBtn">Restore Original</button>
+                </div>
+            </div>
+            <div class="hint-box" id="smartHint"></div>
         </div>
 
-        <div class="control-group">
-            <label>3. Typography Text Overlay</label>
-            <input type="text" id="textInput" placeholder="Type banner text here...">
-            
-            <label style="font-size:11px; font-weight:normal;">Font Typography Style</label>
-            <select id="fontStyle">
-                <option value="Arial">Sans-Serif (Arial)</option>
-                <option value="Georgia">Serif (Georgia)</option>
-                <option value="Courier New">Monospace (Courier)</option>
-                <option value="Impact">Bold Impact (Impact)</option>
+        <!-- 3. Typography Text Layers -->
+        <div class="control-card">
+            <div class="section-title">3. Interactive Typography</div>
+            <div style="display:flex; gap:6px; margin-bottom:8px;">
+                <input type="text" id="textInput" placeholder="Enter text..." style="margin-bottom:0;">
+                <button class="action-btn primary" id="addTextBtn" style="white-space:nowrap;">+ Add Text</button>
+            </div>
+            <select id="fontStyle" style="margin-bottom:6px;">
+                <option value="Inter, Arial, sans-serif">Modern Sans (Inter / Arial)</option>
+                <option value="Georgia, serif">Editorial Serif (Georgia)</option>
+                <option value="'Courier New', monospace">Code Mono (Courier)</option>
+                <option value="Impact, sans-serif">Heavy Display (Impact)</option>
             </select>
+            <div class="color-row">
+                <label>Selected Text / Shape Color</label>
+                <input type="color" id="activeColorPicker" value="#ffffff">
+            </div>
+        </div>
 
-            <label style="font-size:11px; font-weight:normal;">Font Canvas Size (px)</label>
-            <input type="range" id="fontSize" min="12" max="150" value="40">
+        <!-- 4. Vector Shape Boxes -->
+        <div class="control-card">
+            <div class="section-title">4. Shape Boxes & Elements</div>
+            <div class="btn-grid-3">
+                <button class="action-btn" onclick="addShapeLayer('rect')">Rectangle</button>
+                <button class="action-btn" onclick="addShapeLayer('roundRect')">Rounded</button>
+                <button class="action-btn" onclick="addShapeLayer('circle')">Circle</button>
+                <button class="action-btn" onclick="addShapeLayer('star')">Star</button>
+                <button class="action-btn" onclick="addShapeLayer('arrow')">Arrow</button>
+                <button class="action-btn" onclick="addShapeLayer('frame')">Outline Box</button>
+            </div>
+            <div class="slider-row" style="margin-top:10px; margin-bottom:0;">
+                <div class="slider-header">
+                    <span>Selected Layer Opacity</span>
+                    <span id="opacityVal">100%</span>
+                </div>
+                <input type="range" id="layerOpacity" min="10" max="100" value="100">
+            </div>
+        </div>
 
-            <label style="font-size:11px; font-weight:normal;">Fill Theme Color Palette</label>
-            <input type="color" id="textColor" value="#ffffff">
+        <!-- 5. Color Grading & Light (Isolated Per-Layer) -->
+        <div class="control-card">
+            <div class="section-title">
+                <span>5. Color & Light (Active Target)</span>
+                <span style="cursor:pointer; color:#60a5fa;" id="resetGradingBtn">Reset Target</span>
+            </div>
+
+            <div class="slider-row">
+                <div class="slider-header"><span>Exposure</span><span id="valExposure">0</span></div>
+                <input type="range" id="adjExposure" min="-100" max="100" value="0">
+            </div>
+            <div class="slider-row">
+                <div class="slider-header"><span>Light / Brightness</span><span id="valLight">0</span></div>
+                <input type="range" id="adjLight" min="-100" max="100" value="0">
+            </div>
+            <div class="slider-row">
+                <div class="slider-header"><span>Contrast</span><span id="valContrast">0</span></div>
+                <input type="range" id="adjContrast" min="-100" max="100" value="0">
+            </div>
+            <div class="slider-row">
+                <div class="slider-header"><span>Saturation</span><span id="valSaturation">0</span></div>
+                <input type="range" id="adjSaturation" min="-100" max="100" value="0">
+            </div>
+            <div class="slider-row">
+                <div class="slider-header"><span>Hue Shift</span><span id="valHue">0°</span></div>
+                <input type="range" id="adjHue" min="-180" max="180" value="0">
+            </div>
+            <div class="slider-row" style="margin-bottom:0;">
+                <div class="slider-header"><span>Warmth (Temp)</span><span id="valWarmth">0</span></div>
+                <input type="range" id="adjWarmth" min="-100" max="100" value="0">
+            </div>
         </div>
 
         <button class="action-btn download-btn" id="saveImage">Export Composite Image</button>
     </div>
 
     <div class="canvas-container">
+        <div class="floating-status" id="statusBanner">
+            <span class="status-dot"></span>
+            <span id="statusText">Hover over any corner for 1.5s to unlock the Rotate Arrow</span>
+        </div>
         <canvas id="studioCanvas"></canvas>
     </div>
 
@@ -142,150 +428,1531 @@
         const canvas = document.getElementById('studioCanvas');
         const ctx = canvas.getContext('2d');
 
-        let bgImg = null;
-        let fgImg = null;
-        let fgState = { x: 600, y: 400, scale: 1.0, rotate: 0, baseWidth: 0, baseHeight: 0 };
-
-        // Fallback default rendering dimensions
         canvas.width = 1200;
         canvas.height = 800;
 
-        // Background Upload Handler
+        const CORNER_HOVER_DURATION = 1500; // 1.5 seconds
+
+        function createDefaultGrading() {
+            return { exposure: 0, light: 0, contrast: 0, saturation: 0, hue: 0, warmth: 0 };
+        }
+
+        // Dedicated Background Layer State
+        const bgLayer = {
+            img: null,
+            buffer: document.createElement('canvas'),
+            blurLevel: 0,
+            grading: createDefaultGrading()
+        };
+        bgLayer.buffer.width = canvas.width;
+        bgLayer.buffer.height = canvas.height;
+        const bgCtx = bgLayer.buffer.getContext('2d');
+
+        // Offscreen scratchpad for isolated per-layer rendering + warmth tinting
+        const layerScratch = document.createElement('canvas');
+        const scratchCtx = layerScratch.getContext('2d');
+
+        // Interactive objects stack
+        let objects = [];
+        let selectedObj = null;
+
+        // Brush / Apple Clean Up State
+        let activeBrushTool = null; // null | 'removeObj' | 'blurObj'
+        let isBrushing = false;
+        let brushRadius = 38;
+        let mousePos = { x: 0, y: 0 };
+        let cleanUpPath = []; // Stores stroke points during Apple-style Clean Up selection
+
+        // 1.5-Second Corner Hover Rotation State
+        let hoveredCorner = null;
+        let cornerHoverTimer = null;
+        let cornerHoverStartTime = 0;
+        let rotateUnlockedCorner = null;
+        let animFrameId = null;
+
+        // Interaction State
+        let interaction = {
+            mode: 'none', // 'none' | 'drag' | 'resize' | 'rotate'
+            handle: null,
+            startMouse: { x: 0, y: 0 },
+            startObj: null,
+            startAngle: 0,
+            isHorizontalSnap: false,
+            moved: false
+        };
+
+        // ============================================================================
+        // UNDO / REDO HISTORY ENGINE
+        // ============================================================================
+        const MAX_HISTORY = 35;
+        let historyStack = [];
+        let historyIndex = -1;
+
+        function cloneCanvas(srcCanvas) {
+            const c = document.createElement('canvas');
+            c.width = srcCanvas.width;
+            c.height = srcCanvas.height;
+            c.getContext('2d').drawImage(srcCanvas, 0, 0);
+            return c;
+        }
+
+        function createSnapshot() {
+            return {
+                canvasWidth: canvas.width,
+                canvasHeight: canvas.height,
+                bg: {
+                    img: bgLayer.img,
+                    buffer: cloneCanvas(bgLayer.buffer),
+                    blurLevel: bgLayer.blurLevel,
+                    grading: { ...bgLayer.grading }
+                },
+                objects: objects.map(o => ({
+                    ...o,
+                    grading: { ...o.grading },
+                    sourceCanvas: o.type === 'image' ? cloneCanvas(o.sourceCanvas) : null
+                })),
+                selectedObjId: selectedObj ? selectedObj.id : null
+            };
+        }
+
+        function saveHistoryState() {
+            // Truncate any redo states ahead of current index
+            if (historyIndex < historyStack.length - 1) {
+                historyStack = historyStack.slice(0, historyIndex + 1);
+            }
+            historyStack.push(createSnapshot());
+            if (historyStack.length > MAX_HISTORY) {
+                historyStack.shift();
+            } else {
+                historyIndex++;
+            }
+            updateHistoryButtons();
+        }
+
+        function restoreSnapshot(snap) {
+            canvas.width = snap.canvasWidth;
+            canvas.height = snap.canvasHeight;
+
+            bgLayer.img = snap.bg.img;
+            bgLayer.buffer = cloneCanvas(snap.bg.buffer);
+            bgLayer.blurLevel = snap.bg.blurLevel;
+            bgLayer.grading = { ...snap.bg.grading };
+
+            objects = snap.objects.map(o => ({
+                ...o,
+                grading: { ...o.grading },
+                sourceCanvas: o.type === 'image' ? cloneCanvas(o.sourceCanvas) : null
+            }));
+
+            selectedObj = objects.find(o => o.id === snap.selectedObjId) || null;
+            clearCornerHoverTimer();
+            rotateUnlockedCorner = null;
+            syncSidebarToActiveTarget();
+            renderCompositeBoard();
+            updateHistoryButtons();
+        }
+
+        function undo() {
+            if (historyIndex > 0) {
+                historyIndex--;
+                restoreSnapshot(historyStack[historyIndex]);
+            }
+        }
+
+        function redo() {
+            if (historyIndex < historyStack.length - 1) {
+                historyIndex++;
+                restoreSnapshot(historyStack[historyIndex]);
+            }
+        }
+
+        function updateHistoryButtons() {
+            document.getElementById('undoBtn').disabled = historyIndex <= 0;
+            document.getElementById('redoBtn').disabled = historyIndex >= historyStack.length - 1;
+        }
+
+        document.getElementById('undoBtn').addEventListener('click', undo);
+        document.getElementById('redoBtn').addEventListener('click', redo);
+
+        window.addEventListener('keydown', (e) => {
+            if (document.activeElement.tagName === 'INPUT') return;
+            const isMod = e.ctrlKey || e.metaKey;
+            if (isMod && e.key.toLowerCase() === 'z') {
+                e.preventDefault();
+                if (e.shiftKey) redo();
+                else undo();
+            } else if (isMod && e.key.toLowerCase() === 'y') {
+                e.preventDefault();
+                redo();
+            } else if (e.key === 'Delete' || e.key === 'Backspace') {
+                deleteSelectedObject();
+            }
+        });
+
+        // Returns the currently targeted layer
+        function getActiveTarget() {
+            return selectedObj ? selectedObj : bgLayer;
+        }
+
+        function resetBgBuffer() {
+            bgLayer.buffer.width = canvas.width;
+            bgLayer.buffer.height = canvas.height;
+            const bCtx = bgLayer.buffer.getContext('2d');
+            bCtx.clearRect(0, 0, bgLayer.buffer.width, bgLayer.buffer.height);
+            if (bgLayer.img) {
+                bCtx.drawImage(bgLayer.img, 0, 0, bgLayer.buffer.width, bgLayer.buffer.height);
+            }
+        }
+
+        function resetOverlayBuffer(obj) {
+            if (!obj || obj.type !== 'image' || !obj.originalImg) return;
+            obj.sourceCanvas.width = obj.originalImg.width;
+            obj.sourceCanvas.height = obj.originalImg.height;
+            const oCtx = obj.sourceCanvas.getContext('2d');
+            oCtx.clearRect(0, 0, obj.sourceCanvas.width, obj.sourceCanvas.height);
+            oCtx.drawImage(obj.originalImg, 0, 0);
+        }
+
+        // 1. Background Upload
         document.getElementById('bgUpload').addEventListener('change', function(e) {
             if (e.target.files && e.target.files[0]) {
-                const file = e.target.files[0];
-                const objectUrl = URL.createObjectURL(file);
-                bgImg = new Image();
-                bgImg.onload = function() {
-                    canvas.width = bgImg.width;
-                    canvas.height = bgImg.height;
-                    
-                    document.getElementById('fgX').max = canvas.width;
-                    document.getElementById('fgY').max = canvas.height;
-                    
-                    if (!fgImg) {
-                        fgState.x = Math.round(canvas.width / 2);
-                        fgState.y = Math.round(canvas.height / 2);
-                        document.getElementById('fgX').value = fgState.x;
-                        document.getElementById('fgY').value = fgState.y;
-                    }
-                    
+                const url = URL.createObjectURL(e.target.files[0]);
+                const img = new Image();
+                img.onload = function() {
+                    bgLayer.img = img;
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    resetBgBuffer();
+                    saveHistoryState();
                     renderCompositeBoard();
-                    URL.revokeObjectURL(objectUrl);
+                    URL.revokeObjectURL(url);
                 };
-                bgImg.src = objectUrl;
-                // Reset value so uploading the same image again still triggers 'change'
+                img.src = url;
                 e.target.value = '';
             }
         });
 
-        // Foreground Overlay Upload Handler
+        // 2. Overlay Image Upload
         document.getElementById('fgUpload').addEventListener('change', function(e) {
             if (e.target.files && e.target.files[0]) {
-                const file = e.target.files[0];
-                const objectUrl = URL.createObjectURL(file);
-                fgImg = new Image();
-                fgImg.onload = function() {
-                    const scaleFactor = (canvas.width * 0.5) / fgImg.width;
-                    fgState.baseWidth = fgImg.width * scaleFactor;
-                    fgState.baseHeight = fgImg.height * scaleFactor;
-                    
-                    fgState.x = Math.round(canvas.width / 2);
-                    fgState.y = Math.round(canvas.height / 2);
-                    fgState.scale = 1.0;
-                    fgState.rotate = 0;
+                const url = URL.createObjectURL(e.target.files[0]);
+                const img = new Image();
+                img.onload = function() {
+                    const offCanvas = document.createElement('canvas');
+                    offCanvas.width = img.width;
+                    offCanvas.height = img.height;
+                    offCanvas.getContext('2d').drawImage(img, 0, 0);
 
-                    document.getElementById('fgX').max = canvas.width;
-                    document.getElementById('fgY').max = canvas.height;
-                    document.getElementById('fgScale').value = 100;
-                    document.getElementById('fgRotate').value = 0;
-                    document.getElementById('fgX').value = fgState.x;
-                    document.getElementById('fgY').value = fgState.y;
-                    
-                    document.getElementById('fgControls').classList.remove('disabled');
+                    const scaleFactor = (canvas.width * 0.4) / img.width;
+                    const newObj = {
+                        id: Date.now(),
+                        type: 'image',
+                        originalImg: img,
+                        sourceCanvas: offCanvas,
+                        x: canvas.width / 2,
+                        y: canvas.height / 2,
+                        width: img.width * scaleFactor,
+                        height: img.height * scaleFactor,
+                        rotate: 0,
+                        opacity: 1,
+                        blurLevel: 0,
+                        grading: createDefaultGrading()
+                    };
+                    objects.push(newObj);
+                    selectObject(newObj);
+                    saveHistoryState();
                     renderCompositeBoard();
-                    URL.revokeObjectURL(objectUrl);
+                    URL.revokeObjectURL(url);
                 };
-                fgImg.src = objectUrl;
+                img.src = url;
                 e.target.value = '';
             }
         });
 
-        // Event Sliders Handlers
-        document.getElementById('fgScale').addEventListener('input', (e) => { fgState.scale = parseFloat(e.target.value) / 100; renderCompositeBoard(); });
-        document.getElementById('fgRotate').addEventListener('input', (e) => { fgState.rotate = parseFloat(e.target.value); renderCompositeBoard(); });
-        document.getElementById('fgX').addEventListener('input', (e) => { fgState.x = parseInt(e.target.value, 10); renderCompositeBoard(); });
-        document.getElementById('fgY').addEventListener('input', (e) => { fgState.y = parseInt(e.target.value, 10); renderCompositeBoard(); });
-        
-        document.getElementById('textInput').addEventListener('input', renderCompositeBoard);
-        document.getElementById('fontStyle').addEventListener('change', renderCompositeBoard);
-        document.getElementById('fontSize').addEventListener('input', renderCompositeBoard);
-        document.getElementById('textColor').addEventListener('input', renderCompositeBoard);
+        // 3. Interactive Text Layers
+        function addNewTextLayer(textStr) {
+            const content = (textStr || document.getElementById('textInput').value || 'Double-Click or Edit Text').trim();
+            const fontStyle = document.getElementById('fontStyle').value;
+            const color = document.getElementById('activeColorPicker').value;
 
-        function renderCompositeBoard() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.font = `bold 64px ${fontStyle}`;
+            const metrics = ctx.measureText(content);
+            ctx.restore();
 
-            // Layer 1 Pass: Draw Background Image Asset
-            if (bgImg) {
-                ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
-            } else if (!fgImg) {
-                // Placeholder message when no images are loaded
-                ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
-                ctx.font = "28px Arial";
-                ctx.textBaseline = "middle";
-                ctx.textAlign = "center";
-                ctx.fillText("Upload a Background or Overlay Image to Begin", canvas.width / 2, canvas.height / 2);
+            const w = Math.max(140, metrics.width + 40);
+            const h = 84;
+
+            const newObj = {
+                id: Date.now(),
+                type: 'text',
+                text: content,
+                fontFamily: fontStyle,
+                color: color,
+                x: canvas.width / 2,
+                y: canvas.height / 2,
+                width: w,
+                height: h,
+                rotate: 0,
+                opacity: 1,
+                blurLevel: 0,
+                grading: createDefaultGrading()
+            };
+            objects.push(newObj);
+            selectObject(newObj);
+            saveHistoryState();
+            renderCompositeBoard();
+        }
+
+        document.getElementById('addTextBtn').addEventListener('click', () => addNewTextLayer());
+
+        document.getElementById('textInput').addEventListener('input', (e) => {
+            if (selectedObj && selectedObj.type === 'text') {
+                selectedObj.text = e.target.value || ' ';
+                renderCompositeBoard();
+            }
+        });
+        document.getElementById('textInput').addEventListener('change', () => {
+            if (selectedObj && selectedObj.type === 'text') saveHistoryState();
+        });
+
+        document.getElementById('fontStyle').addEventListener('change', (e) => {
+            if (selectedObj && selectedObj.type === 'text') {
+                selectedObj.fontFamily = e.target.value;
+                saveHistoryState();
+                renderCompositeBoard();
+            }
+        });
+
+        document.getElementById('activeColorPicker').addEventListener('input', (e) => {
+            if (selectedObj && (selectedObj.type === 'text' || selectedObj.type === 'shape')) {
+                selectedObj.color = e.target.value;
+                renderCompositeBoard();
+            }
+        });
+        document.getElementById('activeColorPicker').addEventListener('change', () => {
+            if (selectedObj && (selectedObj.type === 'text' || selectedObj.type === 'shape')) saveHistoryState();
+        });
+
+        // 4. Interactive Vector Shape Boxes
+        window.addShapeLayer = function(shapeType) {
+            const color = document.getElementById('activeColorPicker').value;
+            const size = Math.min(canvas.width, canvas.height) * 0.25;
+            const newObj = {
+                id: Date.now(),
+                type: 'shape',
+                shapeType: shapeType,
+                color: color === '#ffffff' ? '#3b82f6' : color,
+                x: canvas.width / 2,
+                y: canvas.height / 2,
+                width: shapeType === 'arrow' ? size * 1.3 : size,
+                height: shapeType === 'arrow' ? size * 0.6 : size,
+                rotate: 0,
+                opacity: 1,
+                blurLevel: 0,
+                grading: createDefaultGrading()
+            };
+            objects.push(newObj);
+            selectObject(newObj);
+            saveHistoryState();
+            renderCompositeBoard();
+        };
+
+        document.getElementById('layerOpacity').addEventListener('input', (e) => {
+            const val = parseInt(e.target.value, 10);
+            document.getElementById('opacityVal').textContent = val + '%';
+            if (selectedObj) {
+                selectedObj.opacity = val / 100;
+                renderCompositeBoard();
+            }
+        });
+        document.getElementById('layerOpacity').addEventListener('change', () => {
+            if (selectedObj) saveHistoryState();
+        });
+
+        // Layer Management Buttons
+        document.getElementById('bringFrontBtn').addEventListener('click', () => {
+            if (!selectedObj) return;
+            objects = objects.filter(o => o.id !== selectedObj.id);
+            objects.push(selectedObj);
+            saveHistoryState();
+            renderCompositeBoard();
+        });
+
+        function deleteSelectedObject() {
+            if (!selectedObj) return;
+            objects = objects.filter(o => o.id !== selectedObj.id);
+            selectObject(null);
+            saveHistoryState();
+            renderCompositeBoard();
+        }
+        document.getElementById('deleteObjBtn').addEventListener('click', deleteSelectedObject);
+
+        const gradingMap = [
+            { id: 'adjExposure',   key: 'exposure',   label: 'valExposure',   suffix: '' },
+            { id: 'adjLight',      key: 'light',      label: 'valLight',      suffix: '' },
+            { id: 'adjContrast',   key: 'contrast',   label: 'valContrast',   suffix: '' },
+            { id: 'adjSaturation', key: 'saturation', label: 'valSaturation', suffix: '' },
+            { id: 'adjHue',        key: 'hue',        label: 'valHue',        suffix: '°' },
+            { id: 'adjWarmth',     key: 'warmth',     label: 'valWarmth',     suffix: '' }
+        ];
+
+        function syncSidebarToActiveTarget() {
+            const target = getActiveTarget();
+            const g = target.grading;
+
+            const targetLabel = document.getElementById('activeTargetLabel');
+            const deselectLink = document.getElementById('deselectLink');
+            if (!selectedObj) {
+                targetLabel.textContent = 'Background Layer';
+                deselectLink.style.display = 'none';
+            } else {
+                const typeNames = { image: 'Image Overlay', text: 'Text Layer', shape: 'Shape Layer' };
+                targetLabel.textContent = typeNames[selectedObj.type] || 'Selected Layer';
+                deselectLink.style.display = 'inline';
             }
 
-            // Layer 2 Pass: Draw Foreground Overlay Image
-            if (fgImg) {
+            gradingMap.forEach(item => {
+                const val = g[item.key] || 0;
+                document.getElementById(item.id).value = val;
+                document.getElementById(item.label).textContent = val + item.suffix;
+            });
+
+            const blurTag = document.getElementById('layerBlurTag');
+            const blurBtn = document.getElementById('blurBgBtn');
+            if (target.blurLevel > 0) {
+                blurTag.textContent = `Blur: ${target.blurLevel}px`;
+                blurBtn.classList.add('active-tool');
+            } else {
+                blurTag.textContent = '';
+                blurBtn.classList.remove('active-tool');
+            }
+
+            if (selectedObj) {
+                const op = Math.round((selectedObj.opacity ?? 1) * 100);
+                document.getElementById('layerOpacity').value = op;
+                document.getElementById('opacityVal').textContent = op + '%';
+                if (selectedObj.type === 'text') {
+                    document.getElementById('textInput').value = selectedObj.text;
+                    document.getElementById('activeColorPicker').value = selectedObj.color;
+                } else if (selectedObj.type === 'shape') {
+                    document.getElementById('activeColorPicker').value = selectedObj.color;
+                }
+            } else {
+                document.getElementById('layerOpacity').value = 100;
+                document.getElementById('opacityVal').textContent = '100%';
+            }
+        }
+
+        function selectObject(obj) {
+            selectedObj = obj;
+            clearCornerHoverTimer();
+            rotateUnlockedCorner = null;
+            syncSidebarToActiveTarget();
+        }
+
+        function showSmartHint(msg) {
+            const box = document.getElementById('smartHint');
+            if (!msg) {
+                box.style.display = 'none';
+                return;
+            }
+            box.textContent = msg;
+            box.style.display = 'block';
+        }
+
+        // Remove BG: Isolated to active target
+        document.getElementById('removeBgBtn').addEventListener('click', () => {
+            let targetCanvas = null;
+            let targetName = '';
+
+            if (selectedObj) {
+                if (selectedObj.type === 'image') {
+                    targetCanvas = selectedObj.sourceCanvas;
+                    targetName = 'selected overlay';
+                } else {
+                    showSmartHint('Select an Image Overlay or switch to the Background Layer to remove a background.');
+                    return;
+                }
+            } else if (bgLayer.img) {
+                targetCanvas = bgLayer.buffer;
+                targetName = 'background layer';
+            } else {
+                showSmartHint('Upload an Overlay Image or Background first to remove its background.');
+                return;
+            }
+
+            const tCtx = targetCanvas.getContext('2d');
+            const w = targetCanvas.width;
+            const h = targetCanvas.height;
+            const imgData = tCtx.getImageData(0, 0, w, h);
+            const data = imgData.data;
+
+            const sampleCoords = [
+                [2, 2], [w - 3, 2], [2, h - 3], [w - 3, h - 3], [Math.floor(w / 2), 2]
+            ];
+            let rSum = 0, gSum = 0, bSum = 0;
+            sampleCoords.forEach(([sx, sy]) => {
+                const idx = (Math.max(0, sy) * w + Math.max(0, sx)) * 4;
+                rSum += data[idx];
+                gSum += data[idx + 1];
+                bSum += data[idx + 2];
+            });
+            const bgR = rSum / sampleCoords.length;
+            const bgG = gSum / sampleCoords.length;
+            const bgB = bSum / sampleCoords.length;
+
+            const threshold = 68;
+            const softEdge = 24;
+
+            for (let i = 0; i < data.length; i += 4) {
+                const dr = data[i] - bgR;
+                const dg = data[i + 1] - bgG;
+                const db = data[i + 2] - bgB;
+                const dist = Math.sqrt(dr * dr + dg * dg + db * db);
+
+                if (dist < threshold) {
+                    data[i + 3] = 0;
+                } else if (dist < threshold + softEdge) {
+                    const alphaFactor = (dist - threshold) / softEdge;
+                    data[i + 3] = Math.round(data[i + 3] * alphaFactor);
+                }
+            }
+
+            tCtx.putImageData(imgData, 0, 0);
+            saveHistoryState();
+            showSmartHint(`Removed background on the ${targetName} (Ctrl+Z to Undo).`);
+            renderCompositeBoard();
+        });
+
+        // Blur Layer / BG Toggle
+        document.getElementById('blurBgBtn').addEventListener('click', () => {
+            const target = getActiveTarget();
+            if (target.blurLevel === 0) target.blurLevel = 8;
+            else if (target.blurLevel === 8) target.blurLevel = 18;
+            else target.blurLevel = 0;
+
+            saveHistoryState();
+            syncSidebarToActiveTarget();
+            renderCompositeBoard();
+        });
+
+        // ============================================================================
+        // APPLE CLEAN UP STYLE SMART OBJECT REMOVER (INWARD PDE DIFFUSION + TEXTURE SYNTHESIS)
+        // ============================================================================
+        function setBrushTool(toolName) {
+            if (activeBrushTool === toolName) {
+                activeBrushTool = null;
+            } else {
+                activeBrushTool = toolName;
+            }
+
+            document.getElementById('removeObjToolBtn').classList.toggle('active-tool', activeBrushTool === 'removeObj');
+            document.getElementById('blurObjToolBtn').classList.toggle('active-tool', activeBrushTool === 'blurObj');
+            document.getElementById('brushControls').style.display = activeBrushTool ? 'block' : 'none';
+
+            const targetDesc = (selectedObj && selectedObj.type === 'image') ? 'the selected Overlay Image' : 'the Background Layer';
+            if (activeBrushTool === 'removeObj') {
+                showSmartHint(`✨ Apple Clean Up Mode (${targetDesc}): Paint over or circle around an unwanted object. Release the mouse to seamlessly reconstruct the area.`);
+            } else if (activeBrushTool === 'blurObj') {
+                showSmartHint(`Brushing on ${targetDesc} only. Paint over areas to blur them.`);
+            } else {
+                showSmartHint('');
+            }
+            renderCompositeBoard();
+        }
+
+        document.getElementById('removeObjToolBtn').addEventListener('click', () => setBrushTool('removeObj'));
+        document.getElementById('blurObjToolBtn').addEventListener('click', () => setBrushTool('blurObj'));
+        document.getElementById('exitBrushBtn').addEventListener('click', () => setBrushTool(null));
+
+        document.getElementById('clearRetouchBtn').addEventListener('click', () => {
+            if (selectedObj && selectedObj.type === 'image') {
+                resetOverlayBuffer(selectedObj);
+            } else {
+                resetBgBuffer();
+            }
+            saveHistoryState();
+            renderCompositeBoard();
+        });
+
+        document.getElementById('brushSize').addEventListener('input', (e) => {
+            brushRadius = parseInt(e.target.value, 10);
+            document.getElementById('brushSizeVal').textContent = brushRadius + ' px';
+            renderCompositeBoard();
+        });
+
+        // Executes Apple Clean Up style inward onion-peel reconstruction + texture synthesis
+        function runAppleCleanUpInpaint(strokePoints) {
+            if (!strokePoints || strokePoints.length === 0) return;
+
+            let targetCanvas = null;
+            let mappedPoints = [];
+            const worldRadius = brushRadius * getVisualScale();
+            let texRadius = worldRadius;
+
+            if (selectedObj && selectedObj.type === 'image') {
+                targetCanvas = selectedObj.sourceCanvas;
+                const scaleX = targetCanvas.width / selectedObj.width;
+                const scaleY = targetCanvas.height / selectedObj.height;
+                texRadius = worldRadius * ((scaleX + scaleY) / 2);
+
+                mappedPoints = strokePoints.map(pt => {
+                    const local = toLocalSpace(pt, selectedObj);
+                    return {
+                        x: (local.x + selectedObj.width / 2) * scaleX,
+                        y: (local.y + selectedObj.height / 2) * scaleY
+                    };
+                });
+            } else if (bgLayer.img) {
+                targetCanvas = bgLayer.buffer;
+                mappedPoints = strokePoints.map(pt => ({ x: pt.x, y: pt.y }));
+            } else {
+                return;
+            }
+
+            const w = targetCanvas.width;
+            const h = targetCanvas.height;
+
+            // Compute bounding box of the painted selection with padding
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            for (const p of mappedPoints) {
+                if (p.x < minX) minX = p.x;
+                if (p.y < minY) minY = p.y;
+                if (p.x > maxX) maxX = p.x;
+                if (p.y > maxY) maxY = p.y;
+            }
+
+            const pad = Math.ceil(texRadius + 16);
+            const bx0 = Math.max(0, Math.floor(minX - pad));
+            const by0 = Math.max(0, Math.floor(minY - pad));
+            const bx1 = Math.min(w - 1, Math.ceil(maxX + pad));
+            const by1 = Math.min(h - 1, Math.ceil(maxY + pad));
+            const bw = bx1 - bx0 + 1;
+            const bh = by1 - by0 + 1;
+            if (bw <= 2 || bh <= 2) return;
+
+            // Rasterize stroke mask (also auto-fills if the user drew a closed loop around an object)
+            const maskCanvas = document.createElement('canvas');
+            maskCanvas.width = bw;
+            maskCanvas.height = bh;
+            const mCtx = maskCanvas.getContext('2d');
+            mCtx.lineCap = 'round';
+            mCtx.lineJoin = 'round';
+            mCtx.lineWidth = texRadius * 2;
+            mCtx.strokeStyle = '#ffffff';
+            mCtx.fillStyle = '#ffffff';
+
+            mCtx.beginPath();
+            mappedPoints.forEach((p, idx) => {
+                const lx = p.x - bx0;
+                const ly = p.y - by0;
+                if (idx === 0) mCtx.moveTo(lx, ly);
+                else mCtx.lineTo(lx, ly);
+            });
+            // If user circled an object (start and end points are close), fill interior automatically like Apple Clean Up
+            if (mappedPoints.length > 8) {
+                const first = mappedPoints[0];
+                const last = mappedPoints[mappedPoints.length - 1];
+                if (Math.hypot(first.x - last.x, first.y - last.y) <= texRadius * 2.4) {
+                    mCtx.closePath();
+                    mCtx.fill();
+                }
+            }
+            mCtx.stroke();
+
+            const maskData = mCtx.getImageData(0, 0, bw, bh).data;
+            const tCtx = targetCanvas.getContext('2d');
+            const imgData = tCtx.getImageData(bx0, by0, bw, bh);
+            const pixels = imgData.data;
+
+            // state: 0 = known outside pixel, 1 = masked pixel to reconstruct
+            const state = new Uint8Array(bw * bh);
+            const initialMask = new Uint8Array(bw * bh);
+            const boundarySamples = [];
+
+            for (let y = 0; y < bh; y++) {
+                for (let x = 0; x < bw; x++) {
+                    const i = y * bw + x;
+                    if (maskData[i * 4 + 3] > 90) {
+                        state[i] = 1;
+                        initialMask[i] = 1;
+                    }
+                }
+            }
+
+            // Collect clean boundary pixels just outside the mask for realistic texture grain synthesis
+            for (let y = 2; y < bh - 2; y++) {
+                for (let x = 2; x < bw - 2; x++) {
+                    const i = y * bw + x;
+                    if (state[i] === 0) {
+                        if (state[i - 1] === 1 || state[i + 1] === 1 || state[i - bw] === 1 || state[i + bw] === 1) {
+                            const pIdx = i * 4;
+                            // Compute local high-frequency detail (pixel minus 4-neighbor mean)
+                            const meanR = (pixels[(i - 1) * 4] + pixels[(i + 1) * 4] + pixels[(i - bw) * 4] + pixels[(i + bw) * 4]) * 0.25;
+                            const meanG = (pixels[(i - 1) * 4 + 1] + pixels[(i + 1) * 4 + 1] + pixels[(i - bw) * 4 + 1] + pixels[(i + bw) * 4 + 1]) * 0.25;
+                            const meanB = (pixels[(i - 1) * 4 + 2] + pixels[(i + 1) * 4 + 2] + pixels[(i - bw) * 4 + 2] + pixels[(i + bw) * 4 + 2]) * 0.25;
+                            boundarySamples.push({
+                                x, y,
+                                dr: pixels[pIdx] - meanR,
+                                dg: pixels[pIdx + 1] - meanG,
+                                db: pixels[pIdx + 2] - meanB
+                            });
+                        }
+                    }
+                }
+            }
+
+            // Step 1: Inward Onion-Peel Boundary Marching (Fast Marching / Telea-style propagation)
+            const neighborOffsets = [
+                [-1, 0, 1.0], [1, 0, 1.0], [0, -1, 1.0], [0, 1, 1.0],
+                [-1, -1, 0.707], [1, -1, 0.707], [-1, 1, 0.707], [1, 1, 0.707]
+            ];
+
+            let remaining = true;
+            let safetyPasses = 0;
+            const maxPasses = Math.max(bw, bh) + 20;
+
+            while (remaining && safetyPasses < maxPasses) {
+                remaining = false;
+                safetyPasses++;
+                const frontier = [];
+
+                for (let y = 1; y < bh - 1; y++) {
+                    for (let x = 1; x < bw - 1; x++) {
+                        const idx = y * bw + x;
+                        if (state[idx] === 1) {
+                            remaining = true;
+                            // Check if adjacent to at least one known pixel
+                            if (
+                                state[idx - 1] === 0 || state[idx + 1] === 0 ||
+                                state[idx - bw] === 0 || state[idx + bw] === 0
+                            ) {
+                                frontier.push(idx);
+                            }
+                        }
+                    }
+                }
+
+                if (frontier.length === 0) break;
+
+                for (const idx of frontier) {
+                    const y = Math.floor(idx / bw);
+                    const x = idx % bw;
+                    let rSum = 0, gSum = 0, bSum = 0, aSum = 0, wSum = 0;
+
+                    for (const [ox, oy, weight] of neighborOffsets) {
+                        const nx = x + ox;
+                        const ny = y + oy;
+                        if (nx >= 0 && nx < bw && ny >= 0 && ny < bh) {
+                            const nIdx = ny * bw + nx;
+                            if (state[nIdx] === 0) {
+                                const p = nIdx * 4;
+                                rSum += pixels[p] * weight;
+                                gSum += pixels[p + 1] * weight;
+                                bSum += pixels[p + 2] * weight;
+                                aSum += pixels[p + 3] * weight;
+                                wSum += weight;
+                            }
+                        }
+                    }
+
+                    if (wSum > 0) {
+                        const p = idx * 4;
+                        pixels[p]     = rSum / wSum;
+                        pixels[p + 1] = gSum / wSum;
+                        pixels[p + 2] = bSum / wSum;
+                        pixels[p + 3] = aSum / wSum;
+                    }
+                }
+
+                for (const idx of frontier) {
+                    state[idx] = 0;
+                }
+            }
+
+            // Step 2: Harmonic PDE Smoothing Iterations (Seamless Gradient & Lighting Continuity)
+            const tempPixels = new Float32Array(pixels.length);
+            for (let i = 0; i < pixels.length; i++) tempPixels[i] = pixels[i];
+
+            const diffusionPasses = 28;
+            for (let iter = 0; iter < diffusionPasses; iter++) {
+                for (let y = 1; y < bh - 1; y++) {
+                    for (let x = 1; x < bw - 1; x++) {
+                        const idx = y * bw + x;
+                        if (initialMask[idx] === 1) {
+                            const p = idx * 4;
+                            const n1 = (idx - 1) * 4;
+                            const n2 = (idx + 1) * 4;
+                            const n3 = (idx - bw) * 4;
+                            const n4 = (idx + bw) * 4;
+                            const d1 = (idx - bw - 1) * 4;
+                            const d2 = (idx - bw + 1) * 4;
+                            const d3 = (idx + bw - 1) * 4;
+                            const d4 = (idx + bw + 1) * 4;
+
+                            for (let c = 0; c < 3; c++) {
+                                tempPixels[p + c] = (
+                                    (tempPixels[n1 + c] + tempPixels[n2 + c] + tempPixels[n3 + c] + tempPixels[n4 + c]) * 0.175 +
+                                    (tempPixels[d1 + c] + tempPixels[d2 + c] + tempPixels[d3 + c] + tempPixels[d4 + c]) * 0.075
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Step 3: Micro-Texture Synthesis (Prevents flat plastic blur by injecting natural surroundings grain)
+            const sampleLen = boundarySamples.length;
+            for (let y = 1; y < bh - 1; y++) {
+                for (let x = 1; x < bw - 1; x++) {
+                    const idx = y * bw + x;
+                    if (initialMask[idx] === 1) {
+                        const p = idx * 4;
+                        let r = tempPixels[p];
+                        let g = tempPixels[p + 1];
+                        let b = tempPixels[p + 2];
+
+                        if (sampleLen > 0) {
+                            const s = boundarySamples[(x * 73 + y * 37) % sampleLen];
+                            r += s.dr * 0.65;
+                            g += s.dg * 0.65;
+                            b += s.db * 0.65;
+                        }
+
+                        // Soft feather blend at mask perimeter
+                        const maskAlpha = maskData[p + 3] / 255;
+                        pixels[p]     = Math.max(0, Math.min(255, Math.round(pixels[p] * (1 - maskAlpha) + r * maskAlpha)));
+                        pixels[p + 1] = Math.max(0, Math.min(255, Math.round(pixels[p + 1] * (1 - maskAlpha) + g * maskAlpha)));
+                        pixels[p + 2] = Math.max(0, Math.min(255, Math.round(pixels[p + 2] * (1 - maskAlpha) + b * maskAlpha)));
+                    }
+                }
+            }
+
+            tCtx.putImageData(imgData, bx0, by0);
+        }
+
+        // Blur Object Brush Stroke (Real-time localized blur)
+        function applyBlurBrushStroke(worldPt) {
+            const worldRadius = brushRadius * getVisualScale();
+
+            if (selectedObj && selectedObj.type === 'image') {
+                const localPt = toLocalSpace(worldPt, selectedObj);
+                const scaleX = selectedObj.sourceCanvas.width / selectedObj.width;
+                const scaleY = selectedObj.sourceCanvas.height / selectedObj.height;
+                const texX = (localPt.x + selectedObj.width / 2) * scaleX;
+                const texY = (localPt.y + selectedObj.height / 2) * scaleY;
+                const texR = worldRadius * ((scaleX + scaleY) / 2);
+
+                const oCtx = selectedObj.sourceCanvas.getContext('2d');
+                oCtx.save();
+                oCtx.beginPath();
+                oCtx.arc(texX, texY, texR, 0, Math.PI * 2);
+                oCtx.clip();
+                oCtx.filter = 'blur(14px)';
+                oCtx.drawImage(selectedObj.sourceCanvas, 0, 0);
+                oCtx.restore();
+            } else {
+                const bCtx = bgLayer.buffer.getContext('2d');
+                bCtx.save();
+                bCtx.beginPath();
+                bCtx.arc(worldPt.x, worldPt.y, worldRadius, 0, Math.PI * 2);
+                bCtx.clip();
+                bCtx.filter = 'blur(14px)';
+                bCtx.drawImage(bgLayer.buffer, 0, 0);
+                bCtx.restore();
+            }
+            renderCompositeBoard();
+        }
+
+        // 6. Per-Layer Color & Light Grading Controls
+        gradingMap.forEach(item => {
+            const el = document.getElementById(item.id);
+            el.addEventListener('input', (e) => {
+                const target = getActiveTarget();
+                target.grading[item.key] = parseFloat(e.target.value);
+                document.getElementById(item.label).textContent = target.grading[item.key] + item.suffix;
+                renderCompositeBoard();
+            });
+            el.addEventListener('change', () => {
+                saveHistoryState();
+            });
+        });
+
+        document.getElementById('resetGradingBtn').addEventListener('click', () => {
+            const target = getActiveTarget();
+            target.grading = createDefaultGrading();
+            saveHistoryState();
+            syncSidebarToActiveTarget();
+            renderCompositeBoard();
+        });
+
+        function buildLayerFilterString(gradingObj, blurPx = 0) {
+            const g = gradingObj || createDefaultGrading();
+            const brightness = Math.max(10, 100 + g.light * 0.6 + g.exposure * 0.8);
+            const contrast = Math.max(10, 100 + g.contrast * 0.75 + g.exposure * 0.15);
+            const saturate = Math.max(0, 100 + g.saturation);
+            const sepia = g.warmth > 0 ? g.warmth * 0.35 : 0;
+            const blurPart = blurPx > 0 ? `blur(${blurPx}px) ` : '';
+            return `${blurPart}brightness(${brightness}%) contrast(${contrast}%) saturate(${saturate}%) hue-rotate(${g.hue}deg) sepia(${sepia}%)`;
+        }
+
+        // 7. Coordinate & Handle Math
+        function getCanvasMouse(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            return {
+                x: (e.clientX - rect.left) * scaleX,
+                y: (e.clientY - rect.top) * scaleY
+            };
+        }
+
+        function toLocalSpace(pt, obj) {
+            const dx = pt.x - obj.x;
+            const dy = pt.y - obj.y;
+            const rad = (-obj.rotate * Math.PI) / 180;
+            return {
+                x: dx * Math.cos(rad) - dy * Math.sin(rad),
+                y: dx * Math.sin(rad) + dy * Math.cos(rad)
+            };
+        }
+
+        function toWorldSpace(localPt, obj) {
+            const rad = (obj.rotate * Math.PI) / 180;
+            return {
+                x: obj.x + (localPt.x * Math.cos(rad) - localPt.y * Math.sin(rad)),
+                y: obj.y + (localPt.x * Math.sin(rad) + localPt.y * Math.cos(rad))
+            };
+        }
+
+        function getVisualScale() {
+            const rect = canvas.getBoundingClientRect();
+            return canvas.width / (rect.width || 1);
+        }
+
+        function getVisualHandleRadius() {
+            return 7.5 * getVisualScale();
+        }
+
+        function getHandleCoords(obj) {
+            const hw = obj.width / 2;
+            const hh = obj.height / 2;
+            return {
+                tl: { x: -hw, y: -hh, cursor: 'nwse-resize', isCorner: true },
+                tc: { x: 0,   y: -hh, cursor: 'ns-resize',   isCorner: false },
+                tr: { x: hw,  y: -hh, cursor: 'nesw-resize', isCorner: true },
+                mr: { x: hw,  y: 0,   cursor: 'ew-resize',   isCorner: false },
+                br: { x: hw,  y: hh,  cursor: 'nwse-resize', isCorner: true },
+                bc: { x: 0,   y: hh,  cursor: 'ns-resize',   isCorner: false },
+                bl: { x: -hw, y: hh,  cursor: 'nesw-resize', isCorner: true },
+                ml: { x: -hw, y: 0,   cursor: 'ew-resize',   isCorner: false }
+            };
+        }
+
+        function getRotateArrowPos(cornerKey, obj) {
+            const handles = getHandleCoords(obj);
+            const c = handles[cornerKey];
+            const offset = 24 * getVisualScale();
+            const sx = c.x < 0 ? -1 : 1;
+            const sy = c.y < 0 ? -1 : 1;
+            return { x: c.x + sx * offset, y: c.y + sy * offset };
+        }
+
+        function hitTestHandle(localPt, obj) {
+            const handles = getHandleCoords(obj);
+            const r = getVisualHandleRadius() * 1.75;
+
+            if (rotateUnlockedCorner) {
+                const rotPos = getRotateArrowPos(rotateUnlockedCorner, obj);
+                if (Math.hypot(localPt.x - rotPos.x, localPt.y - rotPos.y) <= r * 1.5) {
+                    return 'rotate_' + rotateUnlockedCorner;
+                }
+            }
+
+            for (const [key, pos] of Object.entries(handles)) {
+                if (Math.hypot(localPt.x - pos.x, localPt.y - pos.y) <= r) {
+                    if (rotateUnlockedCorner === key) {
+                        return 'rotate_' + key;
+                    }
+                    return key;
+                }
+            }
+            return null;
+        }
+
+        function hitTestBody(localPt, obj) {
+            return (
+                Math.abs(localPt.x) <= obj.width / 2 &&
+                Math.abs(localPt.y) <= obj.height / 2
+            );
+        }
+
+        // 1.5-Second Corner Hover Timer Logic
+        function clearCornerHoverTimer() {
+            if (cornerHoverTimer) {
+                clearTimeout(cornerHoverTimer);
+                cornerHoverTimer = null;
+            }
+            if (animFrameId) {
+                cancelAnimationFrame(animFrameId);
+                animFrameId = null;
+            }
+            hoveredCorner = null;
+        }
+
+        function startCornerHoverCountdown(cornerKey) {
+            if (hoveredCorner === cornerKey || rotateUnlockedCorner === cornerKey) return;
+            clearCornerHoverTimer();
+            hoveredCorner = cornerKey;
+            cornerHoverStartTime = performance.now();
+
+            const animateProgress = () => {
+                if (!hoveredCorner) return;
+                renderCompositeBoard();
+                if (performance.now() - cornerHoverStartTime < CORNER_HOVER_DURATION) {
+                    animFrameId = requestAnimationFrame(animateProgress);
+                }
+            };
+            animFrameId = requestAnimationFrame(animateProgress);
+
+            cornerHoverTimer = setTimeout(() => {
+                rotateUnlockedCorner = cornerKey;
+                hoveredCorner = null;
+                document.getElementById('statusText').textContent = 'Rotate Arrow unlocked! Drag the corner arrow to freely rotate.';
+                renderCompositeBoard();
+            }, CORNER_HOVER_DURATION);
+        }
+
+        // Mouse Down Handler
+        canvas.addEventListener('mousedown', (e) => {
+            const mouse = getCanvasMouse(e);
+
+            if (activeBrushTool) {
+                isBrushing = true;
+                if (activeBrushTool === 'removeObj') {
+                    cleanUpPath = [mouse];
+                    renderCompositeBoard();
+                } else {
+                    applyBlurBrushStroke(mouse);
+                }
+                return;
+            }
+
+            // 1. Check handles on currently selected object
+            if (selectedObj) {
+                const local = toLocalSpace(mouse, selectedObj);
+                const handleHit = hitTestHandle(local, selectedObj);
+                if (handleHit) {
+                    clearCornerHoverTimer();
+                    interaction.moved = false;
+                    if (handleHit.startsWith('rotate_')) {
+                        interaction.mode = 'rotate';
+                        interaction.startMouse = mouse;
+                        interaction.startObj = { ...selectedObj };
+                        interaction.startAngle = Math.atan2(mouse.y - selectedObj.y, mouse.x - selectedObj.x);
+                    } else {
+                        interaction.mode = 'resize';
+                        interaction.handle = handleHit;
+                        interaction.startMouse = mouse;
+                        interaction.startObj = { ...selectedObj };
+                    }
+                    return;
+                }
+            }
+
+            // 2. Check hit on any object from top-most to bottom-most
+            for (let i = objects.length - 1; i >= 0; i--) {
+                const obj = objects[i];
+                const local = toLocalSpace(mouse, obj);
+                if (hitTestBody(local, obj)) {
+                    selectObject(obj);
+                    interaction.mode = 'drag';
+                    interaction.moved = false;
+                    interaction.startMouse = mouse;
+                    interaction.startObj = { ...obj };
+                    renderCompositeBoard();
+                    return;
+                }
+            }
+
+            // 3. Clicked empty space -> selects Background Layer
+            selectObject(null);
+            interaction.mode = 'none';
+            renderCompositeBoard();
+        });
+
+        // Mouse Move Handler
+        window.addEventListener('mousemove', (e) => {
+            const mouse = getCanvasMouse(e);
+            mousePos = mouse;
+
+            if (activeBrushTool) {
+                canvas.style.cursor = 'none';
+                if (isBrushing) {
+                    if (activeBrushTool === 'removeObj') {
+                        cleanUpPath.push(mouse);
+                        renderCompositeBoard();
+                    } else {
+                        applyBlurBrushStroke(mouse);
+                    }
+                } else {
+                    renderCompositeBoard();
+                }
+                return;
+            }
+
+            if (interaction.mode === 'none') {
+                if (selectedObj) {
+                    const local = toLocalSpace(mouse, selectedObj);
+                    const handle = hitTestHandle(local, selectedObj);
+
+                    if (handle) {
+                        if (handle.startsWith('rotate_')) {
+                            canvas.style.cursor = 'grab';
+                            return;
+                        }
+                        const handleInfo = getHandleCoords(selectedObj)[handle];
+                        canvas.style.cursor = handleInfo.cursor;
+
+                        if (handleInfo.isCorner) {
+                            startCornerHoverCountdown(handle);
+                        } else {
+                            clearCornerHoverTimer();
+                        }
+                        return;
+                    } else {
+                        if (rotateUnlockedCorner) {
+                            const cPos = getHandleCoords(selectedObj)[rotateUnlockedCorner];
+                            const rPos = getRotateArrowPos(rotateUnlockedCorner, selectedObj);
+                            const distCorner = Math.hypot(local.x - cPos.x, local.y - cPos.y);
+                            const distArrow = Math.hypot(local.x - rPos.x, local.y - rPos.y);
+                            if (distCorner > getVisualHandleRadius() * 4.5 && distArrow > getVisualHandleRadius() * 4.5) {
+                                rotateUnlockedCorner = null;
+                                document.getElementById('statusText').textContent = 'Hover over any corner for 1.5s to unlock the Rotate Arrow';
+                                renderCompositeBoard();
+                            }
+                        }
+                        if (hoveredCorner) {
+                            clearCornerHoverTimer();
+                            renderCompositeBoard();
+                        }
+                    }
+
+                    if (hitTestBody(local, selectedObj)) {
+                        canvas.style.cursor = 'move';
+                        return;
+                    }
+                }
+
+                const hoveringAny = objects.some(o => hitTestBody(toLocalSpace(mouse, o), o));
+                canvas.style.cursor = hoveringAny ? 'pointer' : 'default';
+                return;
+            }
+
+            // Dragging Object
+            if (interaction.mode === 'drag' && selectedObj) {
+                const dx = mouse.x - interaction.startMouse.x;
+                const dy = mouse.y - interaction.startMouse.y;
+                if (Math.hypot(dx, dy) > 1) interaction.moved = true;
+                selectedObj.x = interaction.startObj.x + dx;
+                selectedObj.y = interaction.startObj.y + dy;
+                renderCompositeBoard();
+            }
+
+            // Rotating Object via 1.5s Corner Rotate Arrow + Horizontal Red Dashed Line Snap
+            else if (interaction.mode === 'rotate' && selectedObj) {
+                canvas.style.cursor = 'grabbing';
+                interaction.moved = true;
+                const currentAngle = Math.atan2(mouse.y - selectedObj.y, mouse.x - selectedObj.x);
+                const deltaDeg = ((currentAngle - interaction.startAngle) * 180) / Math.PI;
+                let newDeg = (interaction.startObj.rotate + deltaDeg) % 360;
+                if (newDeg < 0) newDeg += 360;
+
+                const snapTolerance = 3.5;
+                if (Math.abs(newDeg - 0) <= snapTolerance || Math.abs(newDeg - 360) <= snapTolerance) {
+                    newDeg = 0;
+                    interaction.isHorizontalSnap = true;
+                } else if (Math.abs(newDeg - 180) <= snapTolerance) {
+                    newDeg = 180;
+                    interaction.isHorizontalSnap = true;
+                } else {
+                    interaction.isHorizontalSnap = false;
+                }
+
+                selectedObj.rotate = newDeg;
+                renderCompositeBoard();
+            }
+
+            // Resizing Object (8-point resize)
+            else if (interaction.mode === 'resize' && selectedObj) {
+                interaction.moved = true;
+                const s = interaction.startObj;
+                const localMouse = toLocalSpace(mouse, s);
+                const minSize = 28;
+
+                let left = -s.width / 2;
+                let right = s.width / 2;
+                let top = -s.height / 2;
+                let bottom = s.height / 2;
+
+                const h = interaction.handle;
+
+                if (h === 'mr') right = Math.max(left + minSize, localMouse.x);
+                else if (h === 'ml') left = Math.min(right - minSize, localMouse.x);
+                else if (h === 'bc') bottom = Math.max(top + minSize, localMouse.y);
+                else if (h === 'tc') top = Math.min(bottom - minSize, localMouse.y);
+                else {
+                    if (h === 'br') {
+                        const scale = Math.max(Math.max(minSize, localMouse.x - left) / s.width, Math.max(minSize, localMouse.y - top) / s.height);
+                        right = left + s.width * scale;
+                        bottom = top + s.height * scale;
+                    } else if (h === 'tl') {
+                        const scale = Math.max(Math.max(minSize, right - localMouse.x) / s.width, Math.max(minSize, bottom - localMouse.y) / s.height);
+                        left = right - s.width * scale;
+                        top = bottom - s.height * scale;
+                    } else if (h === 'tr') {
+                        const scale = Math.max(Math.max(minSize, localMouse.x - left) / s.width, Math.max(minSize, bottom - localMouse.y) / s.height);
+                        right = left + s.width * scale;
+                        top = bottom - s.height * scale;
+                    } else if (h === 'bl') {
+                        const scale = Math.max(Math.max(minSize, right - localMouse.x) / s.width, Math.max(minSize, localMouse.y - top) / s.height);
+                        left = right - s.width * scale;
+                        bottom = top + s.height * scale;
+                    }
+                }
+
+                const newW = right - left;
+                const newH = bottom - top;
+                const localOffset = { x: (left + right) / 2, y: (top + bottom) / 2 };
+                const worldCenter = toWorldSpace(localOffset, s);
+
+                selectedObj.width = newW;
+                selectedObj.height = newH;
+                selectedObj.x = worldCenter.x;
+                selectedObj.y = worldCenter.y;
+
+                renderCompositeBoard();
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (isBrushing) {
+                isBrushing = false;
+                if (activeBrushTool === 'removeObj' && cleanUpPath.length > 0) {
+                    runAppleCleanUpInpaint(cleanUpPath);
+                    cleanUpPath = [];
+                }
+                saveHistoryState();
+                renderCompositeBoard();
+            }
+
+            if (interaction.mode !== 'none') {
+                const didChange = interaction.moved;
+                interaction.isHorizontalSnap = false;
+                interaction.mode = 'none';
+                interaction.handle = null;
+                interaction.moved = false;
+                if (didChange) {
+                    saveHistoryState();
+                }
+                renderCompositeBoard();
+            }
+        });
+
+        // Draw Vector Shapes Helper
+        function drawShapeObject(targetCtx, obj) {
+            const w = obj.width;
+            const h = obj.height;
+            const hw = w / 2;
+            const hh = h / 2;
+            targetCtx.fillStyle = obj.color;
+            targetCtx.strokeStyle = obj.color;
+            targetCtx.lineWidth = Math.max(4, Math.min(w, h) * 0.06);
+
+            targetCtx.beginPath();
+            if (obj.shapeType === 'rect') {
+                targetCtx.fillRect(-hw, -hh, w, h);
+            } else if (obj.shapeType === 'roundRect') {
+                const r = Math.min(w, h) * 0.2;
+                targetCtx.roundRect(-hw, -hh, w, h, r);
+                targetCtx.fill();
+            } else if (obj.shapeType === 'circle') {
+                targetCtx.ellipse(0, 0, hw, hh, 0, 0, Math.PI * 2);
+                targetCtx.fill();
+            } else if (obj.shapeType === 'frame') {
+                targetCtx.strokeRect(-hw, -hh, w, h);
+            } else if (obj.shapeType === 'star') {
+                const spikes = 5;
+                for (let i = 0; i < spikes * 2; i++) {
+                    const rad = (i * Math.PI) / spikes - Math.PI / 2;
+                    const rx = (i % 2 === 0 ? hw : hw * 0.45) * Math.cos(rad);
+                    const ry = (i % 2 === 0 ? hh : hh * 0.45) * Math.sin(rad);
+                    if (i === 0) targetCtx.moveTo(rx, ry);
+                    else targetCtx.lineTo(rx, ry);
+                }
+                targetCtx.closePath();
+                targetCtx.fill();
+            } else if (obj.shapeType === 'arrow') {
+                const shaftH = h * 0.38;
+                const headW = w * 0.38;
+                targetCtx.moveTo(-hw, -shaftH / 2);
+                targetCtx.lineTo(hw - headW, -shaftH / 2);
+                targetCtx.lineTo(hw - headW, -hh);
+                targetCtx.lineTo(hw, 0);
+                targetCtx.lineTo(hw - headW, hh);
+                targetCtx.lineTo(hw - headW, shaftH / 2);
+                targetCtx.lineTo(-hw, shaftH / 2);
+                targetCtx.closePath();
+                targetCtx.fill();
+            }
+        }
+
+        // Draw Rotate Arrow Icon at Unlocked Corner
+        function drawRotateIcon(targetCtx, x, y, radius) {
+            targetCtx.save();
+            targetCtx.translate(x, y);
+
+            targetCtx.beginPath();
+            targetCtx.arc(0, 0, radius * 1.35, 0, Math.PI * 2);
+            targetCtx.fillStyle = '#2563eb';
+            targetCtx.fill();
+            targetCtx.lineWidth = Math.max(1.5, radius * 0.22);
+            targetCtx.strokeStyle = '#ffffff';
+            targetCtx.stroke();
+
+            const arcR = radius * 0.72;
+            targetCtx.beginPath();
+            targetCtx.arc(0, 0, arcR, -Math.PI * 0.75, Math.PI * 0.55);
+            targetCtx.strokeStyle = '#ffffff';
+            targetCtx.lineWidth = Math.max(1.8, radius * 0.24);
+            targetCtx.stroke();
+
+            const endAngle = Math.PI * 0.55;
+            const ax = arcR * Math.cos(endAngle);
+            const ay = arcR * Math.sin(endAngle);
+            targetCtx.beginPath();
+            targetCtx.moveTo(ax, ay);
+            targetCtx.lineTo(ax - radius * 0.45, ay - radius * 0.2);
+            targetCtx.lineTo(ax + radius * 0.1, ay - radius * 0.48);
+            targetCtx.closePath();
+            targetCtx.fillStyle = '#ffffff';
+            targetCtx.fill();
+
+            targetCtx.restore();
+        }
+
+        function applyScopedWarmth(targetCtx, warmthVal, x, y, w, h) {
+            if (!warmthVal) return;
+            targetCtx.save();
+            targetCtx.globalCompositeOperation = 'source-atop';
+            targetCtx.fillStyle = warmthVal > 0
+                ? `rgba(255, 140, 0, ${Math.abs(warmthVal) * 0.0022})`
+                : `rgba(56, 189, 248, ${Math.abs(warmthVal) * 0.0022})`;
+            targetCtx.fillRect(x, y, w, h);
+            targetCtx.restore();
+        }
+
+        // Main Render Pipeline
+        function renderCompositeBoard(exportMode = false) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Layer 1: Background Layer
+            if (bgLayer.img) {
+                layerScratch.width = canvas.width;
+                layerScratch.height = canvas.height;
+                scratchCtx.clearRect(0, 0, canvas.width, canvas.height);
+                scratchCtx.filter = buildLayerFilterString(bgLayer.grading, bgLayer.blurLevel);
+                scratchCtx.drawImage(bgLayer.buffer, 0, 0, canvas.width, canvas.height);
+                scratchCtx.filter = 'none';
+                applyScopedWarmth(scratchCtx, bgLayer.grading.warmth, 0, 0, canvas.width, canvas.height);
+
+                ctx.drawImage(layerScratch, 0, 0);
+            } else if (objects.length === 0 && !exportMode) {
+                ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+                ctx.font = "600 26px Inter, system-ui, sans-serif";
+                ctx.textBaseline = "middle";
+                ctx.textAlign = "center";
+                ctx.fillText("Upload a Background, Overlay, Shape, or Text Layer to Start", canvas.width / 2, canvas.height / 2);
+            }
+
+            // Layer 2: Render Each Interactive Object with Isolated Grading & Blur
+            for (const obj of objects) {
+                const pad = Math.ceil((obj.blurLevel || 0) * 2.5 + 20);
+                const sw = Math.max(1, Math.ceil(obj.width + pad * 2));
+                const sh = Math.max(1, Math.ceil(obj.height + pad * 2));
+                layerScratch.width = sw;
+                layerScratch.height = sh;
+
+                scratchCtx.save();
+                scratchCtx.clearRect(0, 0, sw, sh);
+                scratchCtx.translate(sw / 2, sh / 2);
+                scratchCtx.filter = buildLayerFilterString(obj.grading, obj.blurLevel);
+
+                if (obj.type === 'image') {
+                    scratchCtx.drawImage(
+                        obj.sourceCanvas,
+                        -obj.width / 2,
+                        -obj.height / 2,
+                        obj.width,
+                        obj.height
+                    );
+                } else if (obj.type === 'shape') {
+                    drawShapeObject(scratchCtx, obj);
+                } else if (obj.type === 'text') {
+                    scratchCtx.save();
+                    const baseFontPx = 64;
+                    scratchCtx.font = `bold ${baseFontPx}px ${obj.fontFamily}`;
+                    const measuredW = Math.max(10, scratchCtx.measureText(obj.text).width);
+                    const scaleX = obj.width / (measuredW + 20);
+                    const scaleY = obj.height / (baseFontPx * 1.25);
+                    scratchCtx.scale(scaleX, scaleY);
+
+                    scratchCtx.fillStyle = obj.color;
+                    scratchCtx.textAlign = 'center';
+                    scratchCtx.textBaseline = 'middle';
+                    scratchCtx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+                    scratchCtx.shadowBlur = 6;
+                    scratchCtx.shadowOffsetX = 2;
+                    scratchCtx.shadowOffsetY = 2;
+                    scratchCtx.fillText(obj.text, 0, 0);
+                    scratchCtx.restore();
+                }
+                scratchCtx.restore();
+
+                if (obj.grading && obj.grading.warmth !== 0) {
+                    applyScopedWarmth(scratchCtx, obj.grading.warmth, 0, 0, sw, sh);
+                }
+
                 ctx.save();
-                ctx.translate(fgState.x, fgState.y);
-                ctx.rotate((fgState.rotate * Math.PI) / 180);
-                ctx.scale(fgState.scale, fgState.scale);
-                ctx.drawImage(
-                    fgImg,
-                    -fgState.baseWidth / 2,
-                    -fgState.baseHeight / 2,
-                    fgState.baseWidth,
-                    fgState.baseHeight
-                );
+                ctx.translate(obj.x, obj.y);
+                ctx.rotate((obj.rotate * Math.PI) / 180);
+                ctx.globalAlpha = obj.opacity ?? 1;
+                ctx.drawImage(layerScratch, -sw / 2, -sh / 2, sw, sh);
                 ctx.restore();
             }
 
-            // Layer 3 Pass: Draw Typography Text Overlay
-            const text = document.getElementById('textInput').value.trim();
-            if (text) {
-                const fontSize = document.getElementById('fontSize').value;
-                const fontStyle = document.getElementById('fontStyle').value;
-                const textColor = document.getElementById('textColor').value;
+            // Layer 3: UI Overlays
+            if (!exportMode && selectedObj) {
+                const obj = selectedObj;
+                const r = getVisualHandleRadius();
+                const lw = Math.max(1.5, r * 0.25);
+
+                if (interaction.mode === 'rotate' && interaction.isHorizontalSnap) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.setLineDash([10 * getVisualScale(), 7 * getVisualScale()]);
+                    ctx.strokeStyle = '#ef4444';
+                    ctx.lineWidth = 2.5 * getVisualScale();
+                    ctx.moveTo(0, obj.y);
+                    ctx.lineTo(canvas.width, obj.y);
+                    ctx.stroke();
+
+                    ctx.setLineDash([]);
+                    ctx.fillStyle = '#ef4444';
+                    const badgeW = 110 * getVisualScale();
+                    const badgeH = 24 * getVisualScale();
+                    ctx.fillRect(obj.x - badgeW / 2, obj.y - obj.height / 2 - badgeH - 14 * getVisualScale(), badgeW, badgeH);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = `bold ${11 * getVisualScale()}px Inter, sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('0° HORIZONTAL', obj.x, obj.y - obj.height / 2 - badgeH / 2 - 14 * getVisualScale());
+                    ctx.restore();
+                }
 
                 ctx.save();
-                ctx.font = `bold ${fontSize}px "${fontStyle}"`;
-                ctx.fillStyle = textColor;
-                ctx.textAlign = "center";
-                ctx.textBaseline = "bottom";
-                
-                // Subtle drop shadow for legibility
-                ctx.shadowColor = "rgba(0, 0, 0, 0.7)";
-                ctx.shadowBlur = 8;
-                ctx.shadowOffsetX = 2;
-                ctx.shadowOffsetY = 2;
+                ctx.translate(obj.x, obj.y);
+                ctx.rotate((obj.rotate * Math.PI) / 180);
 
-                ctx.fillText(text, canvas.width / 2, canvas.height - 40);
+                ctx.strokeStyle = '#3b82f6';
+                ctx.lineWidth = lw;
+                ctx.strokeRect(-obj.width / 2, -obj.height / 2, obj.width, obj.height);
+
+                const handles = getHandleCoords(obj);
+                for (const [key, pos] of Object.entries(handles)) {
+                    ctx.beginPath();
+                    if (pos.isCorner) {
+                        ctx.arc(pos.x, pos.y, r, 0, Math.PI * 2);
+                    } else {
+                        ctx.rect(pos.x - r * 0.85, pos.y - r * 0.85, r * 1.7, r * 1.7);
+                    }
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fill();
+                    ctx.lineWidth = lw;
+                    ctx.strokeStyle = '#2563eb';
+                    ctx.stroke();
+
+                    if (hoveredCorner === key) {
+                        const elapsed = performance.now() - cornerHoverStartTime;
+                        const progress = Math.min(1, elapsed / CORNER_HOVER_DURATION);
+                        ctx.beginPath();
+                        ctx.arc(pos.x, pos.y, r * 1.7, -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2);
+                        ctx.strokeStyle = '#f59e0b';
+                        ctx.lineWidth = lw * 1.4;
+                        ctx.stroke();
+                    }
+                }
+
+                if (rotateUnlockedCorner) {
+                    const rotPos = getRotateArrowPos(rotateUnlockedCorner, obj);
+                    drawRotateIcon(ctx, rotPos.x, rotPos.y, r);
+                }
+
+                ctx.restore();
+            }
+
+            // Apple Clean Up Glowing Selection Shimmer Path + Brush Cursor Preview
+            if (!exportMode && activeBrushTool) {
+                const r = brushRadius * getVisualScale();
+
+                if (activeBrushTool === 'removeObj' && cleanUpPath.length > 0) {
+                    ctx.save();
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.lineWidth = r * 2;
+                    const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                    grad.addColorStop(0, 'rgba(96, 165, 250, 0.55)');
+                    grad.addColorStop(0.5, 'rgba(192, 132, 252, 0.65)');
+                    grad.addColorStop(1, 'rgba(244, 114, 182, 0.55)');
+                    ctx.strokeStyle = grad;
+                    ctx.shadowColor = 'rgba(192, 132, 252, 0.85)';
+                    ctx.shadowBlur = 18 * getVisualScale();
+
+                    ctx.beginPath();
+                    cleanUpPath.forEach((pt, idx) => {
+                        if (idx === 0) ctx.moveTo(pt.x, pt.y);
+                        else ctx.lineTo(pt.x, pt.y);
+                    });
+                    ctx.stroke();
+                    ctx.restore();
+                }
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(mousePos.x, mousePos.y, r, 0, Math.PI * 2);
+                ctx.fillStyle = activeBrushTool === 'removeObj' ? 'rgba(192, 132, 252, 0.25)' : 'rgba(59, 130, 246, 0.22)';
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2 * getVisualScale();
+                ctx.stroke();
                 ctx.restore();
             }
         }
 
-        // Export Composite Image Handler
+        // Export Composite Image
         document.getElementById('saveImage').addEventListener('click', function() {
+            renderCompositeBoard(true);
             const link = document.createElement('a');
-            link.download = 'composite-studio-image.png';
+            link.download = 'studio-pro-composite.png';
             link.href = canvas.toDataURL('image/png');
             link.click();
+            renderCompositeBoard(false);
         });
 
-        // Initial render on page load
+        // Save initial blank state so Undo can revert all the way back to the beginning
+        saveHistoryState();
+        syncSidebarToActiveTarget();
         renderCompositeBoard();
     </script>
 </body>
