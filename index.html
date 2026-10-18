@@ -9,94 +9,51 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f4f7f6;
             color: #333;
-            max-width: 950px;
-            margin: 40px auto;
+            max-width: 600px;
+            margin: 100px auto;
             padding: 20px;
+            text-align: center;
         }
         h1 {
             color: #2c3e50;
-            text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 40px;
         }
-        .tab-navigation {
+        .hub-menu {
             display: flex;
-            background: #eef2f3;
-            border-radius: 8px 8px 0 0;
-            padding: 10px 10px 0 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            gap: 5px;
+            flex-direction: column;
+            gap: 15px;
         }
-        .tab-button {
-            flex: 1;
-            padding: 15px;
-            font-size: 16px;
+        /* Style the tabs as massive click blocks */
+        .tool-link {
+            display: block;
+            padding: 20px;
+            font-size: 18px;
             font-weight: bold;
-            border: none;
-            background: transparent;
-            color: #7f8c8d;
-            cursor: pointer;
-            border-radius: 6px 6px 0 0;
-            transition: all 0.2s ease;
-            text-align: center;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
         }
-        .tab-button:hover {
-            background-color: rgba(255, 255, 255, 0.5);
-            color: #2c3e50;
+        .tool-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
         }
-        .tab-button.active[data-src="image.html"] {
-            background-color: white; color: #e74c3c; border-top: 3px solid #e74c3c;
-        }
-        .tab-button.active[data-src="video.html"] {
-            background-color: white; color: #9b59b6; border-top: 3px solid #9b59b6;
-        }
-        .tab-button.active[data-src="music.html"] {
-            background-color: white; color: #2ecc71; border-top: 3px solid #2ecc71;
-        }
-        /* The isolated sandbox container */
-        .iframe-container {
-            background: white;
-            border-radius: 0 0 8px 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-            border: none;
-            width: 100%;
-            height: 450px;
-        }
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-            border-radius: 0 0 8px 8px;
-        }
+        .image-btn { background-color: #e74c3c; }
+        .video-btn { background-color: #9b59b6; }
+        .music-btn { background-color: #2ecc71; }
     </style>
 </head>
 <body>
 
     <h1>Creative Editing Studio Hub</h1>
     
-    <div class="tab-navigation">
-        <button class="tab-button active" data-src="image.html">🖼️ Image Edit</button>
-        <button class="tab-button" data-src="video.html">🎬 Video Edit</button>
-        <button class="tab-button" data-src="music.html">🎵 Music Edit</button>
+    <div class="hub-menu">
+        <!-- target="_blank" forces your browser to launch this in a brand new, empty full screen tab -->
+        <a href="image.html" target="_blank" class="tool-link image-btn">🖼️ Launch Image Editor (Full Screen)</a>
+        <a href="video.html" target="_blank" class="tool-link video-btn">🎬 Launch Video Editor (Full Screen)</a>
+        <a href="music.html" target="_blank" class="tool-link music-btn">🎵 Launch Music Editor (Full Screen)</a>
     </div>
 
-    <div class="iframe-container">
-        <!-- Secure Sandbox Viewport Frame. Starts looking inside image.html -->
-        <iframe id="studio-frame" src="image.html" sandbox="allow-scripts allow-same-origin allow-downloads allow-forms"></iframe>
-    </div>
-
-    <script>
-        const tabs = document.querySelectorAll('.tab-button');
-        const frame = document.getElementById('studio-frame');
-
-        tabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                tabs.forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                
-                // Routes the frame view to load the target tool file
-                frame.src = tab.getAttribute('data-src');
-            });
-        });
-    </script>
 </body>
 </html>
