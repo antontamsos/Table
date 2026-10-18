@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: system-ui, sans-serif; padding: 10px; margin: 0; color: #333; }
+        .placeholder-tool { border: 2px dashed #ccc; border-radius: 8px; padding: 40px; text-align: center; background-color: #fafafa; color: #7f8c8d; margin-top: 15px; }
+        .action-btn { color: white; border: none; padding: 12px 24px; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 15px; background-color: #9b59b6; }
+    </style>
+</head>
+<body>
+    <h2>Video Sequencing Studio</h2>
+    <p>Splice timelines, modify playback framerates, or encode file output tracks.</p>
+    <div class="placeholder-tool">
+        <p>Drop Video Tracks (.mp4, .mov) Here</p>
+        <input type="file" id="videoUpload" accept="video/*" style="display:none;">
+        <button class="action-btn" onclick="document.getElementById('videoUpload').click()">Import Video Clip</button>
+    </div>
+    <script>
+        // FUTURE COMPLEX CODE OR AI API CALLS FOR VIDEOS GO HERE
+        console.log("Video sub-application script loaded cleanly.");
+    </script>
+</body>
+</html>
