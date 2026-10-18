@@ -38,3 +38,255 @@
             font-size: 13px;
             margin-bottom: 6px;
             color: #bdc3c7;
+        }
+        input[type="range"], input[type="text"], input[type="color"], select {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #34495e;
+            background: #34495e;
+            color: #fff;
+            margin-bottom: 5px;
+        }
+        .btn-stack { display: flex; gap: 8px; margin-bottom: 10px; }
+        .action-btn {
+            flex: 1; color: white; border: none; padding: 10px 12px; border-radius: 5px;
+            cursor: pointer; font-weight: bold; font-size: 13px; text-align: center;
+        }
+        .upload-bg-btn { background-color: #3498db; }
+        .upload-fg-btn { background-color: #e74c3c; }
+        .download-btn { background-color: #2ecc71; margin-top: 15px; width: 100%; font-size: 15px; padding: 12px; }
+        .disabled { opacity: 0.3; pointer-events: none; }
+
+        .canvas-container {
+            flex: 1;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-image: linear-gradient(45deg, #242424 25%, transparent 25%), 
+                              linear-gradient(-45deg, #242424 25%, transparent 25%), 
+                              linear-gradient(45deg, transparent 75%, #242424 75%), 
+                              linear-gradient(-45deg, transparent 75%, #242424 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            background-color: #1e1e1e;
+            position: relative;
+        }
+        canvas {
+            max-width: 95%;
+            max-height: 95%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            background-color: transparent;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="controls-sidebar">
+        <h2>Image Studio</h2>
+        
+        <div class="control-group">
+            <label>1. Media Import</label>
+            <div class="btn-stack">
+                <button class="action-btn upload-bg-btn" onclick="document.getElementById('bgUpload').click()">Set Background</button>
+                <button class="action-btn upload-fg-btn" onclick="document.getElementById('fgUpload').click()">Add Overlay</button>
+            </div>
+            <input type="file" id="bgUpload" accept="image/*" style="display:none;">
+            <input type="file" id="fgUpload" accept="image/*" style="display:none;">
+        </div>
+
+        <div id="fgControls" class="control-group disabled">
+            <label>2. Overlay Layer Transformation</label>
+            <label style="font-size:11px; font-weight:normal;">Scale (Size Factor)</label>
+            <input type="range" id="fgScale" min="10" max="200" value="100">
+            
+            <label style="font-size:11px; font-weight:normal;">Rotation Angle (Degrees)</label>
+            <input type="range" id="fgRotate" min="0" max="360" value="0">
+            
+            <label style="font-size:11px; font-weight:normal;">Position X Coordinate</label>
+            <input type="range" id="fgX" min="0" max="1200" value="600">
+            
+            <label style="font-size:11px; font-weight:normal;">Position Y Coordinate</label>
+            <input type="range" id="fgY" min="0" max="800" value="400">
+        </div>
+
+        <div class="control-group">
+            <label>3. Typography Text Overlay</label>
+            <input type="text" id="textInput" placeholder="Type banner text here...">
+            
+            <label style="font-size:11px; font-weight:normal;">Font Typography Style</label>
+            <select id="fontStyle">
+                <option value="Arial">Sans-Serif (Arial)</option>
+                <option value="Georgia">Serif (Georgia)</option>
+                <option value="Courier New">Monospace (Courier)</option>
+                <option value="Impact">Bold Impact (Impact)</option>
+            </select>
+
+            <label style="font-size:11px; font-weight:normal;">Font Canvas Size (px)</label>
+            <input type="range" id="fontSize" min="12" max="150" value="40">
+
+            <label style="font-size:11px; font-weight:normal;">Fill Theme Color Palette</label>
+            <input type="color" id="textColor" value="#ffffff">
+        </div>
+
+        <button class="action-btn download-btn" id="saveImage">Export Composite Image</button>
+    </div>
+
+    <div class="canvas-container">
+        <canvas id="studioCanvas"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('studioCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let bgImg = null;
+        let fgImg = null;
+        let fgState = { x: 600, y: 400, scale: 1.0, rotate: 0, baseWidth: 0, baseHeight: 0 };
+
+        // Fallback default rendering dimensions
+        canvas.width = 1200;
+        canvas.height = 800;
+
+        // Background Upload Handler
+        document.getElementById('bgUpload').addEventListener('change', function(e) {
+            if (e.target.files && e.target.files[0]) {
+                const file = e.target.files[0];
+                const objectUrl = URL.createObjectURL(file);
+                bgImg = new Image();
+                bgImg.onload = function() {
+                    canvas.width = bgImg.width;
+                    canvas.height = bgImg.height;
+                    
+                    document.getElementById('fgX').max = canvas.width;
+                    document.getElementById('fgY').max = canvas.height;
+                    
+                    if (!fgImg) {
+                        fgState.x = Math.round(canvas.width / 2);
+                        fgState.y = Math.round(canvas.height / 2);
+                        document.getElementById('fgX').value = fgState.x;
+                        document.getElementById('fgY').value = fgState.y;
+                    }
+                    
+                    renderCompositeBoard();
+                    URL.revokeObjectURL(objectUrl);
+                };
+                bgImg.src = objectUrl;
+                // Reset value so uploading the same image again still triggers 'change'
+                e.target.value = '';
+            }
+        });
+
+        // Foreground Overlay Upload Handler
+        document.getElementById('fgUpload').addEventListener('change', function(e) {
+            if (e.target.files && e.target.files[0]) {
+                const file = e.target.files[0];
+                const objectUrl = URL.createObjectURL(file);
+                fgImg = new Image();
+                fgImg.onload = function() {
+                    const scaleFactor = (canvas.width * 0.5) / fgImg.width;
+                    fgState.baseWidth = fgImg.width * scaleFactor;
+                    fgState.baseHeight = fgImg.height * scaleFactor;
+                    
+                    fgState.x = Math.round(canvas.width / 2);
+                    fgState.y = Math.round(canvas.height / 2);
+                    fgState.scale = 1.0;
+                    fgState.rotate = 0;
+
+                    document.getElementById('fgX').max = canvas.width;
+                    document.getElementById('fgY').max = canvas.height;
+                    document.getElementById('fgScale').value = 100;
+                    document.getElementById('fgRotate').value = 0;
+                    document.getElementById('fgX').value = fgState.x;
+                    document.getElementById('fgY').value = fgState.y;
+                    
+                    document.getElementById('fgControls').classList.remove('disabled');
+                    renderCompositeBoard();
+                    URL.revokeObjectURL(objectUrl);
+                };
+                fgImg.src = objectUrl;
+                e.target.value = '';
+            }
+        });
+
+        // Event Sliders Handlers
+        document.getElementById('fgScale').addEventListener('input', (e) => { fgState.scale = parseFloat(e.target.value) / 100; renderCompositeBoard(); });
+        document.getElementById('fgRotate').addEventListener('input', (e) => { fgState.rotate = parseFloat(e.target.value); renderCompositeBoard(); });
+        document.getElementById('fgX').addEventListener('input', (e) => { fgState.x = parseInt(e.target.value, 10); renderCompositeBoard(); });
+        document.getElementById('fgY').addEventListener('input', (e) => { fgState.y = parseInt(e.target.value, 10); renderCompositeBoard(); });
+        
+        document.getElementById('textInput').addEventListener('input', renderCompositeBoard);
+        document.getElementById('fontStyle').addEventListener('change', renderCompositeBoard);
+        document.getElementById('fontSize').addEventListener('input', renderCompositeBoard);
+        document.getElementById('textColor').addEventListener('input', renderCompositeBoard);
+
+        function renderCompositeBoard() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Layer 1 Pass: Draw Background Image Asset
+            if (bgImg) {
+                ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+            } else if (!fgImg) {
+                // Placeholder message when no images are loaded
+                ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+                ctx.font = "28px Arial";
+                ctx.textBaseline = "middle";
+                ctx.textAlign = "center";
+                ctx.fillText("Upload a Background or Overlay Image to Begin", canvas.width / 2, canvas.height / 2);
+            }
+
+            // Layer 2 Pass: Draw Foreground Overlay Image
+            if (fgImg) {
+                ctx.save();
+                ctx.translate(fgState.x, fgState.y);
+                ctx.rotate((fgState.rotate * Math.PI) / 180);
+                ctx.scale(fgState.scale, fgState.scale);
+                ctx.drawImage(
+                    fgImg,
+                    -fgState.baseWidth / 2,
+                    -fgState.baseHeight / 2,
+                    fgState.baseWidth,
+                    fgState.baseHeight
+                );
+                ctx.restore();
+            }
+
+            // Layer 3 Pass: Draw Typography Text Overlay
+            const text = document.getElementById('textInput').value.trim();
+            if (text) {
+                const fontSize = document.getElementById('fontSize').value;
+                const fontStyle = document.getElementById('fontStyle').value;
+                const textColor = document.getElementById('textColor').value;
+
+                ctx.save();
+                ctx.font = `bold ${fontSize}px "${fontStyle}"`;
+                ctx.fillStyle = textColor;
+                ctx.textAlign = "center";
+                ctx.textBaseline = "bottom";
+                
+                // Subtle drop shadow for legibility
+                ctx.shadowColor = "rgba(0, 0, 0, 0.7)";
+                ctx.shadowBlur = 8;
+                ctx.shadowOffsetX = 2;
+                ctx.shadowOffsetY = 2;
+
+                ctx.fillText(text, canvas.width / 2, canvas.height - 40);
+                ctx.restore();
+            }
+        }
+
+        // Export Composite Image Handler
+        document.getElementById('saveImage').addEventListener('click', function() {
+            const link = document.createElement('a');
+            link.download = 'composite-studio-image.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+
+        // Initial render on page load
+        renderCompositeBoard();
+    </script>
+</body>
+</html>
