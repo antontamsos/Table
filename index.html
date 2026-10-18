@@ -3,121 +3,176 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dynamic Table Generator</title>
+    <title>Creative Editing Studio Hub</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f4f7f6;
             color: #333;
-            max-width: 800px;
+            max-width: 900px;
             margin: 40px auto;
             padding: 20px;
         }
         h1 {
             color: #2c3e50;
             text-align: center;
+            margin-bottom: 30px;
         }
-        .controls {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+        /* Navigation Tabs Layout */
+        .tab-navigation {
             display: flex;
-            gap: 15px;
-            align-items: center;
-            justify-content: center;
+            background: #eef2f3;
+            border-radius: 8px 8px 0 0;
+            padding: 10px 10px 0 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            gap: 5px;
         }
-        label {
+        .tab-button {
+            flex: 1;
+            padding: 15px;
+            font-size: 16px;
             font-weight: bold;
-        }
-        input[type="number"] {
-            width: 60px;
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        button {
-            background-color: #3498db;
-            color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
+            background: transparent;
+            color: #7f8c8d;
             cursor: pointer;
-            font-weight: bold;
-            transition: background 0.2s;
+            border-radius: 6px 6px 0 0;
+            transition: all 0.2s ease;
+            text-align: center;
         }
-        button:hover {
-            background-color: #2980b9;
+        .tab-button:hover {
+            background-color: rgba(255, 255, 255, 0.5);
+            color: #2c3e50;
         }
-        #tableContainer {
+        /* Active Tab Status Color Filters */
+        .tab-button.active[data-target="image-panel"] {
+            background-color: white;
+            color: #e74c3c;
+            border-top: 3px solid #e74c3c;
+        }
+        .tab-button.active[data-target="video-panel"] {
+            background-color: white;
+            color: #9b59b6;
+            border-top: 3px solid #9b59b6;
+        }
+        .tab-button.active[data-target="music-panel"] {
+            background-color: white;
+            color: #2ecc71;
+            border-top: 3px solid #2ecc71;
+        }
+        /* Work Panels Workspace Styling */
+        .panel-container {
             background: white;
-            padding: 20px;
+            padding: 30px;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            min-height: 300px;
+        }
+        .workspace-panel {
+            display: none; /* Hides panel sections until active */
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        .workspace-panel.active {
+            display: block; /* Reveals target active workspace */
+        }
+        .placeholder-tool {
+            border: 2px dashed #ccc;
             border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            overflow-x: auto;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-        table, th, td {
-            border: 1px solid #bdc3c7;
-        }
-        td {
-            padding: 12px;
+            padding: 40px;
             text-align: center;
             background-color: #fafafa;
+            color: #7f8c8d;
+            margin-top: 15px;
         }
-        tr:nth-child(even) td {
-            background-color: #f2f2f2;
+        .action-btn {
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 15px;
+            transition: transform 0.1s;
+        }
+        .action-btn:active {
+            transform: scale(0.98);
+        }
+        .image-btn { background-color: #e74c3c; }
+        .video-btn { background-color: #9b59b6; }
+        .music-btn { background-color: #2ecc71; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
 <body>
 
-    <h1>Dynamic Table Generator</h1>
+    <h1>Creative Editing Studio Hub</h1>
     
-    <div class="controls">
-        <label for="rows">Rows:</label>
-        <input type="number" id="rows" name="rows" value="3" min="1">
-        
-        <label for="cols">Columns:</label>
-        <input type="number" id="cols" name="cols" value="3" min="1">
-        
-        <button onclick="generateTable()">Generate Table</button>
+    <!-- Tab Controls Selection -->
+    <div class="tab-navigation">
+        <button class="tab-button active" data-target="image-panel">🖼️ Image Edit</button>
+        <button class="tab-button" data-target="video-panel">🎬 Video Edit</button>
+        <button class="tab-button" data-target="music-panel">🎵 Music Edit</button>
     </div>
 
-    <div id="tableContainer"></div>
+    <!-- Active Workspace Board Viewports -->
+    <div class="panel-container">
+        
+        <!-- Tab Panel 1: Image Studio -->
+        <div id="image-panel" class="workspace-panel active">
+            <h2>Image Processing Studio</h2>
+            <p>Upload your graphics files to crop, filter, or optimize your dimensions instantly.</p>
+            <div class="placeholder-tool">
+                <p>Drag & Drop Images or Click Below to Import</p>
+                <input type="file" id="imageUpload" accept="image/*" style="display:none;">
+                <button class="action-btn image-btn" onclick="document.getElementById('imageUpload').click()">Upload Photo</button>
+            </div>
+        </div>
 
+        <!-- Tab Panel 2: Video Lounge -->
+        <div id="video-panel" class="workspace-panel">
+            <h2>Video Sequencing Studio</h2>
+            <p>Splice timelines, modify playback framerates, or encode file output tracks.</p>
+            <div class="placeholder-tool">
+                <p>Drop Video Tracks (.mp4, .mov) Here</p>
+                <input type="file" id="videoUpload" accept="video/*" style="display:none;">
+                <button class="action-btn video-btn" onclick="document.getElementById('videoUpload').click()">Import Video clip</button>
+            </div>
+        </div>
+
+        <!-- Tab Panel 3: Music Deck -->
+        <div id="music-panel" class="workspace-panel">
+            <h2>Audio Synthesis Deck</h2>
+            <p>Trim master audio tracks, normalize gain waveforms, or layer sound design tracks.</p>
+            <div class="placeholder-tool">
+                <p>Load Audio Source Stems (.mp3, .wav)</p>
+                <input type="file" id="audioUpload" accept="audio/*" style="display:none;">
+                <button class="action-btn music-btn" onclick="document.getElementById('audioUpload').click()">Open Audio Track</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Interface Animation Routing Controller Script -->
     <script>
-        function generateTable() {
-            var rows = document.getElementById('rows').value;
-            var cols = document.getElementById('cols').value;
-            var tableContainer = document.getElementById('tableContainer');
-            
-            // Validation check
-            if (rows < 1 || cols < 1) {
-                tableContainer.innerHTML = '<p style="color: red; text-align: center;">Please enter a number greater than 0.</p>';
-                return;
-            }
+        const tabs = document.querySelectorAll('.tab-button');
+        const panels = document.querySelectorAll('.workspace-panel');
 
-            var table = document.createElement('table');
-            
-            for (var i = 0; i < rows; i++) {
-                var tr = document.createElement('tr');
-                for (var j = 0; j < cols; j++) {
-                    var td = document.createElement('td');
-                    td.appendChild(document.createTextNode('Cell ' + (i + 1) + ',' + (j + 1)));
-                    tr.appendChild(td);
-                }
-                table.appendChild(tr); // FIXED: This appends rows directly to your table structure
-            }
-            
-            tableContainer.innerHTML = '';
-            tableContainer.appendChild(table);
-        }
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove active classes from all existing tabs and layouts
+                tabs.forEach(t => t.classList.remove('active'));
+                panels.forEach(p => p.classList.remove('active'));
+
+                // Target and set active element bindings
+                tab.classList.add('active');
+                const targetPanelId = tab.getAttribute('data-target');
+                document.getElementById(targetPanelId).classList.add('active');
+            });
+        });
     </script>
 </body>
 </html>
