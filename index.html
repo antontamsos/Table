@@ -9,50 +9,55 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f4f7f6;
             color: #333;
-            max-width: 600px;
-            margin: 100px auto;
+            max-width: 550px;
+            margin: 80px auto;
             padding: 20px;
             text-align: center;
         }
         h1 {
             color: #2c3e50;
-            margin-bottom: 40px;
+            font-size: 32px;
+            margin-bottom: 35px;
         }
-        .hub-menu {
+        .launcher-stack {
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 16px;
         }
-        /* Style the tabs as massive click blocks */
-        .tool-link {
+        .launch-btn {
             display: block;
-            padding: 20px;
-            font-size: 18px;
+            width: 100%;
+            padding: 18px 24px;
+            font-size: 16px;
             font-weight: bold;
             color: white;
             text-decoration: none;
+            border: none;
             border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+            transition: transform 0.15s ease, filter 0.15s ease;
+            box-sizing: border-box;
         }
-        .tool-link:hover {
+        .launch-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+            filter: brightness(1.06);
         }
-        .image-btn { background-color: #e74c3c; }
-        .video-btn { background-color: #9b59b6; }
-        .music-btn { background-color: #2ecc71; }
+        .btn-image { background-color: #e74c3c; }
+        .btn-video { background-color: #9b59b6; }
+        .btn-music { background-color: #2ecc71; }
+        .btn-download { background-color: #3498db; }
     </style>
 </head>
 <body>
 
     <h1>Creative Editing Studio Hub</h1>
-    
-    <div class="hub-menu">
-        <!-- target="_blank" forces your browser to launch this in a brand new, empty full screen tab -->
-        <a href="image.html" target="_blank" class="tool-link image-btn">🖼️ Launch Image Editor (Full Screen)</a>
-        <a href="video.html" target="_blank" class="tool-link video-btn">🎬 Launch Video Editor (Full Screen)</a>
-        <a href="music.html" target="_blank" class="tool-link music-btn">🎵 Launch Music Editor (Full Screen)</a>
+
+    <div class="launcher-stack">
+        <a class="launch-btn btn-image" href="image.html">🖼️ Launch Image Editor (Full Screen)</a>
+        <a class="launch-btn btn-video" href="video.html">🎬 Launch Video Editor (Full Screen)</a>
+        <a class="launch-btn btn-music" href="music.html">🎵 Launch Music Editor (Full Screen)</a>
+        <a class="launch-btn btn-download" href="download.html">📥 Download Tool (Full Screen)</a>
     </div>
 
 </body>
