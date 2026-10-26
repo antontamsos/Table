@@ -308,6 +308,101 @@
             flex-shrink: 0;
         }
 
+        /* On-Canvas Floating Paste / Copy Action Bar (Only shown on Right-Click or Long-Press) */
+        .workspace-context-bar {
+            position: absolute;
+            display: none;
+            align-items: center;
+            gap: 6px;
+            background: rgba(22, 26, 32, 0.96);
+            backdrop-filter: blur(12px);
+            border: 1px solid #4b5563;
+            padding: 6px 8px;
+            border-radius: 10px;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.65);
+            z-index: 30;
+            transform: translate(-50%, -125%);
+            white-space: nowrap;
+        }
+        .workspace-context-bar::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%) rotate(45deg);
+            width: 10px;
+            height: 10px;
+            background: rgba(22, 26, 32, 0.96);
+            border-right: 1px solid #4b5563;
+            border-bottom: 1px solid #4b5563;
+        }
+        .ctx-btn {
+            background: #2d3542;
+            color: #f9fafb;
+            border: 1px solid #455061;
+            border-radius: 6px;
+            padding: 6px 11px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.12s ease;
+            touch-action: manipulation;
+        }
+        .ctx-btn:hover, .ctx-btn:active {
+            background: #3b82f6;
+            border-color: #60a5fa;
+            color: #fff;
+        }
+        .ctx-btn.paste-primary {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-color: #8b5cf6;
+            color: #fff;
+        }
+        .ctx-btn.paste-primary:hover, .ctx-btn.paste-primary:active {
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+        }
+        .ctx-btn.danger-sm {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.45);
+            color: #fca5a5;
+        }
+        .ctx-btn.danger-sm:hover {
+            background: #ef4444;
+            color: #fff;
+        }
+
+        /* Native Fallback Paste Catcher Modal */
+        .paste-catcher-popover {
+            position: absolute;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            background: rgba(22, 26, 32, 0.98);
+            border: 1.5px solid #8b5cf6;
+            padding: 10px 14px;
+            border-radius: 10px;
+            box-shadow: 0 14px 35px rgba(0,0,0,0.75);
+            z-index: 40;
+            transform: translate(-50%, -110%);
+            text-align: center;
+        }
+        .paste-catcher-box {
+            width: 180px;
+            padding: 7px 10px;
+            border-radius: 6px;
+            border: 1px dashed #a78bfa;
+            background: rgba(139, 92, 246, 0.12);
+            color: #e9d5ff;
+            font-size: 12px;
+            outline: none;
+            user-select: text;
+            -webkit-user-select: text;
+        }
+
         /* Responsive Layout for iPad Portrait & Tablets */
         @media (max-width: 900px) {
             body {
@@ -354,15 +449,20 @@
         <div class="control-card">
             <div class="section-title">
                 <span>1. Media & Clipboard Import</span>
-                <span style="color:#a78bfa; font-weight:normal; font-size:10px;">Ctrl+V / Cmd+V</span>
+                <span style="color:#a78bfa; font-weight:normal; font-size:10px;">Right-Click / Long-Press</span>
             </div>
             <div class="btn-grid">
                 <button class="action-btn primary" onclick="document.getElementById('bgUpload').click()">Set Background</button>
                 <button class="action-btn accent-red" onclick="document.getElementById('fgUpload').click()">+ Add Overlay</button>
             </div>
-            <button class="action-btn accent-purple" id="pasteClipboardBtn" style="width:100%; margin-top:8px;" title="Paste copied image directly from clipboard (or press Ctrl+V / Cmd+V)">
-                📋 Paste Copied Image
-            </button>
+            <div class="btn-grid" style="margin-top:8px;">
+                <button class="action-btn accent-purple" id="pasteClipboardBtn" title="Paste copied image directly onto workspace">
+                    📋 Paste Image
+                </button>
+                <button class="action-btn" id="copySelectedSidebarBtn" title="Copy currently selected layer (Ctrl+C / Cmd+C)">
+                    📄 Copy Layer
+                </button>
+            </div>
             <input type="file" id="bgUpload" accept="image/*" style="display:none;">
             <input type="file" id="fgUpload" accept="image/*" style="display:none;">
             <div class="layer-bar">
@@ -371,7 +471,7 @@
             </div>
         </div>
 
-        <!-- 2. Smart AI & Retouch Tools (Isolated to Active Target) -->
+        <!-- 2. Smart AI & Retouch Tools -->
         <div class="control-card">
             <div class="section-title">
                 <span>2. Apple-Style Clean Up & AI</span>
@@ -473,22 +573,42 @@
         <button class="action-btn download-btn" id="saveImage">Export Composite Image</button>
     </div>
 
-    <div class="canvas-container">
+    <div class="canvas-container" id="workspaceContainer">
         <div class="floating-status" id="statusBanner">
             <span class="status-dot"></span>
-            <span id="statusText">Paste image (Ctrl+V / 📋), pinch on iPad, or hold corner 1.5s to rotate</span>
+            <span id="statusText">Right-click or long-press on touch screen to show Paste / Copy menu</span>
         </div>
+
+        <!-- On-Canvas Floating Action Menu (Shows ONLY on Right-Click or Long-Press) -->
+        <div class="workspace-context-bar" id="workspaceContextBar">
+            <button class="ctx-btn paste-primary" id="ctxPasteBtn" title="Paste copied image right here">📋 Paste Here</button>
+            <button class="ctx-btn" id="ctxCopyBtn" style="display:none;" title="Copy selected layer">📄 Copy</button>
+            <button class="ctx-btn" id="ctxDuplicateBtn" style="display:none;" title="Duplicate selected layer">📑 Duplicate</button>
+            <button class="ctx-btn danger-sm" id="ctxDeleteBtn" style="display:none;" title="Delete selected layer">🗑️</button>
+        </div>
+
+        <!-- Native Paste Catcher Fallback -->
+        <div class="paste-catcher-popover" id="pasteCatcherPopover">
+            <span style="font-size:11px; color:#d1d5db;">Press <strong>Ctrl+V / Cmd+V</strong> or <strong>Tap & Paste</strong> inside box:</span>
+            <div contenteditable="true" class="paste-catcher-box" id="nativePasteCatcher">Tap here & Paste</div>
+        </div>
+
         <canvas id="studioCanvas"></canvas>
     </div>
 
     <script>
         const canvas = document.getElementById('studioCanvas');
         const ctx = canvas.getContext('2d');
+        const workspaceContainer = document.getElementById('workspaceContainer');
+        const workspaceContextBar = document.getElementById('workspaceContextBar');
+        const pasteCatcherPopover = document.getElementById('pasteCatcherPopover');
+        const nativePasteCatcher = document.getElementById('nativePasteCatcher');
 
         canvas.width = 1200;
         canvas.height = 800;
 
-        const CORNER_HOVER_DURATION = 1500; // 1.5 seconds
+        const CORNER_HOVER_DURATION = 1500; // 1.5 seconds for corner rotate
+        const LONG_PRESS_DURATION = 550;    // 0.55 seconds for touch long-press Paste menu
 
         function createDefaultGrading() {
             return { exposure: 0, light: 0, contrast: 0, saturation: 0, hue: 0, warmth: 0 };
@@ -505,13 +625,22 @@
         bgLayer.buffer.height = canvas.height;
         const bgCtx = bgLayer.buffer.getContext('2d');
 
-        // Offscreen scratchpad for isolated per-layer rendering + warmth tinting
+        // Offscreen scratchpad for isolated per-layer rendering
         const layerScratch = document.createElement('canvas');
         const scratchCtx = layerScratch.getContext('2d');
 
         // Interactive objects stack
         let objects = [];
         let selectedObj = null;
+
+        // Internal Studio Clipboard + Last Clicked Workspace Coordinates
+        let internalClipboardObj = null;
+        let lastWorkspaceTargetPt = { x: canvas.width / 2, y: canvas.height / 2 };
+        let lastContainerScreenPt = { x: 250, y: 250 };
+
+        // Touch Long-Press Timer State for showing the Paste Menu
+        let longPressTimer = null;
+        let longPressStartPt = { x: 0, y: 0 };
 
         // Brush / Apple Clean Up State
         let activeBrushTool = null; // null | 'removeObj' | 'blurObj'
@@ -527,7 +656,7 @@
         let rotateUnlockedCorner = null;
         let animFrameId = null;
 
-        // Multi-Touch / Pointer Tracking for iPad Pinch-to-Zoom & Two-Finger Rotate
+        // Multi-Touch / Pointer Tracking
         const activePointers = new Map();
         let lastPinchDist = 0;
         let lastPinchAngle = 0;
@@ -558,6 +687,14 @@
             return c;
         }
 
+        function cloneLayerObject(o) {
+            return {
+                ...o,
+                grading: { ...o.grading },
+                sourceCanvas: o.type === 'image' ? cloneCanvas(o.sourceCanvas) : null
+            };
+        }
+
         function createSnapshot() {
             return {
                 canvasWidth: canvas.width,
@@ -568,11 +705,7 @@
                     blurLevel: bgLayer.blurLevel,
                     grading: { ...bgLayer.grading }
                 },
-                objects: objects.map(o => ({
-                    ...o,
-                    grading: { ...o.grading },
-                    sourceCanvas: o.type === 'image' ? cloneCanvas(o.sourceCanvas) : null
-                })),
+                objects: objects.map(cloneLayerObject),
                 selectedObjId: selectedObj ? selectedObj.id : null
             };
         }
@@ -599,15 +732,13 @@
             bgLayer.blurLevel = snap.bg.blurLevel;
             bgLayer.grading = { ...snap.bg.grading };
 
-            objects = snap.objects.map(o => ({
-                ...o,
-                grading: { ...o.grading },
-                sourceCanvas: o.type === 'image' ? cloneCanvas(o.sourceCanvas) : null
-            }));
+            objects = snap.objects.map(cloneLayerObject);
 
             selectedObj = objects.find(o => o.id === snap.selectedObjId) || null;
             clearCornerHoverTimer();
+            clearLongPressTimer();
             rotateUnlockedCorner = null;
+            hideWorkspaceContextBar();
             syncSidebarToActiveTarget();
             renderCompositeBoard();
             updateHistoryButtons();
@@ -635,8 +766,350 @@
         document.getElementById('undoBtn').addEventListener('click', undo);
         document.getElementById('redoBtn').addEventListener('click', redo);
 
+        // ============================================================================
+        // ON-CANVAS PASTE / COPY MENU (ONLY RIGHT-CLICK OR TOUCH LONG-PRESS)
+        // ============================================================================
+        function clearLongPressTimer() {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+        }
+
+        function startTouchLongPressTimer(canvasPt, screenPt) {
+            clearLongPressTimer();
+            longPressStartPt = { ...screenPt };
+            longPressTimer = setTimeout(() => {
+                longPressTimer = null;
+                // Cancel active drag so the long-press cleanly presents the Paste/Copy bar
+                if (interaction.mode === 'drag' && !interaction.moved) {
+                    interaction.mode = 'none';
+                }
+                lastWorkspaceTargetPt = canvasPt;
+                lastContainerScreenPt = screenPt;
+                showWorkspaceContextBar(screenPt.x, screenPt.y);
+            }, LONG_PRESS_DURATION);
+        }
+
+        function showWorkspaceContextBar(screenX, screenY) {
+            if (activeBrushTool) {
+                hideWorkspaceContextBar();
+                return;
+            }
+            pasteCatcherPopover.style.display = 'none';
+
+            const wRect = workspaceContainer.getBoundingClientRect();
+            const clampedX = Math.max(110, Math.min(wRect.width - 110, screenX));
+            const clampedY = Math.max(58, Math.min(wRect.height - 24, screenY));
+
+            workspaceContextBar.style.left = clampedX + 'px';
+            workspaceContextBar.style.top = clampedY + 'px';
+            workspaceContextBar.style.display = 'flex';
+
+            const hasSelection = !!selectedObj;
+            document.getElementById('ctxCopyBtn').style.display = hasSelection ? 'inline-flex' : 'none';
+            document.getElementById('ctxDuplicateBtn').style.display = hasSelection ? 'inline-flex' : 'none';
+            document.getElementById('ctxDeleteBtn').style.display = hasSelection ? 'inline-flex' : 'none';
+        }
+
+        function hideWorkspaceContextBar() {
+            workspaceContextBar.style.display = 'none';
+            pasteCatcherPopover.style.display = 'none';
+        }
+
+        // Prevent context bar clicks from bubbling down into the canvas
+        workspaceContextBar.addEventListener('pointerdown', (e) => e.stopPropagation());
+        pasteCatcherPopover.addEventListener('pointerdown', (e) => e.stopPropagation());
+
+        // Right-click (or two-finger trackpad click) anywhere on the workspace opens the Paste/Copy bar
+        workspaceContainer.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            clearLongPressTimer();
+            const pt = getCanvasPointer(e);
+            lastWorkspaceTargetPt = pt;
+            const wRect = workspaceContainer.getBoundingClientRect();
+            lastContainerScreenPt = { x: e.clientX - wRect.left, y: e.clientY - wRect.top };
+
+            // Also select the object under the right-click if there is one
+            let hitObj = null;
+            for (let i = objects.length - 1; i >= 0; i--) {
+                if (hitTestBody(toLocalSpace(pt, objects[i]), objects[i])) {
+                    hitObj = objects[i];
+                    break;
+                }
+            }
+            if (hitObj && selectedObj !== hitObj) {
+                selectObject(hitObj);
+                renderCompositeBoard();
+            }
+
+            showWorkspaceContextBar(lastContainerScreenPt.x, lastContainerScreenPt.y);
+        });
+
+        // Copy Currently Selected Layer
+        async function copySelectedLayer() {
+            if (!selectedObj) {
+                showSmartHint('Select an Overlay, Text, or Shape layer on the workspace first to copy it.');
+                return;
+            }
+            internalClipboardObj = cloneLayerObject(selectedObj);
+            hideWorkspaceContextBar();
+
+            if (selectedObj.type === 'image' && navigator.clipboard && window.ClipboardItem) {
+                try {
+                    const blob = await new Promise(res => selectedObj.sourceCanvas.toBlob(res, 'image/png'));
+                    if (blob) {
+                        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                    }
+                } catch (_) {}
+            }
+            document.getElementById('statusText').textContent = 'Layer copied! Right-click or long-press where you want to paste it.';
+            showSmartHint('📄 Layer copied! Right-click or long-press anywhere on the workspace to paste.');
+        }
+
+        // Duplicate Selected Layer Immediately
+        function duplicateSelectedLayer() {
+            if (!selectedObj) return;
+            hideWorkspaceContextBar();
+            const copy = cloneLayerObject(selectedObj);
+            copy.id = Date.now() + Math.random();
+            copy.x = Math.min(canvas.width - 40, selectedObj.x + 34);
+            copy.y = Math.min(canvas.height - 40, selectedObj.y + 34);
+            objects.push(copy);
+            selectObject(copy);
+            saveHistoryState();
+            renderCompositeBoard();
+        }
+
+        function pasteInternalLayerAt(targetPt) {
+            if (!internalClipboardObj) return false;
+            hideWorkspaceContextBar();
+            const copy = cloneLayerObject(internalClipboardObj);
+            copy.id = Date.now() + Math.random();
+            copy.x = Math.max(20, Math.min(canvas.width - 20, targetPt ? targetPt.x : canvas.width / 2));
+            copy.y = Math.max(20, Math.min(canvas.height - 20, targetPt ? targetPt.y : canvas.height / 2));
+            objects.push(copy);
+            selectObject(copy);
+            saveHistoryState();
+            renderCompositeBoard();
+            document.getElementById('statusText').textContent = 'Layer pasted onto the workspace!';
+            return true;
+        }
+
+        function loadAsBackgroundFromBlob(blob) {
+            const url = URL.createObjectURL(blob);
+            const img = new Image();
+            img.onload = function() {
+                bgLayer.img = img;
+                canvas.width = img.width;
+                canvas.height = img.height;
+                resetBgBuffer();
+                hideWorkspaceContextBar();
+                saveHistoryState();
+                renderCompositeBoard();
+                URL.revokeObjectURL(url);
+                document.getElementById('statusText').textContent = 'Background image loaded!';
+            };
+            img.src = url;
+        }
+
+        function loadAsOverlayFromBlob(blob, targetPt = null) {
+            const url = URL.createObjectURL(blob);
+            const img = new Image();
+            img.onload = function() {
+                const offCanvas = document.createElement('canvas');
+                offCanvas.width = img.width;
+                offCanvas.height = img.height;
+                offCanvas.getContext('2d').drawImage(img, 0, 0);
+
+                const scaleFactor = Math.min(1, (canvas.width * 0.45) / img.width);
+                const destX = targetPt ? Math.max(30, Math.min(canvas.width - 30, targetPt.x)) : canvas.width / 2;
+                const destY = targetPt ? Math.max(30, Math.min(canvas.height - 30, targetPt.y)) : canvas.height / 2;
+
+                const newObj = {
+                    id: Date.now() + Math.random(),
+                    type: 'image',
+                    originalImg: img,
+                    sourceCanvas: offCanvas,
+                    x: destX,
+                    y: destY,
+                    width: img.width * scaleFactor,
+                    height: img.height * scaleFactor,
+                    rotate: 0,
+                    opacity: 1,
+                    blurLevel: 0,
+                    grading: createDefaultGrading()
+                };
+                objects.push(newObj);
+                selectObject(newObj);
+                hideWorkspaceContextBar();
+                saveHistoryState();
+                renderCompositeBoard();
+                URL.revokeObjectURL(url);
+                document.getElementById('statusText').textContent = 'Image pasted onto the workspace!';
+            };
+            img.src = url;
+        }
+
+        function handlePastedImageBlob(blob, targetPt = lastWorkspaceTargetPt) {
+            hideWorkspaceContextBar();
+            if (!bgLayer.img && objects.length === 0) {
+                loadAsBackgroundFromBlob(blob);
+                showSmartHint('📋 First copied image set as Background! Paste again to add Overlay layers.');
+            } else {
+                loadAsOverlayFromBlob(blob, targetPt);
+                showSmartHint('📋 Copied image pasted at your target workspace point!');
+            }
+        }
+
+        // Helper to extract <img src="..."> from copied HTML or image URLs
+        async function tryLoadImageFromHtmlOrUrl(str, targetPt) {
+            let srcUrl = null;
+            if (str.includes('<img')) {
+                const doc = new DOMParser().parseFromString(str, 'text/html');
+                const imgEl = doc.querySelector('img');
+                if (imgEl && imgEl.src) srcUrl = imgEl.src;
+            } else if (/^(https?:\/\/|data:image\/)/i.test(str.trim())) {
+                srcUrl = str.trim();
+            }
+            if (!srcUrl) return false;
+
+            try {
+                const resp = await fetch(srcUrl, { mode: 'cors' });
+                const blob = await resp.blob();
+                if (blob && blob.type.startsWith('image/')) {
+                    handlePastedImageBlob(blob, targetPt);
+                    return true;
+                }
+            } catch (_) {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    img.onload = () => {
+                        const c = document.createElement('canvas');
+                        c.width = img.width;
+                        c.height = img.height;
+                        c.getContext('2d').drawImage(img, 0, 0);
+                        c.toBlob((b) => {
+                            if (b) {
+                                handlePastedImageBlob(b, targetPt);
+                                resolve(true);
+                            } else resolve(false);
+                        });
+                    };
+                    img.onerror = () => resolve(false);
+                    img.src = srcUrl;
+                });
+            }
+            return false;
+        }
+
+        function openNativePasteCatcher() {
+            workspaceContextBar.style.display = 'none';
+            const wRect = workspaceContainer.getBoundingClientRect();
+            const cx = Math.max(120, Math.min(wRect.width - 120, lastContainerScreenPt.x));
+            const cy = Math.max(85, Math.min(wRect.height - 30, lastContainerScreenPt.y));
+            pasteCatcherPopover.style.left = cx + 'px';
+            pasteCatcherPopover.style.top = cy + 'px';
+            pasteCatcherPopover.style.display = 'flex';
+            nativePasteCatcher.innerHTML = '';
+            nativePasteCatcher.focus();
+            showSmartHint('Press Ctrl+V / Cmd+V or Tap & Paste inside the purple box.');
+        }
+
+        async function triggerSmartPaste(targetPt = lastWorkspaceTargetPt) {
+            hideWorkspaceContextBar();
+
+            if (navigator.clipboard && navigator.clipboard.read) {
+                try {
+                    const clipboardItems = await navigator.clipboard.read();
+                    for (const item of clipboardItems) {
+                        const imageType = item.types.find(t => t.startsWith('image/'));
+                        if (imageType) {
+                            const blob = await item.getType(imageType);
+                            handlePastedImageBlob(blob, targetPt);
+                            return;
+                        }
+                        if (item.types.includes('text/html')) {
+                            const htmlBlob = await item.getType('text/html');
+                            const htmlText = await htmlBlob.text();
+                            if (await tryLoadImageFromHtmlOrUrl(htmlText, targetPt)) return;
+                        }
+                        if (item.types.includes('text/plain')) {
+                            const textBlob = await item.getType('text/plain');
+                            const plainText = await textBlob.text();
+                            if (await tryLoadImageFromHtmlOrUrl(plainText, targetPt)) return;
+                        }
+                    }
+                } catch (_) {}
+            }
+
+            if (internalClipboardObj) {
+                pasteInternalLayerAt(targetPt);
+                return;
+            }
+
+            openNativePasteCatcher();
+        }
+
+        // Global Paste Event Listener (Ctrl+V / Cmd+V & iPad native Paste)
+        window.addEventListener('paste', async (e) => {
+            const activeEl = document.activeElement;
+            if (activeEl && activeEl.tagName === 'INPUT' && activeEl.id === 'textInput') return;
+
+            const clipboardData = e.clipboardData || window.clipboardData;
+            if (!clipboardData) return;
+
+            const items = clipboardData.items;
+            if (items) {
+                for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.indexOf('image') !== -1) {
+                        e.preventDefault();
+                        const blob = items[i].getAsFile();
+                        if (blob) {
+                            handlePastedImageBlob(blob, lastWorkspaceTargetPt);
+                            return;
+                        }
+                    }
+                }
+            }
+
+            const htmlData = clipboardData.getData('text/html');
+            if (htmlData && await tryLoadImageFromHtmlOrUrl(htmlData, lastWorkspaceTargetPt)) {
+                e.preventDefault();
+                return;
+            }
+            const textData = clipboardData.getData('text/plain');
+            if (textData && await tryLoadImageFromHtmlOrUrl(textData, lastWorkspaceTargetPt)) {
+                e.preventDefault();
+                return;
+            }
+
+            if (internalClipboardObj) {
+                e.preventDefault();
+                pasteInternalLayerAt(lastWorkspaceTargetPt);
+            }
+        });
+
+        nativePasteCatcher.addEventListener('input', () => {
+            const pastedImg = nativePasteCatcher.querySelector('img');
+            if (pastedImg && pastedImg.src) {
+                tryLoadImageFromHtmlOrUrl(pastedImg.outerHTML, lastWorkspaceTargetPt);
+                nativePasteCatcher.innerHTML = '';
+                pasteCatcherPopover.style.display = 'none';
+            }
+        });
+
+        document.getElementById('ctxPasteBtn').addEventListener('click', () => triggerSmartPaste(lastWorkspaceTargetPt));
+        document.getElementById('pasteClipboardBtn').addEventListener('click', () => triggerSmartPaste(lastWorkspaceTargetPt));
+        document.getElementById('ctxCopyBtn').addEventListener('click', copySelectedLayer);
+        document.getElementById('copySelectedSidebarBtn').addEventListener('click', copySelectedLayer);
+        document.getElementById('ctxDuplicateBtn').addEventListener('click', duplicateSelectedLayer);
+        document.getElementById('ctxDeleteBtn').addEventListener('click', deleteSelectedObject);
+
+        // Keyboard Shortcuts
         window.addEventListener('keydown', (e) => {
-            if (document.activeElement.tagName === 'INPUT') return;
+            if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement === nativePasteCatcher)) return;
             const isMod = e.ctrlKey || e.metaKey;
             if (isMod && e.key.toLowerCase() === 'z') {
                 e.preventDefault();
@@ -645,8 +1118,20 @@
             } else if (isMod && e.key.toLowerCase() === 'y') {
                 e.preventDefault();
                 redo();
+            } else if (isMod && e.key.toLowerCase() === 'c') {
+                if (selectedObj) {
+                    e.preventDefault();
+                    copySelectedLayer();
+                }
+            } else if (isMod && e.key.toLowerCase() === 'd') {
+                if (selectedObj) {
+                    e.preventDefault();
+                    duplicateSelectedLayer();
+                }
             } else if (e.key === 'Delete' || e.key === 'Backspace') {
                 deleteSelectedObject();
+            } else if (e.key === 'Escape') {
+                hideWorkspaceContextBar();
             }
         });
 
@@ -673,110 +1158,6 @@
             oCtx.drawImage(obj.originalImg, 0, 0);
         }
 
-        // ============================================================================
-        // IMAGE IMPORT & UNIVERSAL CLIPBOARD PASTE (Ctrl+V / Cmd+V / iPad Paste Button)
-        // ============================================================================
-        function loadAsBackgroundFromBlob(blob) {
-            const url = URL.createObjectURL(blob);
-            const img = new Image();
-            img.onload = function() {
-                bgLayer.img = img;
-                canvas.width = img.width;
-                canvas.height = img.height;
-                resetBgBuffer();
-                saveHistoryState();
-                renderCompositeBoard();
-                URL.revokeObjectURL(url);
-                document.getElementById('statusText').textContent = 'Background image loaded!';
-            };
-            img.src = url;
-        }
-
-        function loadAsOverlayFromBlob(blob) {
-            const url = URL.createObjectURL(blob);
-            const img = new Image();
-            img.onload = function() {
-                const offCanvas = document.createElement('canvas');
-                offCanvas.width = img.width;
-                offCanvas.height = img.height;
-                offCanvas.getContext('2d').drawImage(img, 0, 0);
-
-                const scaleFactor = Math.min(1, (canvas.width * 0.45) / img.width);
-                // Slight offset if pasting multiple overlays so they don't stack invisibly
-                const jitter = (objects.length % 5) * 18;
-                const newObj = {
-                    id: Date.now() + Math.random(),
-                    type: 'image',
-                    originalImg: img,
-                    sourceCanvas: offCanvas,
-                    x: canvas.width / 2 + jitter,
-                    y: canvas.height / 2 + jitter,
-                    width: img.width * scaleFactor,
-                    height: img.height * scaleFactor,
-                    rotate: 0,
-                    opacity: 1,
-                    blurLevel: 0,
-                    grading: createDefaultGrading()
-                };
-                objects.push(newObj);
-                selectObject(newObj);
-                saveHistoryState();
-                renderCompositeBoard();
-                URL.revokeObjectURL(url);
-                document.getElementById('statusText').textContent = 'Image pasted as an interactive Overlay Layer!';
-            };
-            img.src = url;
-        }
-
-        // Smart Paste Handler: Sets as Background if canvas is completely empty, or adds as Overlay if background already exists
-        function handlePastedImageBlob(blob) {
-            if (!bgLayer.img && objects.length === 0) {
-                loadAsBackgroundFromBlob(blob);
-                showSmartHint('📋 First copied image set as Background! Paste again to add interactive Overlay layers on top.');
-            } else {
-                loadAsOverlayFromBlob(blob);
-                showSmartHint('📋 Copied image pasted as a new Overlay Layer! Drag, resize, or pinch on iPad.');
-            }
-        }
-
-        // Global Paste Event Listener (Desktop Ctrl+V / Cmd+V & iPadOS 3-finger Paste / Keyboard Paste)
-        window.addEventListener('paste', (e) => {
-            if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
-            const items = (e.clipboardData || window.clipboardData)?.items;
-            if (!items) return;
-
-            for (let i = 0; i < items.length; i++) {
-                if (items[i].type.indexOf('image') !== -1) {
-                    e.preventDefault();
-                    const blob = items[i].getAsFile();
-                    if (blob) handlePastedImageBlob(blob);
-                    return;
-                }
-            }
-        });
-
-        // Dedicated "Paste Copied Image" Button (Ideal for iPad touch users without a hardware keyboard)
-        document.getElementById('pasteClipboardBtn').addEventListener('click', async () => {
-            if (!navigator.clipboard || !navigator.clipboard.read) {
-                showSmartHint('Use Ctrl+V / Cmd+V (or 3-finger pinch-paste on iPad) to paste your copied image directly onto the studio.');
-                return;
-            }
-            try {
-                const clipboardItems = await navigator.clipboard.read();
-                for (const item of clipboardItems) {
-                    const imageType = item.types.find(type => type.startsWith('image/'));
-                    if (imageType) {
-                        const blob = await item.getType(imageType);
-                        handlePastedImageBlob(blob);
-                        return;
-                    }
-                }
-                showSmartHint('No copied image found in your clipboard. Copy any image first, then tap Paste Copied Image.');
-            } catch (err) {
-                showSmartHint('Clipboard permission prompt declined or restricted—press Ctrl+V / Cmd+V anywhere on the page to paste.');
-            }
-        });
-
         // 1. Background File Upload
         document.getElementById('bgUpload').addEventListener('change', function(e) {
             if (e.target.files && e.target.files[0]) {
@@ -788,7 +1169,7 @@
         // 2. Overlay File Upload
         document.getElementById('fgUpload').addEventListener('change', function(e) {
             if (e.target.files && e.target.files[0]) {
-                loadAsOverlayFromBlob(e.target.files[0]);
+                loadAsOverlayFromBlob(e.target.files[0], { x: canvas.width / 2, y: canvas.height / 2 });
                 e.target.value = '';
             }
         });
@@ -907,6 +1288,7 @@
             if (!selectedObj) return;
             objects = objects.filter(o => o.id !== selectedObj.id);
             selectObject(null);
+            hideWorkspaceContextBar();
             saveHistoryState();
             renderCompositeBoard();
         }
@@ -1069,6 +1451,7 @@
                 activeBrushTool = null;
             } else {
                 activeBrushTool = toolName;
+                hideWorkspaceContextBar();
             }
 
             document.getElementById('removeObjToolBtn').classList.toggle('active-tool', activeBrushTool === 'removeObj');
@@ -1409,7 +1792,7 @@
         }
 
         // ============================================================================
-        // UNIFIED POINTER EVENTS (MOUSE + IPAD TOUCH + APPLE PENCIL + MULTI-TOUCH PINCH)
+        // UNIFIED POINTER EVENTS (LEFT-CLICK HIDES PASTE; RIGHT-CLICK / LONG-PRESS SHOWS PASTE)
         // ============================================================================
         function getCanvasPointer(e) {
             const rect = canvas.getBoundingClientRect();
@@ -1472,7 +1855,6 @@
             return { x: c.x + sx * offset, y: c.y + sy * offset };
         }
 
-        // Larger touch hit-radius on iPad / touchscreens so fingers easily grab handles
         function hitTestHandle(localPt, obj, isTouch = false) {
             const handles = getHandleCoords(obj);
             const hitScale = isTouch ? 2.5 : 1.75;
@@ -1503,7 +1885,6 @@
             );
         }
 
-        // 1.5-Second Corner Hover / Touch-Hold Timer Logic
         function clearCornerHoverTimer() {
             if (cornerHoverTimer) {
                 clearTimeout(cornerHoverTimer);
@@ -1535,7 +1916,6 @@
                 rotateUnlockedCorner = cornerKey;
                 hoveredCorner = null;
                 document.getElementById('statusText').textContent = 'Rotate Arrow unlocked! Drag to freely rotate.';
-                // On iPad touch-hold: if the user held their finger still on a corner for 1.5s, seamlessly switch into rotate mode!
                 if (autoSwitchTouchRotate && selectedObj && interaction.mode === 'resize' && !interaction.moved) {
                     interaction.mode = 'rotate';
                     interaction.startObj = { ...selectedObj };
@@ -1545,19 +1925,31 @@
             }, CORNER_HOVER_DURATION);
         }
 
-        // Pointer Down (Works for Mouse, Finger Touch, and Apple Pencil)
+        // Pointer Down on Workspace Canvas
         canvas.addEventListener('pointerdown', (e) => {
+            // Ignore right-click here; contextmenu handler manages right-click menu
+            if (e.pointerType === 'mouse' && e.button !== 0) return;
+
             e.preventDefault();
             canvas.setPointerCapture(e.pointerId);
             const pt = getCanvasPointer(e);
             mousePos = pt;
-            const isTouch = e.pointerType === 'touch';
+            lastWorkspaceTargetPt = pt;
 
+            const wRect = workspaceContainer.getBoundingClientRect();
+            const screenPt = { x: e.clientX - wRect.left, y: e.clientY - wRect.top };
+            lastContainerScreenPt = screenPt;
+
+            // Left-click or initial touch always hides any open Paste menu
+            hideWorkspaceContextBar();
+
+            const isTouch = e.pointerType === 'touch' || e.pointerType === 'pen';
             activePointers.set(e.pointerId, pt);
 
             // Multi-touch (2 fingers on iPad): Pinch to Scale & Twist to Rotate Selected Object
             if (activePointers.size === 2 && selectedObj && !activeBrushTool) {
                 clearCornerHoverTimer();
+                clearLongPressTimer();
                 const pts = Array.from(activePointers.values());
                 lastPinchDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
                 lastPinchAngle = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
@@ -1567,6 +1959,7 @@
             }
 
             if (activeBrushTool) {
+                clearLongPressTimer();
                 isBrushing = true;
                 if (activeBrushTool === 'removeObj') {
                     cleanUpPath = [pt];
@@ -1583,6 +1976,7 @@
                 const handleHit = hitTestHandle(local, selectedObj, isTouch);
                 if (handleHit) {
                     clearCornerHoverTimer();
+                    clearLongPressTimer();
                     interaction.moved = false;
                     if (handleHit.startsWith('rotate_')) {
                         interaction.mode = 'rotate';
@@ -1595,7 +1989,6 @@
                         interaction.startMouse = pt;
                         interaction.startObj = { ...selectedObj };
 
-                        // On iPad/touch: holding a corner still for 1.5s also unlocks the Rotate Arrow!
                         const handleInfo = getHandleCoords(selectedObj)[handleHit];
                         if (isTouch && handleInfo && handleInfo.isCorner) {
                             startCornerHoverCountdown(handleHit, true);
@@ -1616,28 +2009,48 @@
                     interaction.startMouse = pt;
                     interaction.startObj = { ...obj };
                     renderCompositeBoard();
+                    // On touch screens, start long-press timer to show Paste/Copy menu if finger stays still
+                    if (isTouch) {
+                        startTouchLongPressTimer(pt, screenPt);
+                    }
                     return;
                 }
             }
 
-            // 3. Tapped/Clicked empty space -> selects Background Layer
+            // 3. Left-clicked or tapped empty working space -> Select Background (do NOT show Paste button immediately)
             selectObject(null);
             interaction.mode = 'none';
             renderCompositeBoard();
+
+            // On touch screens, start long-press timer so holding finger shows the Paste menu
+            if (isTouch) {
+                startTouchLongPressTimer(pt, screenPt);
+            }
         });
 
         // Pointer Move
         window.addEventListener('pointermove', (e) => {
             const pt = getCanvasPointer(e);
             mousePos = pt;
-            const isTouch = e.pointerType === 'touch';
+            const isTouch = e.pointerType === 'touch' || e.pointerType === 'pen';
 
             if (activePointers.has(e.pointerId)) {
                 activePointers.set(e.pointerId, pt);
             }
 
+            // Cancel touch long-press timer if the user moves their finger more than 10px
+            if (longPressTimer) {
+                const wRect = workspaceContainer.getBoundingClientRect();
+                const curScreenX = e.clientX - wRect.left;
+                const curScreenY = e.clientY - wRect.top;
+                if (Math.hypot(curScreenX - longPressStartPt.x, curScreenY - longPressStartPt.y) > 10) {
+                    clearLongPressTimer();
+                }
+            }
+
             // Handle 2-Finger iPad Pinch Zoom & Rotate
             if (interaction.mode === 'pinch' && activePointers.size === 2 && selectedObj) {
+                clearLongPressTimer();
                 const pts = Array.from(activePointers.values());
                 const dist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
                 const angle = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
@@ -1714,7 +2127,7 @@
                             const distArrow = Math.hypot(local.x - rPos.x, local.y - rPos.y);
                             if (distCorner > getVisualHandleRadius() * 4.5 && distArrow > getVisualHandleRadius() * 4.5) {
                                 rotateUnlockedCorner = null;
-                                document.getElementById('statusText').textContent = 'Paste image (Ctrl+V / 📋), pinch on iPad, or hold corner 1.5s to rotate';
+                                document.getElementById('statusText').textContent = 'Right-click or long-press on touch screen to show Paste / Copy menu';
                                 renderCompositeBoard();
                             }
                         }
@@ -1739,7 +2152,11 @@
             if (interaction.mode === 'drag' && selectedObj) {
                 const dx = pt.x - interaction.startMouse.x;
                 const dy = pt.y - interaction.startMouse.y;
-                if (Math.hypot(dx, dy) > 2) interaction.moved = true;
+                if (Math.hypot(dx, dy) > 3) {
+                    interaction.moved = true;
+                    clearLongPressTimer();
+                    hideWorkspaceContextBar();
+                }
                 selectedObj.x = interaction.startObj.x + dx;
                 selectedObj.y = interaction.startObj.y + dy;
                 renderCompositeBoard();
@@ -1749,6 +2166,7 @@
             else if (interaction.mode === 'rotate' && selectedObj) {
                 canvas.style.cursor = 'grabbing';
                 interaction.moved = true;
+                clearLongPressTimer();
                 const currentAngle = Math.atan2(pt.y - selectedObj.y, pt.x - selectedObj.x);
                 const deltaDeg = ((currentAngle - interaction.startAngle) * 180) / Math.PI;
                 let newDeg = (interaction.startObj.rotate + deltaDeg) % 360;
@@ -1775,6 +2193,7 @@
                 if (moveDist > 6 * getVisualScale()) {
                     interaction.moved = true;
                     clearCornerHoverTimer();
+                    clearLongPressTimer();
                 } else if (!interaction.moved) {
                     return;
                 }
@@ -1830,6 +2249,7 @@
 
         function handlePointerUpOrCancel(e) {
             activePointers.delete(e.pointerId);
+            clearLongPressTimer();
 
             if (isBrushing && activePointers.size === 0) {
                 isBrushing = false;
@@ -1971,7 +2391,7 @@
                 ctx.font = "600 24px Inter, system-ui, sans-serif";
                 ctx.textBaseline = "middle";
                 ctx.textAlign = "center";
-                ctx.fillText("Paste an Image (Ctrl+V / 📋 Paste Button) or Upload to Start", canvas.width / 2, canvas.height / 2);
+                ctx.fillText("Right-Click or Long-Press Here to Paste Image, or Upload from Sidebar", canvas.width / 2, canvas.height / 2);
             }
 
             // Layer 2: Render Each Interactive Object with Isolated Grading & Blur
@@ -2140,6 +2560,7 @@
 
         // Export Composite Image
         document.getElementById('saveImage').addEventListener('click', function() {
+            hideWorkspaceContextBar();
             renderCompositeBoard(true);
             const link = document.createElement('a');
             link.download = 'studio-pro-composite.png';
