@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Pro Image Processing Studio</title>
     <style>
         :root {
@@ -17,7 +17,11 @@
             --text-main: #f3f4f6;
             --text-muted: #9ca3af;
         }
-        * { box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+        }
         body {
             font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
             margin: 0;
@@ -27,8 +31,11 @@
             display: flex;
             width: 100vw;
             height: 100vh;
+            height: 100dvh;
             user-select: none;
+            -webkit-user-select: none;
             color: var(--text-main);
+            overscroll-behavior: none;
         }
 
         /* Sidebar Styling */
@@ -39,11 +46,13 @@
             padding: 16px;
             box-shadow: 6px 0 25px rgba(0,0,0,0.45);
             z-index: 10;
-            height: 100vh;
+            height: 100%;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
             display: flex;
             flex-direction: column;
             gap: 12px;
+            flex-shrink: 0;
         }
         .controls-sidebar::-webkit-scrollbar { width: 6px; }
         .controls-sidebar::-webkit-scrollbar-thumb { background: #3e4652; border-radius: 3px; }
@@ -73,7 +82,7 @@
             color: var(--text-main);
             border: 1px solid var(--border-color);
             border-radius: 6px;
-            padding: 5px 10px;
+            padding: 6px 11px;
             font-size: 12px;
             font-weight: 600;
             cursor: pointer;
@@ -81,8 +90,9 @@
             align-items: center;
             gap: 4px;
             transition: all 0.15s ease;
+            touch-action: manipulation;
         }
-        .history-btn:hover:not(:disabled) {
+        .history-btn:hover:not(:disabled), .history-btn:active:not(:disabled) {
             background: #3a4250;
             border-color: #556070;
         }
@@ -95,7 +105,7 @@
             background: rgba(59, 130, 246, 0.12);
             border: 1px solid rgba(59, 130, 246, 0.35);
             border-radius: 6px;
-            padding: 7px 10px;
+            padding: 8px 10px;
             font-size: 11px;
             display: flex;
             justify-content: space-between;
@@ -137,7 +147,7 @@
             background: #323944;
             color: var(--text-main);
             border: 1px solid #434c59;
-            padding: 8px 10px;
+            padding: 10px 10px;
             border-radius: 6px;
             cursor: pointer;
             font-weight: 600;
@@ -147,12 +157,21 @@
             align-items: center;
             justify-content: center;
             gap: 6px;
+            touch-action: manipulation;
         }
-        .action-btn:hover { background: #3e4756; border-color: #556070; }
+        .action-btn:hover, .action-btn:active { background: #3e4756; border-color: #556070; }
         .action-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-        .action-btn.primary:hover { background: var(--accent-hover); }
+        .action-btn.primary:hover, .action-btn.primary:active { background: var(--accent-hover); }
         .action-btn.accent-red { background: #e11d48; border-color: #e11d48; color: #fff; }
-        .action-btn.accent-red:hover { background: #be123c; }
+        .action-btn.accent-red:hover, .action-btn.accent-red:active { background: #be123c; }
+        .action-btn.accent-purple {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-color: #8b5cf6;
+            color: #fff;
+        }
+        .action-btn.accent-purple:hover, .action-btn.accent-purple:active {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        }
         .action-btn.active-tool {
             background: linear-gradient(135deg, rgba(96, 165, 250, 0.28), rgba(192, 132, 252, 0.28));
             border-color: #a78bfa;
@@ -160,32 +179,35 @@
             box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.25);
         }
 
-        .slider-row { margin-bottom: 8px; }
+        .slider-row { margin-bottom: 10px; }
         .slider-header {
             display: flex;
             justify-content: space-between;
             font-size: 11px;
             color: #d1d5db;
-            margin-bottom: 3px;
+            margin-bottom: 4px;
         }
         input[type="range"] {
             width: 100%;
             accent-color: var(--accent);
-            height: 5px;
+            height: 6px;
             background: #181b20;
             border-radius: 4px;
             cursor: pointer;
+            touch-action: pan-y;
         }
         input[type="text"], select {
             width: 100%;
-            padding: 8px 10px;
+            padding: 9px 10px;
             border-radius: 6px;
             border: 1px solid var(--border-color);
             background: #181b20;
             color: var(--text-main);
-            font-size: 12px;
+            font-size: 13px;
             margin-bottom: 8px;
             outline: none;
+            user-select: text;
+            -webkit-user-select: text;
         }
         input[type="text"]:focus, select:focus { border-color: var(--accent); }
 
@@ -198,7 +220,7 @@
         .color-row label { font-size: 11px; color: #d1d5db; flex: 1; }
         input[type="color"] {
             width: 48px;
-            height: 28px;
+            height: 32px;
             border: 1px solid var(--border-color);
             border-radius: 4px;
             background: #181b20;
@@ -221,7 +243,7 @@
         .layer-bar {
             display: flex;
             gap: 6px;
-            margin-top: 6px;
+            margin-top: 8px;
         }
 
         .download-btn {
@@ -230,15 +252,15 @@
             color: #fff;
             width: 100%;
             font-size: 14px;
-            padding: 12px;
+            padding: 13px;
             margin-top: auto;
         }
-        .download-btn:hover { background: #059669; }
+        .download-btn:hover, .download-btn:active { background: #059669; }
 
         /* Workspace Canvas Area */
         .canvas-container {
             flex: 1;
-            height: 100vh;
+            height: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -251,22 +273,24 @@
             background-color: #121418;
             position: relative;
             overflow: hidden;
+            touch-action: none;
         }
         canvas {
             max-width: 94%;
             max-height: 92%;
             box-shadow: 0 18px 50px rgba(0,0,0,0.65);
             background-color: transparent;
+            touch-action: none;
         }
 
         .floating-status {
             position: absolute;
             top: 16px;
             right: 20px;
-            background: rgba(28, 32, 38, 0.88);
+            background: rgba(28, 32, 38, 0.9);
             backdrop-filter: blur(8px);
             border: 1px solid var(--border-color);
-            padding: 7px 13px;
+            padding: 8px 14px;
             border-radius: 99px;
             font-size: 12px;
             color: #d1d5db;
@@ -274,12 +298,39 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            z-index: 5;
         }
         .status-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
             background: #60a5fa;
+            flex-shrink: 0;
+        }
+
+        /* Responsive Layout for iPad Portrait & Tablets */
+        @media (max-width: 900px) {
+            body {
+                flex-direction: column-reverse;
+            }
+            .controls-sidebar {
+                width: 100vw;
+                height: 44dvh;
+                border-right: none;
+                border-top: 1px solid var(--border-color);
+                padding: 14px;
+            }
+            .canvas-container {
+                width: 100vw;
+                height: 56dvh;
+            }
+            .floating-status {
+                top: 10px;
+                right: 12px;
+                left: 12px;
+                justify-content: center;
+                font-size: 11px;
+            }
         }
     </style>
 </head>
@@ -299,13 +350,19 @@
             <span id="deselectLink" style="cursor:pointer; text-decoration:underline; display:none;" onclick="selectObject(null); renderCompositeBoard();">Select BG</span>
         </div>
 
-        <!-- 1. Media Import -->
+        <!-- 1. Media Import & Clipboard Paste -->
         <div class="control-card">
-            <div class="section-title">1. Media & Layer Import</div>
+            <div class="section-title">
+                <span>1. Media & Clipboard Import</span>
+                <span style="color:#a78bfa; font-weight:normal; font-size:10px;">Ctrl+V / Cmd+V</span>
+            </div>
             <div class="btn-grid">
                 <button class="action-btn primary" onclick="document.getElementById('bgUpload').click()">Set Background</button>
                 <button class="action-btn accent-red" onclick="document.getElementById('fgUpload').click()">+ Add Overlay</button>
             </div>
+            <button class="action-btn accent-purple" id="pasteClipboardBtn" style="width:100%; margin-top:8px;" title="Paste copied image directly from clipboard (or press Ctrl+V / Cmd+V)">
+                📋 Paste Copied Image
+            </button>
             <input type="file" id="bgUpload" accept="image/*" style="display:none;">
             <input type="file" id="fgUpload" accept="image/*" style="display:none;">
             <div class="layer-bar">
@@ -419,7 +476,7 @@
     <div class="canvas-container">
         <div class="floating-status" id="statusBanner">
             <span class="status-dot"></span>
-            <span id="statusText">Hover over any corner for 1.5s to unlock the Rotate Arrow</span>
+            <span id="statusText">Paste image (Ctrl+V / 📋), pinch on iPad, or hold corner 1.5s to rotate</span>
         </div>
         <canvas id="studioCanvas"></canvas>
     </div>
@@ -461,18 +518,23 @@
         let isBrushing = false;
         let brushRadius = 38;
         let mousePos = { x: 0, y: 0 };
-        let cleanUpPath = []; // Stores stroke points during Apple-style Clean Up selection
+        let cleanUpPath = [];
 
-        // 1.5-Second Corner Hover Rotation State
+        // 1.5-Second Corner Hover / Touch-Hold Rotation State
         let hoveredCorner = null;
         let cornerHoverTimer = null;
         let cornerHoverStartTime = 0;
         let rotateUnlockedCorner = null;
         let animFrameId = null;
 
+        // Multi-Touch / Pointer Tracking for iPad Pinch-to-Zoom & Two-Finger Rotate
+        const activePointers = new Map();
+        let lastPinchDist = 0;
+        let lastPinchAngle = 0;
+
         // Interaction State
         let interaction = {
-            mode: 'none', // 'none' | 'drag' | 'resize' | 'rotate'
+            mode: 'none', // 'none' | 'drag' | 'resize' | 'rotate' | 'pinch'
             handle: null,
             startMouse: { x: 0, y: 0 },
             startObj: null,
@@ -516,7 +578,6 @@
         }
 
         function saveHistoryState() {
-            // Truncate any redo states ahead of current index
             if (historyIndex < historyStack.length - 1) {
                 historyStack = historyStack.slice(0, historyIndex + 1);
             }
@@ -589,7 +650,6 @@
             }
         });
 
-        // Returns the currently targeted layer
         function getActiveTarget() {
             return selectedObj ? selectedObj : bgLayer;
         }
@@ -613,58 +673,122 @@
             oCtx.drawImage(obj.originalImg, 0, 0);
         }
 
-        // 1. Background Upload
+        // ============================================================================
+        // IMAGE IMPORT & UNIVERSAL CLIPBOARD PASTE (Ctrl+V / Cmd+V / iPad Paste Button)
+        // ============================================================================
+        function loadAsBackgroundFromBlob(blob) {
+            const url = URL.createObjectURL(blob);
+            const img = new Image();
+            img.onload = function() {
+                bgLayer.img = img;
+                canvas.width = img.width;
+                canvas.height = img.height;
+                resetBgBuffer();
+                saveHistoryState();
+                renderCompositeBoard();
+                URL.revokeObjectURL(url);
+                document.getElementById('statusText').textContent = 'Background image loaded!';
+            };
+            img.src = url;
+        }
+
+        function loadAsOverlayFromBlob(blob) {
+            const url = URL.createObjectURL(blob);
+            const img = new Image();
+            img.onload = function() {
+                const offCanvas = document.createElement('canvas');
+                offCanvas.width = img.width;
+                offCanvas.height = img.height;
+                offCanvas.getContext('2d').drawImage(img, 0, 0);
+
+                const scaleFactor = Math.min(1, (canvas.width * 0.45) / img.width);
+                // Slight offset if pasting multiple overlays so they don't stack invisibly
+                const jitter = (objects.length % 5) * 18;
+                const newObj = {
+                    id: Date.now() + Math.random(),
+                    type: 'image',
+                    originalImg: img,
+                    sourceCanvas: offCanvas,
+                    x: canvas.width / 2 + jitter,
+                    y: canvas.height / 2 + jitter,
+                    width: img.width * scaleFactor,
+                    height: img.height * scaleFactor,
+                    rotate: 0,
+                    opacity: 1,
+                    blurLevel: 0,
+                    grading: createDefaultGrading()
+                };
+                objects.push(newObj);
+                selectObject(newObj);
+                saveHistoryState();
+                renderCompositeBoard();
+                URL.revokeObjectURL(url);
+                document.getElementById('statusText').textContent = 'Image pasted as an interactive Overlay Layer!';
+            };
+            img.src = url;
+        }
+
+        // Smart Paste Handler: Sets as Background if canvas is completely empty, or adds as Overlay if background already exists
+        function handlePastedImageBlob(blob) {
+            if (!bgLayer.img && objects.length === 0) {
+                loadAsBackgroundFromBlob(blob);
+                showSmartHint('📋 First copied image set as Background! Paste again to add interactive Overlay layers on top.');
+            } else {
+                loadAsOverlayFromBlob(blob);
+                showSmartHint('📋 Copied image pasted as a new Overlay Layer! Drag, resize, or pinch on iPad.');
+            }
+        }
+
+        // Global Paste Event Listener (Desktop Ctrl+V / Cmd+V & iPadOS 3-finger Paste / Keyboard Paste)
+        window.addEventListener('paste', (e) => {
+            if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
+            const items = (e.clipboardData || window.clipboardData)?.items;
+            if (!items) return;
+
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    e.preventDefault();
+                    const blob = items[i].getAsFile();
+                    if (blob) handlePastedImageBlob(blob);
+                    return;
+                }
+            }
+        });
+
+        // Dedicated "Paste Copied Image" Button (Ideal for iPad touch users without a hardware keyboard)
+        document.getElementById('pasteClipboardBtn').addEventListener('click', async () => {
+            if (!navigator.clipboard || !navigator.clipboard.read) {
+                showSmartHint('Use Ctrl+V / Cmd+V (or 3-finger pinch-paste on iPad) to paste your copied image directly onto the studio.');
+                return;
+            }
+            try {
+                const clipboardItems = await navigator.clipboard.read();
+                for (const item of clipboardItems) {
+                    const imageType = item.types.find(type => type.startsWith('image/'));
+                    if (imageType) {
+                        const blob = await item.getType(imageType);
+                        handlePastedImageBlob(blob);
+                        return;
+                    }
+                }
+                showSmartHint('No copied image found in your clipboard. Copy any image first, then tap Paste Copied Image.');
+            } catch (err) {
+                showSmartHint('Clipboard permission prompt declined or restricted—press Ctrl+V / Cmd+V anywhere on the page to paste.');
+            }
+        });
+
+        // 1. Background File Upload
         document.getElementById('bgUpload').addEventListener('change', function(e) {
             if (e.target.files && e.target.files[0]) {
-                const url = URL.createObjectURL(e.target.files[0]);
-                const img = new Image();
-                img.onload = function() {
-                    bgLayer.img = img;
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    resetBgBuffer();
-                    saveHistoryState();
-                    renderCompositeBoard();
-                    URL.revokeObjectURL(url);
-                };
-                img.src = url;
+                loadAsBackgroundFromBlob(e.target.files[0]);
                 e.target.value = '';
             }
         });
 
-        // 2. Overlay Image Upload
+        // 2. Overlay File Upload
         document.getElementById('fgUpload').addEventListener('change', function(e) {
             if (e.target.files && e.target.files[0]) {
-                const url = URL.createObjectURL(e.target.files[0]);
-                const img = new Image();
-                img.onload = function() {
-                    const offCanvas = document.createElement('canvas');
-                    offCanvas.width = img.width;
-                    offCanvas.height = img.height;
-                    offCanvas.getContext('2d').drawImage(img, 0, 0);
-
-                    const scaleFactor = (canvas.width * 0.4) / img.width;
-                    const newObj = {
-                        id: Date.now(),
-                        type: 'image',
-                        originalImg: img,
-                        sourceCanvas: offCanvas,
-                        x: canvas.width / 2,
-                        y: canvas.height / 2,
-                        width: img.width * scaleFactor,
-                        height: img.height * scaleFactor,
-                        rotate: 0,
-                        opacity: 1,
-                        blurLevel: 0,
-                        grading: createDefaultGrading()
-                    };
-                    objects.push(newObj);
-                    selectObject(newObj);
-                    saveHistoryState();
-                    renderCompositeBoard();
-                    URL.revokeObjectURL(url);
-                };
-                img.src = url;
+                loadAsOverlayFromBlob(e.target.files[0]);
                 e.target.value = '';
             }
         });
@@ -878,7 +1002,7 @@
                 targetCanvas = bgLayer.buffer;
                 targetName = 'background layer';
             } else {
-                showSmartHint('Upload an Overlay Image or Background first to remove its background.');
+                showSmartHint('Upload or Paste an Image first to remove its background.');
                 return;
             }
 
@@ -921,7 +1045,7 @@
 
             tCtx.putImageData(imgData, 0, 0);
             saveHistoryState();
-            showSmartHint(`Removed background on the ${targetName} (Ctrl+Z to Undo).`);
+            showSmartHint(`Removed background on the ${targetName} (Undo available).`);
             renderCompositeBoard();
         });
 
@@ -938,7 +1062,7 @@
         });
 
         // ============================================================================
-        // APPLE CLEAN UP STYLE SMART OBJECT REMOVER (INWARD PDE DIFFUSION + TEXTURE SYNTHESIS)
+        // APPLE CLEAN UP STYLE SMART OBJECT REMOVER
         // ============================================================================
         function setBrushTool(toolName) {
             if (activeBrushTool === toolName) {
@@ -953,9 +1077,9 @@
 
             const targetDesc = (selectedObj && selectedObj.type === 'image') ? 'the selected Overlay Image' : 'the Background Layer';
             if (activeBrushTool === 'removeObj') {
-                showSmartHint(`✨ Apple Clean Up Mode (${targetDesc}): Paint over or circle around an unwanted object. Release the mouse to seamlessly reconstruct the area.`);
+                showSmartHint(`✨ Apple Clean Up Mode (${targetDesc}): Paint or circle over an unwanted object with your finger, Apple Pencil, or mouse.`);
             } else if (activeBrushTool === 'blurObj') {
-                showSmartHint(`Brushing on ${targetDesc} only. Paint over areas to blur them.`);
+                showSmartHint(`Brushing on ${targetDesc} only. Drag over areas to blur them.`);
             } else {
                 showSmartHint('');
             }
@@ -982,7 +1106,6 @@
             renderCompositeBoard();
         });
 
-        // Executes Apple Clean Up style inward onion-peel reconstruction + texture synthesis
         function runAppleCleanUpInpaint(strokePoints) {
             if (!strokePoints || strokePoints.length === 0) return;
 
@@ -1014,7 +1137,6 @@
             const w = targetCanvas.width;
             const h = targetCanvas.height;
 
-            // Compute bounding box of the painted selection with padding
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
             for (const p of mappedPoints) {
                 if (p.x < minX) minX = p.x;
@@ -1032,7 +1154,6 @@
             const bh = by1 - by0 + 1;
             if (bw <= 2 || bh <= 2) return;
 
-            // Rasterize stroke mask (also auto-fills if the user drew a closed loop around an object)
             const maskCanvas = document.createElement('canvas');
             maskCanvas.width = bw;
             maskCanvas.height = bh;
@@ -1050,7 +1171,6 @@
                 if (idx === 0) mCtx.moveTo(lx, ly);
                 else mCtx.lineTo(lx, ly);
             });
-            // If user circled an object (start and end points are close), fill interior automatically like Apple Clean Up
             if (mappedPoints.length > 8) {
                 const first = mappedPoints[0];
                 const last = mappedPoints[mappedPoints.length - 1];
@@ -1066,7 +1186,6 @@
             const imgData = tCtx.getImageData(bx0, by0, bw, bh);
             const pixels = imgData.data;
 
-            // state: 0 = known outside pixel, 1 = masked pixel to reconstruct
             const state = new Uint8Array(bw * bh);
             const initialMask = new Uint8Array(bw * bh);
             const boundarySamples = [];
@@ -1081,14 +1200,12 @@
                 }
             }
 
-            // Collect clean boundary pixels just outside the mask for realistic texture grain synthesis
             for (let y = 2; y < bh - 2; y++) {
                 for (let x = 2; x < bw - 2; x++) {
                     const i = y * bw + x;
                     if (state[i] === 0) {
                         if (state[i - 1] === 1 || state[i + 1] === 1 || state[i - bw] === 1 || state[i + bw] === 1) {
                             const pIdx = i * 4;
-                            // Compute local high-frequency detail (pixel minus 4-neighbor mean)
                             const meanR = (pixels[(i - 1) * 4] + pixels[(i + 1) * 4] + pixels[(i - bw) * 4] + pixels[(i + bw) * 4]) * 0.25;
                             const meanG = (pixels[(i - 1) * 4 + 1] + pixels[(i + 1) * 4 + 1] + pixels[(i - bw) * 4 + 1] + pixels[(i + bw) * 4 + 1]) * 0.25;
                             const meanB = (pixels[(i - 1) * 4 + 2] + pixels[(i + 1) * 4 + 2] + pixels[(i - bw) * 4 + 2] + pixels[(i + bw) * 4 + 2]) * 0.25;
@@ -1103,7 +1220,6 @@
                 }
             }
 
-            // Step 1: Inward Onion-Peel Boundary Marching (Fast Marching / Telea-style propagation)
             const neighborOffsets = [
                 [-1, 0, 1.0], [1, 0, 1.0], [0, -1, 1.0], [0, 1, 1.0],
                 [-1, -1, 0.707], [1, -1, 0.707], [-1, 1, 0.707], [1, 1, 0.707]
@@ -1123,7 +1239,6 @@
                         const idx = y * bw + x;
                         if (state[idx] === 1) {
                             remaining = true;
-                            // Check if adjacent to at least one known pixel
                             if (
                                 state[idx - 1] === 0 || state[idx + 1] === 0 ||
                                 state[idx - bw] === 0 || state[idx + bw] === 0
@@ -1171,7 +1286,6 @@
                 }
             }
 
-            // Step 2: Harmonic PDE Smoothing Iterations (Seamless Gradient & Lighting Continuity)
             const tempPixels = new Float32Array(pixels.length);
             for (let i = 0; i < pixels.length; i++) tempPixels[i] = pixels[i];
 
@@ -1202,7 +1316,6 @@
                 }
             }
 
-            // Step 3: Micro-Texture Synthesis (Prevents flat plastic blur by injecting natural surroundings grain)
             const sampleLen = boundarySamples.length;
             for (let y = 1; y < bh - 1; y++) {
                 for (let x = 1; x < bw - 1; x++) {
@@ -1220,7 +1333,6 @@
                             b += s.db * 0.65;
                         }
 
-                        // Soft feather blend at mask perimeter
                         const maskAlpha = maskData[p + 3] / 255;
                         pixels[p]     = Math.max(0, Math.min(255, Math.round(pixels[p] * (1 - maskAlpha) + r * maskAlpha)));
                         pixels[p + 1] = Math.max(0, Math.min(255, Math.round(pixels[p + 1] * (1 - maskAlpha) + g * maskAlpha)));
@@ -1232,7 +1344,6 @@
             tCtx.putImageData(imgData, bx0, by0);
         }
 
-        // Blur Object Brush Stroke (Real-time localized blur)
         function applyBlurBrushStroke(worldPt) {
             const worldRadius = brushRadius * getVisualScale();
 
@@ -1297,8 +1408,10 @@
             return `${blurPart}brightness(${brightness}%) contrast(${contrast}%) saturate(${saturate}%) hue-rotate(${g.hue}deg) sepia(${sepia}%)`;
         }
 
-        // 7. Coordinate & Handle Math
-        function getCanvasMouse(e) {
+        // ============================================================================
+        // UNIFIED POINTER EVENTS (MOUSE + IPAD TOUCH + APPLE PENCIL + MULTI-TOUCH PINCH)
+        // ============================================================================
+        function getCanvasPointer(e) {
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
             const scaleY = canvas.height / rect.height;
@@ -1332,7 +1445,7 @@
         }
 
         function getVisualHandleRadius() {
-            return 7.5 * getVisualScale();
+            return 8.5 * getVisualScale();
         }
 
         function getHandleCoords(obj) {
@@ -1353,19 +1466,21 @@
         function getRotateArrowPos(cornerKey, obj) {
             const handles = getHandleCoords(obj);
             const c = handles[cornerKey];
-            const offset = 24 * getVisualScale();
+            const offset = 26 * getVisualScale();
             const sx = c.x < 0 ? -1 : 1;
             const sy = c.y < 0 ? -1 : 1;
             return { x: c.x + sx * offset, y: c.y + sy * offset };
         }
 
-        function hitTestHandle(localPt, obj) {
+        // Larger touch hit-radius on iPad / touchscreens so fingers easily grab handles
+        function hitTestHandle(localPt, obj, isTouch = false) {
             const handles = getHandleCoords(obj);
-            const r = getVisualHandleRadius() * 1.75;
+            const hitScale = isTouch ? 2.5 : 1.75;
+            const r = getVisualHandleRadius() * hitScale;
 
             if (rotateUnlockedCorner) {
                 const rotPos = getRotateArrowPos(rotateUnlockedCorner, obj);
-                if (Math.hypot(localPt.x - rotPos.x, localPt.y - rotPos.y) <= r * 1.5) {
+                if (Math.hypot(localPt.x - rotPos.x, localPt.y - rotPos.y) <= r * 1.45) {
                     return 'rotate_' + rotateUnlockedCorner;
                 }
             }
@@ -1388,7 +1503,7 @@
             );
         }
 
-        // 1.5-Second Corner Hover Timer Logic
+        // 1.5-Second Corner Hover / Touch-Hold Timer Logic
         function clearCornerHoverTimer() {
             if (cornerHoverTimer) {
                 clearTimeout(cornerHoverTimer);
@@ -1401,7 +1516,7 @@
             hoveredCorner = null;
         }
 
-        function startCornerHoverCountdown(cornerKey) {
+        function startCornerHoverCountdown(cornerKey, autoSwitchTouchRotate = false) {
             if (hoveredCorner === cornerKey || rotateUnlockedCorner === cornerKey) return;
             clearCornerHoverTimer();
             hoveredCorner = cornerKey;
@@ -1419,43 +1534,72 @@
             cornerHoverTimer = setTimeout(() => {
                 rotateUnlockedCorner = cornerKey;
                 hoveredCorner = null;
-                document.getElementById('statusText').textContent = 'Rotate Arrow unlocked! Drag the corner arrow to freely rotate.';
+                document.getElementById('statusText').textContent = 'Rotate Arrow unlocked! Drag to freely rotate.';
+                // On iPad touch-hold: if the user held their finger still on a corner for 1.5s, seamlessly switch into rotate mode!
+                if (autoSwitchTouchRotate && selectedObj && interaction.mode === 'resize' && !interaction.moved) {
+                    interaction.mode = 'rotate';
+                    interaction.startObj = { ...selectedObj };
+                    interaction.startAngle = Math.atan2(mousePos.y - selectedObj.y, mousePos.x - selectedObj.x);
+                }
                 renderCompositeBoard();
             }, CORNER_HOVER_DURATION);
         }
 
-        // Mouse Down Handler
-        canvas.addEventListener('mousedown', (e) => {
-            const mouse = getCanvasMouse(e);
+        // Pointer Down (Works for Mouse, Finger Touch, and Apple Pencil)
+        canvas.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            canvas.setPointerCapture(e.pointerId);
+            const pt = getCanvasPointer(e);
+            mousePos = pt;
+            const isTouch = e.pointerType === 'touch';
+
+            activePointers.set(e.pointerId, pt);
+
+            // Multi-touch (2 fingers on iPad): Pinch to Scale & Twist to Rotate Selected Object
+            if (activePointers.size === 2 && selectedObj && !activeBrushTool) {
+                clearCornerHoverTimer();
+                const pts = Array.from(activePointers.values());
+                lastPinchDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+                lastPinchAngle = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
+                interaction.mode = 'pinch';
+                interaction.moved = false;
+                return;
+            }
 
             if (activeBrushTool) {
                 isBrushing = true;
                 if (activeBrushTool === 'removeObj') {
-                    cleanUpPath = [mouse];
+                    cleanUpPath = [pt];
                     renderCompositeBoard();
                 } else {
-                    applyBlurBrushStroke(mouse);
+                    applyBlurBrushStroke(pt);
                 }
                 return;
             }
 
             // 1. Check handles on currently selected object
             if (selectedObj) {
-                const local = toLocalSpace(mouse, selectedObj);
-                const handleHit = hitTestHandle(local, selectedObj);
+                const local = toLocalSpace(pt, selectedObj);
+                const handleHit = hitTestHandle(local, selectedObj, isTouch);
                 if (handleHit) {
                     clearCornerHoverTimer();
                     interaction.moved = false;
                     if (handleHit.startsWith('rotate_')) {
                         interaction.mode = 'rotate';
-                        interaction.startMouse = mouse;
+                        interaction.startMouse = pt;
                         interaction.startObj = { ...selectedObj };
-                        interaction.startAngle = Math.atan2(mouse.y - selectedObj.y, mouse.x - selectedObj.x);
+                        interaction.startAngle = Math.atan2(pt.y - selectedObj.y, pt.x - selectedObj.x);
                     } else {
                         interaction.mode = 'resize';
                         interaction.handle = handleHit;
-                        interaction.startMouse = mouse;
+                        interaction.startMouse = pt;
                         interaction.startObj = { ...selectedObj };
+
+                        // On iPad/touch: holding a corner still for 1.5s also unlocks the Rotate Arrow!
+                        const handleInfo = getHandleCoords(selectedObj)[handleHit];
+                        if (isTouch && handleInfo && handleInfo.isCorner) {
+                            startCornerHoverCountdown(handleHit, true);
+                        }
                     }
                     return;
                 }
@@ -1464,48 +1608,89 @@
             // 2. Check hit on any object from top-most to bottom-most
             for (let i = objects.length - 1; i >= 0; i--) {
                 const obj = objects[i];
-                const local = toLocalSpace(mouse, obj);
+                const local = toLocalSpace(pt, obj);
                 if (hitTestBody(local, obj)) {
                     selectObject(obj);
                     interaction.mode = 'drag';
                     interaction.moved = false;
-                    interaction.startMouse = mouse;
+                    interaction.startMouse = pt;
                     interaction.startObj = { ...obj };
                     renderCompositeBoard();
                     return;
                 }
             }
 
-            // 3. Clicked empty space -> selects Background Layer
+            // 3. Tapped/Clicked empty space -> selects Background Layer
             selectObject(null);
             interaction.mode = 'none';
             renderCompositeBoard();
         });
 
-        // Mouse Move Handler
-        window.addEventListener('mousemove', (e) => {
-            const mouse = getCanvasMouse(e);
-            mousePos = mouse;
+        // Pointer Move
+        window.addEventListener('pointermove', (e) => {
+            const pt = getCanvasPointer(e);
+            mousePos = pt;
+            const isTouch = e.pointerType === 'touch';
+
+            if (activePointers.has(e.pointerId)) {
+                activePointers.set(e.pointerId, pt);
+            }
+
+            // Handle 2-Finger iPad Pinch Zoom & Rotate
+            if (interaction.mode === 'pinch' && activePointers.size === 2 && selectedObj) {
+                const pts = Array.from(activePointers.values());
+                const dist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+                const angle = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
+
+                if (lastPinchDist > 10) {
+                    const scale = dist / lastPinchDist;
+                    selectedObj.width = Math.max(28, selectedObj.width * scale);
+                    selectedObj.height = Math.max(28, selectedObj.height * scale);
+                    interaction.moved = true;
+                }
+
+                const deltaDeg = ((angle - lastPinchAngle) * 180) / Math.PI;
+                let newDeg = (selectedObj.rotate + deltaDeg) % 360;
+                if (newDeg < 0) newDeg += 360;
+
+                const snapTolerance = 3.5;
+                if (Math.abs(newDeg - 0) <= snapTolerance || Math.abs(newDeg - 360) <= snapTolerance) {
+                    newDeg = 0;
+                    interaction.isHorizontalSnap = true;
+                } else if (Math.abs(newDeg - 180) <= snapTolerance) {
+                    newDeg = 180;
+                    interaction.isHorizontalSnap = true;
+                } else {
+                    interaction.isHorizontalSnap = false;
+                }
+                selectedObj.rotate = newDeg;
+
+                lastPinchDist = dist;
+                lastPinchAngle = angle;
+                renderCompositeBoard();
+                return;
+            }
 
             if (activeBrushTool) {
                 canvas.style.cursor = 'none';
                 if (isBrushing) {
                     if (activeBrushTool === 'removeObj') {
-                        cleanUpPath.push(mouse);
+                        cleanUpPath.push(pt);
                         renderCompositeBoard();
                     } else {
-                        applyBlurBrushStroke(mouse);
+                        applyBlurBrushStroke(pt);
                     }
-                } else {
+                } else if (!isTouch) {
                     renderCompositeBoard();
                 }
                 return;
             }
 
-            if (interaction.mode === 'none') {
+            // Desktop Hover State (when not dragging)
+            if (interaction.mode === 'none' && !isTouch) {
                 if (selectedObj) {
-                    const local = toLocalSpace(mouse, selectedObj);
-                    const handle = hitTestHandle(local, selectedObj);
+                    const local = toLocalSpace(pt, selectedObj);
+                    const handle = hitTestHandle(local, selectedObj, false);
 
                     if (handle) {
                         if (handle.startsWith('rotate_')) {
@@ -1516,7 +1701,7 @@
                         canvas.style.cursor = handleInfo.cursor;
 
                         if (handleInfo.isCorner) {
-                            startCornerHoverCountdown(handle);
+                            startCornerHoverCountdown(handle, false);
                         } else {
                             clearCornerHoverTimer();
                         }
@@ -1529,7 +1714,7 @@
                             const distArrow = Math.hypot(local.x - rPos.x, local.y - rPos.y);
                             if (distCorner > getVisualHandleRadius() * 4.5 && distArrow > getVisualHandleRadius() * 4.5) {
                                 rotateUnlockedCorner = null;
-                                document.getElementById('statusText').textContent = 'Hover over any corner for 1.5s to unlock the Rotate Arrow';
+                                document.getElementById('statusText').textContent = 'Paste image (Ctrl+V / 📋), pinch on iPad, or hold corner 1.5s to rotate';
                                 renderCompositeBoard();
                             }
                         }
@@ -1545,26 +1730,26 @@
                     }
                 }
 
-                const hoveringAny = objects.some(o => hitTestBody(toLocalSpace(mouse, o), o));
+                const hoveringAny = objects.some(o => hitTestBody(toLocalSpace(pt, o), o));
                 canvas.style.cursor = hoveringAny ? 'pointer' : 'default';
                 return;
             }
 
             // Dragging Object
             if (interaction.mode === 'drag' && selectedObj) {
-                const dx = mouse.x - interaction.startMouse.x;
-                const dy = mouse.y - interaction.startMouse.y;
-                if (Math.hypot(dx, dy) > 1) interaction.moved = true;
+                const dx = pt.x - interaction.startMouse.x;
+                const dy = pt.y - interaction.startMouse.y;
+                if (Math.hypot(dx, dy) > 2) interaction.moved = true;
                 selectedObj.x = interaction.startObj.x + dx;
                 selectedObj.y = interaction.startObj.y + dy;
                 renderCompositeBoard();
             }
 
-            // Rotating Object via 1.5s Corner Rotate Arrow + Horizontal Red Dashed Line Snap
+            // Rotating Object + Horizontal Red Dashed Line Snap
             else if (interaction.mode === 'rotate' && selectedObj) {
                 canvas.style.cursor = 'grabbing';
                 interaction.moved = true;
-                const currentAngle = Math.atan2(mouse.y - selectedObj.y, mouse.x - selectedObj.x);
+                const currentAngle = Math.atan2(pt.y - selectedObj.y, pt.x - selectedObj.x);
                 const deltaDeg = ((currentAngle - interaction.startAngle) * 180) / Math.PI;
                 let newDeg = (interaction.startObj.rotate + deltaDeg) % 360;
                 if (newDeg < 0) newDeg += 360;
@@ -1586,9 +1771,16 @@
 
             // Resizing Object (8-point resize)
             else if (interaction.mode === 'resize' && selectedObj) {
-                interaction.moved = true;
+                const moveDist = Math.hypot(pt.x - interaction.startMouse.x, pt.y - interaction.startMouse.y);
+                if (moveDist > 6 * getVisualScale()) {
+                    interaction.moved = true;
+                    clearCornerHoverTimer();
+                } else if (!interaction.moved) {
+                    return;
+                }
+
                 const s = interaction.startObj;
-                const localMouse = toLocalSpace(mouse, s);
+                const localMouse = toLocalSpace(pt, s);
                 const minSize = 28;
 
                 let left = -s.width / 2;
@@ -1636,8 +1828,10 @@
             }
         });
 
-        window.addEventListener('mouseup', () => {
-            if (isBrushing) {
+        function handlePointerUpOrCancel(e) {
+            activePointers.delete(e.pointerId);
+
+            if (isBrushing && activePointers.size === 0) {
                 isBrushing = false;
                 if (activeBrushTool === 'removeObj' && cleanUpPath.length > 0) {
                     runAppleCleanUpInpaint(cleanUpPath);
@@ -1647,7 +1841,8 @@
                 renderCompositeBoard();
             }
 
-            if (interaction.mode !== 'none') {
+            if (interaction.mode !== 'none' && activePointers.size === 0) {
+                clearCornerHoverTimer();
                 const didChange = interaction.moved;
                 interaction.isHorizontalSnap = false;
                 interaction.mode = 'none';
@@ -1658,7 +1853,10 @@
                 }
                 renderCompositeBoard();
             }
-        });
+        }
+
+        window.addEventListener('pointerup', handlePointerUpOrCancel);
+        window.addEventListener('pointercancel', handlePointerUpOrCancel);
 
         // Draw Vector Shapes Helper
         function drawShapeObject(targetCtx, obj) {
@@ -1770,10 +1968,10 @@
                 ctx.drawImage(layerScratch, 0, 0);
             } else if (objects.length === 0 && !exportMode) {
                 ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
-                ctx.font = "600 26px Inter, system-ui, sans-serif";
+                ctx.font = "600 24px Inter, system-ui, sans-serif";
                 ctx.textBaseline = "middle";
                 ctx.textAlign = "center";
-                ctx.fillText("Upload a Background, Overlay, Shape, or Text Layer to Start", canvas.width / 2, canvas.height / 2);
+                ctx.fillText("Paste an Image (Ctrl+V / 📋 Paste Button) or Upload to Start", canvas.width / 2, canvas.height / 2);
             }
 
             // Layer 2: Render Each Interactive Object with Isolated Grading & Blur
@@ -1838,7 +2036,7 @@
                 const r = getVisualHandleRadius();
                 const lw = Math.max(1.5, r * 0.25);
 
-                if (interaction.mode === 'rotate' && interaction.isHorizontalSnap) {
+                if ((interaction.mode === 'rotate' || interaction.mode === 'pinch') && interaction.isHorizontalSnap) {
                     ctx.save();
                     ctx.beginPath();
                     ctx.setLineDash([10 * getVisualScale(), 7 * getVisualScale()]);
@@ -1950,7 +2148,6 @@
             renderCompositeBoard(false);
         });
 
-        // Save initial blank state so Undo can revert all the way back to the beginning
         saveHistoryState();
         syncSidebarToActiveTarget();
         renderCompositeBoard();
