@@ -2,845 +2,720 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Creative Editing Studio Hub</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Video & Audio Download Tool</title>
     <style>
         :root {
-            --bg-light: #f0f4f8;
-            --hub-title: #1e293b;
-            --btn-image: #e04434;
-            --btn-video: #9053b8;
-            --btn-music: #23c55e;
-            --btn-download: #0284c7;
-            --border-color: #343b46;
-            --accent: #3b82f6;
+            --bg-dark: #0f1217;
+            --card-bg: #1a1f29;
+            --row-bg: #232a38;
+            --border: #323b4d;
+            --accent: #3498db;
+            --accent-hover: #258cd1;
+            --success: #10b981;
+            --purple: #8b5cf6;
             --text-main: #f3f4f6;
             --text-muted: #9ca3af;
         }
-        * {
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
+        * { box-sizing: border-box; }
         body {
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
             margin: 0;
-            padding: 0;
-            width: 100vw;
-            height: 100vh;
-            height: 100dvh;
-            background-color: var(--bg-light);
-            overflow: hidden;
-        }
-
-        /* View Router */
-        .view-container {
-            width: 100%;
-            height: 100%;
-            display: none;
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
-        .view-container.active {
+            padding: 32px 20px;
+            min-height: 100vh;
             display: flex;
-        }
-
-        /* 1. Hub Screen Styling */
-        .hub-screen {
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            background-color: var(--bg-light);
-            padding: 20px;
         }
-        .hub-title {
-            font-size: 38px;
-            font-weight: 800;
-            color: var(--hub-title);
-            margin-bottom: 35px;
-            text-align: center;
-            letter-spacing: -0.5px;
-        }
-        .hub-button-stack {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            width: 100%;
-            max-width: 480px;
-        }
-        .hub-btn {
-            width: 100%;
-            padding: 16px 20px;
-            border-radius: 8px;
-            border: none;
-            font-size: 16px;
-            font-weight: 700;
-            cursor: pointer;
-            color: #ffffff;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            transition: transform 0.1s ease, filter 0.1s ease;
-        }
-        .hub-btn:hover {
-            transform: translateY(-2px);
-            filter: brightness(1.05);
-        }
-        .hub-btn:active {
-            transform: translateY(0);
-        }
-        .hub-btn.btn-image { background-color: var(--btn-image); }
-        .hub-btn.btn-video { background-color: var(--btn-video); }
-        .hub-btn.btn-music { background-color: var(--btn-music); }
-        .hub-btn.btn-download { background-color: var(--btn-download); }
 
-        /* 2. Download Tool Screen */
-        .downloader-screen {
-            flex-direction: column;
-            background-color: #111827;
-            color: #f3f4f6;
-            overflow-y: auto;
-            padding: 30px;
-            align-items: center;
-        }
-        .downloader-wrapper {
+        .container {
             width: 100%;
-            max-width: 780px;
+            max-width: 860px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 22px;
         }
-        .downloader-header {
+
+        /* Header */
+        .top-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid #374151;
+            border-bottom: 1px solid var(--border);
             padding-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
         }
-        .downloader-header h2 {
+        .top-bar h1 {
             margin: 0;
-            font-size: 24px;
+            font-size: 26px;
             font-weight: 800;
-            background: linear-gradient(90deg, #38bdf8, #818cf8);
+            background: linear-gradient(90deg, #38bdf8, #a78bfa, #34d399);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        .back-hub-btn {
-            background: #1f2937;
-            border: 1px solid #374151;
-            color: #f3f4f6;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
+        .hub-return-btn {
+            background: var(--row-bg);
+            color: var(--text-main);
+            text-decoration: none;
+            padding: 9px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
             font-size: 13px;
+            font-weight: 700;
+            transition: background 0.15s ease;
         }
-        .back-hub-btn:hover { background: #374151; }
+        .hub-return-btn:hover { background: #2f384a; }
 
-        .url-input-card {
-            background: #1f2937;
-            border: 1px solid #374151;
-            border-radius: 12px;
+        /* URL Input Box */
+        .input-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 14px;
             padding: 24px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
+            box-shadow: 0 14px 35px rgba(0,0,0,0.5);
         }
-        .url-input-group {
+        .input-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: #d1d5db;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .input-row {
             display: flex;
             gap: 10px;
         }
-        .url-input-group input {
+        .url-input {
             flex: 1;
             padding: 14px 16px;
-            background: #111827;
-            border: 1px solid #4b5563;
-            border-radius: 8px;
+            border-radius: 9px;
+            border: 1.5px solid var(--border);
+            background: #11151c;
             color: #fff;
             font-size: 15px;
             outline: none;
+            transition: border-color 0.15s ease;
         }
-        .url-input-group input:focus { border-color: #38bdf8; }
-        .fetch-btn {
-            background: #0284c7;
-            color: #fff;
-            border: none;
-            padding: 0 24px;
-            border-radius: 8px;
-            font-weight: 700;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .fetch-btn:hover { background: #0369a1; }
+        .url-input:focus { border-color: var(--accent); }
 
-        .supported-platforms {
-            font-size: 12px;
-            color: #9ca3af;
+        .btn {
+            border: none;
+            border-radius: 9px;
+            padding: 0 20px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+        }
+        .btn-paste {
+            background: #2b3446;
+            color: #f3f4f6;
+            border: 1px solid #3f4c66;
+        }
+        .btn-paste:hover { background: #374359; }
+        .btn-fetch {
+            background: linear-gradient(135deg, #2563eb, #0284c7);
+            color: #fff;
+            padding: 0 26px;
+        }
+        .btn-fetch:hover { filter: brightness(1.1); }
+
+        .supported-bar {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 7px;
+            margin-top: 15px;
             align-items: center;
         }
-        .platform-tag {
-            background: rgba(255,255,255,0.06);
-            padding: 4px 8px;
-            border-radius: 4px;
+        .plat-chip {
+            font-size: 11px;
+            font-weight: 600;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.09);
+            color: var(--text-muted);
+            padding: 4px 10px;
+            border-radius: 99px;
         }
 
+        /* Status & Loader */
+        .status-banner {
+            font-size: 13px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            background: rgba(52, 152, 219, 0.14);
+            border: 1px solid rgba(52, 152, 219, 0.35);
+            color: #93c5fd;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        /* Results Card */
         .results-card {
-            background: #1f2937;
-            border: 1px solid #374151;
-            border-radius: 12px;
-            padding: 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 24px;
+            box-shadow: 0 14px 35px rgba(0,0,0,0.5);
             display: none;
             flex-direction: column;
-            gap: 16px;
+            gap: 20px;
         }
-        .media-preview-box {
+
+        .media-summary {
             display: flex;
-            gap: 16px;
+            gap: 18px;
+            background: #11151c;
+            border: 1px solid var(--border);
+            padding: 14px;
+            border-radius: 10px;
             align-items: center;
-            background: #111827;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #374151;
         }
-        .media-thumb {
-            width: 140px;
-            height: 85px;
-            background: #374151;
-            border-radius: 6px;
+        .thumb-wrap {
+            width: 175px;
+            height: 102px;
+            border-radius: 8px;
+            background: #232a38;
+            overflow: hidden;
+            flex-shrink: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #9ca3af;
-            font-size: 11px;
+            position: relative;
         }
-        .media-meta h4 {
+        .thumb-wrap img, .thumb-wrap video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .detected-pill {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            padding: 3px 9px;
+            border-radius: 99px;
+            background: rgba(56, 189, 248, 0.16);
+            color: #38bdf8;
+            margin-bottom: 6px;
+        }
+        .media-details h3 {
             margin: 0 0 6px 0;
             font-size: 16px;
             color: #fff;
+            line-height: 1.35;
         }
-        .media-meta p {
+        .media-details p {
             margin: 0;
             font-size: 12px;
-            color: #9ca3af;
+            color: var(--text-muted);
             word-break: break-all;
         }
 
-        .download-options-list {
+        /* Resolution Ladder List */
+        .res-section-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-muted);
+            margin-bottom: -8px;
+        }
+        .res-list {
             display: flex;
             flex-direction: column;
             gap: 10px;
         }
-        .dl-option-row {
+        .res-item {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background: #111827;
-            border: 1px solid #374151;
-            padding: 12px 18px;
-            border-radius: 8px;
+            background: var(--row-bg);
+            border: 1px solid var(--border);
+            padding: 13px 16px;
+            border-radius: 10px;
+            transition: transform 0.12s ease, border-color 0.12s ease;
         }
-        .dl-option-info {
+        .res-item:hover {
+            border-color: #4b5563;
+            transform: translateX(2px);
+        }
+        .res-item.tier-max {
+            border-color: rgba(16, 185, 129, 0.55);
+            background: linear-gradient(90deg, rgba(16, 185, 129, 0.1), rgba(35, 42, 56, 0.96));
+        }
+        .res-item.tier-audio {
+            border-color: rgba(139, 92, 246, 0.55);
+            background: linear-gradient(90deg, rgba(139, 92, 246, 0.1), rgba(35, 42, 56, 0.96));
+        }
+
+        .res-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .res-badge {
+            min-width: 92px;
+            text-align: center;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-weight: 800;
+            font-size: 12px;
+            background: #11151c;
+            color: #60a5fa;
+            border: 1px solid var(--border);
+        }
+        .tier-max .res-badge {
+            color: #34d399;
+            border-color: rgba(16, 185, 129, 0.45);
+        }
+        .tier-audio .res-badge {
+            color: #c084fc;
+            border-color: rgba(139, 92, 246, 0.45);
+        }
+
+        .res-text {
             display: flex;
             flex-direction: column;
             gap: 3px;
         }
-        .dl-option-title { font-weight: 700; font-size: 14px; color: #fff; }
-        .dl-option-desc { font-size: 12px; color: #9ca3af; }
-        .dl-action-btn {
-            background: #0284c7;
+        .res-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+        }
+        .res-meta {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .dl-trigger-btn {
+            background: var(--accent);
             color: #fff;
             border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-weight: 600;
+            border-radius: 7px;
+            padding: 10px 18px;
             font-size: 13px;
+            font-weight: 700;
             cursor: pointer;
-            text-decoration: none;
             display: inline-flex;
             align-items: center;
-            gap: 5px;
-        }
-        .dl-action-btn:hover { background: #0369a1; }
-        .dl-action-btn.audio-badge { background: #8b5cf6; }
-        .dl-action-btn.audio-badge:hover { background: #7c3aed; }
-
-        /* 3. Image Editor Full Screen Module */
-        .image-studio-screen {
-            display: flex;
-            width: 100vw;
-            height: 100vh;
-            background: #121418;
-            color: #f3f4f6;
-            user-select: none;
-        }
-        .controls-sidebar {
-            width: 356px;
-            background: #1c2026;
-            border-right: 1px solid #343b46;
-            padding: 16px;
-            z-index: 10;
-            height: 100%;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            flex-shrink: 0;
-        }
-        .studio-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid #343b46;
-            padding-bottom: 10px;
-        }
-        .studio-header h2 {
-            margin: 0;
-            font-size: 18px;
-            font-weight: 700;
-            background: linear-gradient(90deg, #60a5fa, #c084fc);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .history-bar { display: flex; gap: 6px; }
-        .history-btn {
-            background: #2b313b;
-            color: #f3f4f6;
-            border: 1px solid #343b46;
-            border-radius: 6px;
-            padding: 6px 11px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .history-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-        .control-card {
-            background: #262b33;
-            border: 1px solid #343b46;
-            border-radius: 8px;
-            padding: 12px;
-        }
-        .section-title {
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            color: #9ca3af;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-        }
-        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .btn-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-        .action-btn {
-            background: #323944;
-            color: #f3f4f6;
-            border: 1px solid #434c59;
-            padding: 10px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             gap: 6px;
+            text-decoration: none;
+            transition: filter 0.15s ease;
+            white-space: nowrap;
         }
-        .action-btn.primary { background: #3b82f6; border-color: #3b82f6; color: #fff; }
-        .action-btn.accent-red { background: #e11d48; border-color: #e11d48; color: #fff; }
-        .action-btn.accent-purple { background: linear-gradient(135deg, #6366f1, #8b5cf6); border-color: #8b5cf6; color: #fff; }
-        .slider-row { margin-bottom: 10px; }
-        .slider-header { display: flex; justify-content: space-between; font-size: 11px; color: #d1d5db; margin-bottom: 4px; }
-        input[type="range"] { width: 100%; accent-color: #3b82f6; height: 6px; background: #181b20; border-radius: 4px; }
-        input[type="text"], select { width: 100%; padding: 9px 10px; border-radius: 6px; border: 1px solid #343b46; background: #181b20; color: #fff; font-size: 13px; margin-bottom: 8px; outline: none; }
-        .color-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
-        .color-row label { font-size: 11px; color: #d1d5db; flex: 1; }
-        input[type="color"] { width: 48px; height: 32px; border: 1px solid #343b46; border-radius: 4px; background: #181b20; cursor: pointer; }
-        .layer-bar { display: flex; gap: 6px; margin-top: 8px; }
-        .download-btn { background: #10b981; border: none; color: #fff; width: 100%; font-size: 14px; padding: 13px; margin-top: auto; cursor: pointer; border-radius: 6px; font-weight: bold; }
+        .dl-trigger-btn:hover { filter: brightness(1.12); }
+        .tier-max .dl-trigger-btn { background: var(--success); }
+        .tier-audio .dl-trigger-btn { background: var(--purple); }
 
-        .canvas-container {
-            flex: 1;
-            height: 100%;
+        /* Embedded Stream Extractor Frame (for YouTube/FB/IG/TikTok multi-resolution transcoding) */
+        .extractor-modal {
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            background: #11151c;
+            border: 1px solid var(--accent);
+            border-radius: 10px;
+            padding: 14px;
+            margin-top: 6px;
+        }
+        .extractor-header {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            justify-content: center;
-            background-color: #121418;
-            position: relative;
-            overflow: hidden;
+            font-size: 12px;
+            color: #93c5fd;
+            font-weight: 700;
         }
-        canvas { max-width: 94%; max-height: 92%; box-shadow: 0 18px 50px rgba(0,0,0,0.65); background: transparent; }
-        .floating-status {
-            position: absolute; top: 16px; right: 20px; background: rgba(28, 32, 38, 0.9);
-            border: 1px solid #343b46; padding: 8px 14px; border-radius: 99px; font-size: 12px; color: #d1d5db;
+        .close-extractor {
+            background: transparent;
+            border: 1px solid #4b5563;
+            color: #d1d5db;
+            border-radius: 4px;
+            padding: 3px 8px;
+            cursor: pointer;
+            font-size: 11px;
         }
-        .workspace-context-bar {
-            position: absolute; display: none; align-items: center; gap: 6px; background: rgba(22, 26, 32, 0.96);
-            border: 1px solid #4b5563; padding: 6px 8px; border-radius: 10px; box-shadow: 0 12px 32px rgba(0,0,0,0.65); z-index: 30; transform: translate(-50%, -125%);
+
+        @media (max-width: 640px) {
+            .input-row { flex-direction: column; }
+            .btn { padding: 13px; }
+            .media-summary { flex-direction: column; align-items: flex-start; }
+            .thumb-wrap { width: 100%; height: 170px; }
+            .res-item { flex-direction: column; align-items: flex-start; gap: 12px; }
+            .dl-trigger-btn { width: 100%; justify-content: center; }
         }
-        .ctx-btn { background: #2d3542; color: #f9fafb; border: 1px solid #455061; border-radius: 6px; padding: 6px 11px; font-size: 12px; font-weight: 600; cursor: pointer; }
-        .ctx-btn.paste-primary { background: linear-gradient(135deg, #3b82f6, #8b5cf6); border-color: #8b5cf6; color: #fff; }
     </style>
 </head>
 <body>
 
-    <!-- ================= 1. CREATIVE EDITING STUDIO HUB ================= -->
-    <div id="viewHub" class="view-container active hub-screen">
-        <div class="hub-title">Creative Editing Studio Hub[cite: 5]</div>
-        <div class="hub-button-stack">
-            <button class="hub-btn btn-image" onclick="switchView('image')">
-                🖼️ Launch Image Editor (Full Screen)[cite: 5]
-            </button>
-            <button class="hub-btn btn-video" onclick="switchView('video')">
-                🎬 Launch Video Editor (Full Screen)[cite: 5]
-            </button>
-            <button class="hub-btn btn-music" onclick="switchView('music')">
-                🎵 Launch Music Editor (Full Screen)[cite: 5]
-            </button>
-            <!-- 4th Tool Tab Added Below -->
-            <button class="hub-btn btn-download" onclick="switchView('download')">
-                📥 Download Tool (Full Screen)
-            </button>
+    <div class="container">
+        <div class="top-bar">
+            <h1>📥 Universal Video & Audio Download Tool</h1>
+            <a href="index.html" class="hub-return-btn">⬅ Back to Creative Studio Hub</a>
         </div>
-    </div>
 
-
-    <!-- ================= 2. DOWNLOAD TOOL SCREEN ================= -->
-    <div id="viewDownload" class="view-container downloader-screen">
-        <div class="downloader-wrapper">
-            <div class="downloader-header">
-                <h2>Universal Video & Audio Downloader</h2>
-                <button class="back-hub-btn" onclick="switchView('hub')">⬅ Back to Hub</button>
+        <div class="input-card">
+            <div class="input-label">
+                <span>Paste Video URL from Any Platform</span>
+                <span style="color:#60a5fa; font-weight:normal;">Auto-detects Highest Resolution → 244p → Audio Only</span>
+            </div>
+            <div class="input-row">
+                <input type="text" id="urlInput" class="url-input" placeholder="Paste Facebook, Reels, Instagram, TikTok, YouTube, Shorts, or Dailymotion URL...">
+                <button class="btn btn-paste" id="pasteBtn" title="Paste copied link from clipboard">📋 Paste Link</button>
+                <button class="btn btn-fetch" id="fetchBtn">🔍 Analyze Link</button>
             </div>
 
-            <div class="url-input-card">
-                <label style="font-size: 13px; font-weight: 700; color: #e5e7eb;">Copy & Paste Media URL</label>
-                <div class="url-input-group">
-                    <input type="text" id="targetVideoUrl" placeholder="Paste link from YouTube, Reels, TikTok, Facebook, Shorts, Dailymotion...">
-                    <button class="fetch-btn" id="fetchVideoBtn">Extract Media</button>
+            <div class="supported-bar">
+                <span class="plat-chip">📘 Facebook Videos & Reels</span>
+                <span class="plat-chip">📸 Instagram Videos & Reels</span>
+                <span class="plat-chip">🎵 TikTok (No Watermark)</span>
+                <span class="plat-chip">▶️ YouTube & YouTube Shorts</span>
+                <span class="plat-chip">🎞️ Dailymotion</span>
+                <span class="plat-chip">🌐 X / Twitter / Vimeo / Direct MP4</span>
+            </div>
+        </div>
+
+        <div id="statusBanner" class="status-banner"></div>
+
+        <div id="resultsCard" class="results-card">
+            <div class="media-summary">
+                <div class="thumb-wrap" id="thumbContainer">
+                    <span style="font-size:28px;">🎬</span>
                 </div>
-                <div class="supported-platforms">
-                    <span>Supported:</span>
-                    <span class="platform-tag">YouTube & Shorts</span>
-                    <span class="platform-tag">Instagram Reels</span>
-                    <span class="platform-tag">TikTok</span>
-                    <span class="platform-tag">Facebook Watch</span>
-                    <span class="platform-tag">Dailymotion</span>
-                    <span class="platform-tag">X / Twitter</span>
+                <div class="media-details">
+                    <span class="detected-pill" id="platformTag">Detected Platform</span>
+                    <h3 id="mediaTitle">Video Stream Ready</h3>
+                    <p id="mediaUrlText"></p>
                 </div>
             </div>
 
-            <div class="results-card" id="downloadResultsCard">
-                <div class="media-preview-box">
-                    <div class="media-thumb" id="previewThumb">Media Preview</div>
-                    <div class="media-meta">
-                        <h4 id="mediaTitle">Detected Video Stream</h4>
-                        <p id="mediaPlatformSource">Source Platform: Auto-Detected</p>
-                    </div>
-                </div>
+            <div class="res-section-title">Select Resolution to Download (Highest to 244p + Audio Only)</div>
+            <div class="res-list" id="resolutionContainer"></div>
 
-                <div class="download-options-list" id="downloadOptionsContainer">
-                    <!-- Dynamic resolution rows (Highest -> 240P -> Audio Only) -->
+            <!-- Live Stream Transcoder / Downloader Bridge -->
+            <div class="extractor-modal" id="extractorBox">
+                <div class="extractor-header">
+                    <span id="extractorStatusText">Preparing direct stream download...</span>
+                    <button class="close-extractor" onclick="document.getElementById('extractorBox').style.display='none'">Close</button>
                 </div>
+                <div id="extractorContent"></div>
             </div>
         </div>
     </div>
-
-
-    <!-- ================= 3. IMAGE STUDIO SCREEN ================= -->
-    <div id="viewImage" class="view-container image-studio-screen">
-        <div class="controls-sidebar">
-            <div class="studio-header">
-                <h2>Image Studio Pro</h2>
-                <div style="display:flex; gap:6px; align-items:center;">
-                    <button class="history-btn" onclick="switchView('hub')" title="Return to Hub">🏠 Hub</button>
-                    <div class="history-bar">
-                        <button class="history-btn" id="undoBtn" disabled title="Undo">↶</button>
-                        <button class="history-btn" id="redoBtn" disabled title="Redo">↷</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="control-card">
-                <div class="section-title"><span>1. Media & Clipboard</span></div>
-                <div class="btn-grid">
-                    <button class="action-btn primary" onclick="document.getElementById('bgUpload').click()">Set Background</button>
-                    <button class="action-btn accent-red" onclick="document.getElementById('fgUpload').click()">+ Overlay</button>
-                </div>
-                <div class="btn-grid" style="margin-top:8px;">
-                    <button class="action-btn accent-purple" id="pasteClipboardBtn">📋 Paste Image</button>
-                    <button class="action-btn" id="copySelectedSidebarBtn">📄 Copy Layer</button>
-                </div>
-                <input type="file" id="bgUpload" accept="image/*" style="display:none;">
-                <input type="file" id="fgUpload" accept="image/*" style="display:none;">
-                <div class="layer-bar">
-                    <button class="action-btn" style="flex:1" id="bringFrontBtn">Bring Front</button>
-                    <button class="action-btn" style="flex:1; color:#fca5a5;" id="deleteObjBtn">Delete</button>
-                </div>
-            </div>
-
-            <div class="control-card">
-                <div class="section-title"><span>2. AI Clean Up & Retouch</span></div>
-                <div class="btn-grid">
-                    <button class="action-btn" id="removeBgBtn">Remove BG</button>
-                    <button class="action-btn" id="blurBgBtn">Blur Layer / BG</button>
-                    <button class="action-btn" id="removeObjToolBtn">✨ Clean Up</button>
-                    <button class="action-btn" id="blurObjToolBtn">Blur Object</button>
-                </div>
-                <div id="brushControls" style="display:none; margin-top:10px; padding-top:8px; border-top:1px solid #343b46;">
-                    <div class="slider-header"><span>Brush Size</span><span id="brushSizeVal">38 px</span></div>
-                    <input type="range" id="brushSize" min="8" max="130" value="38">
-                    <div style="display:flex; gap:6px; margin-top:6px;">
-                        <button class="action-btn" style="flex:1" id="exitBrushBtn">Done</button>
-                        <button class="action-btn" style="flex:1" id="clearRetouchBtn">Reset</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="control-card">
-                <div class="section-title">3. Typography</div>
-                <div style="display:flex; gap:6px; margin-bottom:8px;">
-                    <input type="text" id="textInput" placeholder="Enter text..." style="margin-bottom:0;">
-                    <button class="action-btn primary" id="addTextBtn" style="white-space:nowrap;">+ Text</button>
-                </div>
-                <select id="fontStyle" style="margin-bottom:6px;">
-                    <option value="Inter, Arial, sans-serif">Modern Sans</option>
-                    <option value="Georgia, serif">Editorial Serif</option>
-                    <option value="Impact, sans-serif">Heavy Impact</option>
-                </select>
-                <div class="color-row">
-                    <label>Text/Shape Color</label>
-                    <input type="color" id="activeColorPicker" value="#ffffff">
-                </div>
-            </div>
-
-            <div class="control-card">
-                <div class="section-title">4. Shapes</div>
-                <div class="btn-grid-3">
-                    <button class="action-btn" onclick="addShapeLayer('rect')">Rect</button>
-                    <button class="action-btn" onclick="addShapeLayer('roundRect')">Round</button>
-                    <button class="action-btn" onclick="addShapeLayer('circle')">Circle</button>
-                    <button class="action-btn" onclick="addShapeLayer('star')">Star</button>
-                    <button class="action-btn" onclick="addShapeLayer('arrow')">Arrow</button>
-                    <button class="action-btn" onclick="addShapeLayer('frame')">Frame</button>
-                </div>
-            </div>
-
-            <div class="control-card">
-                <div class="section-title"><span>5. Color & Light</span><span style="cursor:pointer; color:#60a5fa;" id="resetGradingBtn">Reset</span></div>
-                <div class="slider-row"><div class="slider-header"><span>Exposure</span><span id="valExposure">0</span></div><input type="range" id="adjExposure" min="-100" max="100" value="0"></div>
-                <div class="slider-row"><div class="slider-header"><span>Light</span><span id="valLight">0</span></div><input type="range" id="adjLight" min="-100" max="100" value="0"></div>
-                <div class="slider-row"><div class="slider-header"><span>Contrast</span><span id="valContrast">0</span></div><input type="range" id="adjContrast" min="-100" max="100" value="0"></div>
-                <div class="slider-row"><div class="slider-header"><span>Saturation</span><span id="valSaturation">0</span></div><input type="range" id="adjSaturation" min="-100" max="100" value="0"></div>
-                <div class="slider-row"><div class="slider-header"><span>Hue</span><span id="valHue">0°</span></div><input type="range" id="adjHue" min="-180" max="180" value="0"></div>
-                <div class="slider-row" style="margin-bottom:0;"><div class="slider-header"><span>Warmth</span><span id="valWarmth">0</span></div><input type="range" id="adjWarmth" min="-100" max="100" value="0"></div>
-            </div>
-
-            <button class="download-btn" id="saveImage">Export Composite Image</button>
-        </div>
-
-        <div class="canvas-container" id="workspaceContainer">
-            <div class="floating-status" id="statusBanner">Right-click or long-press to paste images</div>
-
-            <div class="workspace-context-bar" id="workspaceContextBar">
-                <button class="ctx-btn paste-primary" id="ctxPasteBtn">📋 Paste Here</button>
-                <button class="ctx-btn" id="ctxCopyBtn" style="display:none;">📄 Copy</button>
-                <button class="ctx-btn" id="ctxDuplicateBtn" style="display:none;">📑 Duplicate</button>
-            </div>
-
-            <canvas id="studioCanvas"></canvas>
-        </div>
-    </div>
-
-
-    <!-- ================= 4. VIDEO & MUSIC PLACEHOLDER SCREENS ================= -->
-    <div id="viewVideo" class="view-container hub-screen">
-        <h2 style="color:var(--hub-title);">Launch Video Editor Module[cite: 5]</h2>
-        <button class="back-hub-btn" style="color:#000; border-color:#999;" onclick="switchView('hub')">⬅ Back to Hub</button>
-    </div>
-
-    <div id="viewMusic" class="view-container hub-screen">
-        <h2 style="color:var(--hub-title);">Launch Music Editor Module[cite: 5]</h2>
-        <button class="back-hub-btn" style="color:#000; border-color:#999;" onclick="switchView('hub')">⬅ Back to Hub</button>
-    </div>
-
 
     <script>
-        // --- View Navigation Router ---
-        function switchView(viewName) {
-            document.querySelectorAll('.view-container').forEach(el => el.classList.remove('active'));
-            if (viewName === 'hub') document.getElementById('viewHub').classList.add('active');
-            if (viewName === 'image') document.getElementById('viewImage').classList.add('active');
-            if (viewName === 'video') document.getElementById('viewVideo').classList.add('active');
-            if (viewName === 'music') document.getElementById('viewMusic').classList.add('active');
-            if (viewName === 'download') document.getElementById('viewDownload').classList.add('active');
+        const urlInput = document.getElementById('urlInput');
+        const pasteBtn = document.getElementById('pasteBtn');
+        const fetchBtn = document.getElementById('fetchBtn');
+        const statusBanner = document.getElementById('statusBanner');
+        const resultsCard = document.getElementById('resultsCard');
+        const resolutionContainer = document.getElementById('resolutionContainer');
+        const platformTag = document.getElementById('platformTag');
+        const mediaTitle = document.getElementById('mediaTitle');
+        const mediaUrlText = document.getElementById('mediaUrlText');
+        const thumbContainer = document.getElementById('thumbContainer');
+        const extractorBox = document.getElementById('extractorBox');
+        const extractorContent = document.getElementById('extractorContent');
+        const extractorStatusText = document.getElementById('extractorStatusText');
+
+        // Store direct extracted streams when available (e.g., TikTok HD/SD/MP3 API or direct video links)
+        let extractedStreams = {};
+
+        function setStatus(msg, isError = false) {
+            if (!msg) {
+                statusBanner.style.display = 'none';
+                return;
+            }
+            statusBanner.style.display = 'flex';
+            statusBanner.style.borderColor = isError ? 'rgba(239,68,68,0.45)' : 'rgba(52,152,219,0.35)';
+            statusBanner.style.color = isError ? '#fca5a5' : '#93c5fd';
+            statusBanner.textContent = msg;
         }
 
-        // --- Video Downloader Resolution Engine ---
-        document.getElementById('fetchVideoBtn').addEventListener('click', () => {
-            const urlInput = document.getElementById('targetVideoUrl').value.trim();
-            const resultsCard = document.getElementById('downloadResultsCard');
-            const optionsContainer = document.getElementById('downloadOptionsContainer');
-            const mediaTitle = document.getElementById('mediaTitle');
-            const mediaPlatformSource = document.getElementById('mediaPlatformSource');
-            const previewThumb = document.getElementById('previewThumb');
+        // One-Click Paste Button
+        pasteBtn.addEventListener('click', async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                if (text) {
+                    urlInput.value = text.trim();
+                    analyzeVideoUrl();
+                } else {
+                    setStatus('Clipboard is empty. Copy a video URL first!', true);
+                }
+            } catch (_) {
+                urlInput.focus();
+                setStatus('Press Ctrl+V (or Cmd+V / Long-press Paste) inside the input box to paste your URL.');
+            }
+        });
 
-            if (!urlInput) {
-                alert('Please enter or paste a video URL.');
+        // Auto-analyze when user pastes directly into the input field
+        urlInput.addEventListener('paste', () => {
+            setTimeout(() => {
+                if (urlInput.value.trim()) analyzeVideoUrl();
+            }, 80);
+        });
+
+        // Detect Platform & Orientation (16:9 Landscape vs 9:16 Vertical Reels/Shorts/TikTok)
+        function detectPlatformInfo(url) {
+            const u = url.toLowerCase();
+            if (u.includes('youtube.com/shorts/')) {
+                return { name: 'YouTube Shorts', icon: '▶️', isVertical: true, maxLabel: '1080×1920 (Full HD Vertical)' };
+            }
+            if (u.includes('youtube.com') || u.includes('youtu.be')) {
+                return { name: 'YouTube Video', icon: '▶️', isVertical: false, maxLabel: '4K UHD / 1080p60 (Highest Available)' };
+            }
+            if (u.includes('facebook.com/reel') || u.includes('fb.watch')) {
+                return { name: 'Facebook Reels / Watch', icon: '📘', isVertical: true, maxLabel: '1080p HD Reel (Highest Available)' };
+            }
+            if (u.includes('facebook.com')) {
+                return { name: 'Facebook Video', icon: '📘', isVertical: false, maxLabel: '1080p Full HD (Highest Available)' };
+            }
+            if (u.includes('instagram.com/reel')) {
+                return { name: 'Instagram Reels', icon: '📸', isVertical: true, maxLabel: '1080×1920 HD Reel (Highest Available)' };
+            }
+            if (u.includes('instagram.com')) {
+                return { name: 'Instagram Video', icon: '📸', isVertical: true, maxLabel: '1080p Original Video (Highest Available)' };
+            }
+            if (u.includes('tiktok.com')) {
+                return { name: 'TikTok Video', icon: '🎵', isVertical: true, maxLabel: '1080p HD (No Watermark - Highest)' };
+            }
+            if (u.includes('dailymotion.com') || u.includes('dai.ly')) {
+                return { name: 'Dailymotion Video', icon: '🎞️', isVertical: false, maxLabel: '1080p / 4K UHD (Highest Available)' };
+            }
+            if (u.includes('twitter.com') || u.includes('x.com')) {
+                return { name: 'X / Twitter Video', icon: '🐦', isVertical: false, maxLabel: '1080p Original Stream (Highest)' };
+            }
+            return { name: 'Universal Web Video', icon: '🌐', isVertical: false, maxLabel: 'Highest Source Resolution Available' };
+        }
+
+        function extractYouTubeId(url) {
+            const m = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+            return m ? m[1] : null;
+        }
+
+        async function analyzeVideoUrl() {
+            const rawUrl = urlInput.value.trim();
+            if (!rawUrl) {
+                setStatus('Please paste a valid video URL first.', true);
                 return;
             }
 
-            let platform = 'Universal Media';
-            if (/youtube\.com|youtu\.be/i.test(urlInput)) platform = 'YouTube Video / Shorts';
-            else if (/tiktok\.com/i.test(urlInput)) platform = 'TikTok Video';
-            else if (/instagram\.com/i.test(urlInput)) platform = 'Instagram Reel';
-            else if (/facebook\.com|fb\.watch/i.test(urlInput)) platform = 'Facebook Video';
-            else if (/dailymotion\.com/i.test(urlInput)) platform = 'Dailymotion';
+            extractedStreams = {};
+            extractorBox.style.display = 'none';
+            setStatus('Analyzing URL & fetching available resolution streams...');
 
-            mediaTitle.textContent = `Extracted Video (${platform})`;
-            mediaPlatformSource.textContent = `Target: ${urlInput}`;
-            previewThumb.textContent = 'Ready';
+            const plat = detectPlatformInfo(rawUrl);
+            platformTag.textContent = `${plat.icon} ${plat.name}`;
+            mediaUrlText.textContent = rawUrl;
+            mediaTitle.textContent = `${plat.name} Media`;
+            thumbContainer.innerHTML = `<span style="font-size:32px;">${plat.icon}</span>`;
 
-            const resolutions = [
-                { label: 'Highest Resolution (1080p / 4K UHD)', desc: 'Full quality video with direct soundtrack (.mp4)', res: '1080p', type: 'video' },
-                { label: 'High Definition (720p HD)', desc: 'Standard high-res video stream (.mp4)', res: '720p', type: 'video' },
-                { label: 'Standard Definition (480p SD)', desc: 'Medium file size for mobile sharing (.mp4)', res: '480p', type: 'video' },
-                { label: 'Low Resolution (240p Data Saver)', desc: 'Lowest size compressed bandwidth profile (.mp4)', res: '240p', type: 'video' },
-                { label: 'Audio Only (Highest Bitrate MP3)', desc: 'Pure audio stream without video (.mp3)', res: 'Audio', type: 'audio' }
+            // 1. If YouTube / Shorts: Load instant high-res thumbnail
+            const ytId = extractYouTubeId(rawUrl);
+            if (ytId) {
+                thumbContainer.innerHTML = `<img src="https://img.youtube.com/vi/${ytId}/hqdefault.jpg" alt="YouTube Thumbnail">`;
+            }
+
+            // 2. If TikTok: Query public TikWM CORS API for real direct HD, SD, and MP3 streams
+            if (rawUrl.toLowerCase().includes('tiktok.com')) {
+                try {
+                    const tkResp = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(rawUrl)}&hd=1`);
+                    const tkJson = await tkResp.json();
+                    if (tkJson && tkJson.data) {
+                        const d = tkJson.data;
+                        if (d.title) mediaTitle.textContent = d.title;
+                        if (d.cover) thumbContainer.innerHTML = `<img src="${d.cover}" alt="TikTok Cover">`;
+                        extractedStreams = {
+                            max: d.hdplay || d.play,
+                            '1080': d.hdplay || d.play,
+                            '720': d.play,
+                            '480': d.wmplay || d.play,
+                            '360': d.wmplay || d.play,
+                            '244': d.wmplay || d.play,
+                            audio: d.music
+                        };
+                    }
+                } catch (_) {}
+            }
+
+            // 3. Query public NoEmbed API for real video title & thumbnail (YouTube, Vimeo, Dailymotion, etc.)
+            try {
+                const oeResp = await fetch(`https://noembed.com/embed?url=${encodeURIComponent(rawUrl)}`);
+                if (oeResp.ok) {
+                    const oeData = await oeResp.json();
+                    if (oeData.title) mediaTitle.textContent = oeData.title;
+                    if (oeData.thumbnail_url && !ytId && !extractedStreams.max) {
+                        thumbContainer.innerHTML = `<img src="${oeData.thumbnail_url}" alt="Thumbnail">`;
+                    }
+                }
+            } catch (_) {}
+
+            setStatus('');
+
+            // Build the exact resolution ladder from Highest Resolution -> down to 244p -> Audio Only last
+            const resolutionLadder = [
+                {
+                    badge: 'HIGHEST MAX',
+                    name: `Highest Resolution (${plat.maxLabel})`,
+                    meta: 'MP4 • Maximum Source Bitrate + Full Audio Track',
+                    code: 'max',
+                    tier: 'tier-max'
+                },
+                {
+                    badge: '1080p FHD',
+                    name: plat.isVertical ? 'Full HD Vertical (1080×1920)' : 'Full HD 1080p (1920×1080)',
+                    meta: 'MP4 • H.264 High Profile + AAC Stereo Audio',
+                    code: '1080',
+                    tier: ''
+                },
+                {
+                    badge: '720p HD',
+                    name: plat.isVertical ? 'HD Vertical (720×1280)' : 'HD 720p (1280×720)',
+                    meta: 'MP4 • Balanced High Definition & Fast Download',
+                    code: '720',
+                    tier: ''
+                },
+                {
+                    badge: '480p SD',
+                    name: plat.isVertical ? 'Standard Vertical (480×854)' : 'Standard Definition 480p (854×480)',
+                    meta: 'MP4 • Optimized for Mobile & Social Sharing',
+                    code: '480',
+                    tier: ''
+                },
+                {
+                    badge: '360p',
+                    name: plat.isVertical ? 'Compact Vertical (360×640)' : 'Medium Resolution 360p (640×360)',
+                    meta: 'MP4 • Lightweight Video Stream',
+                    code: '360',
+                    tier: ''
+                },
+                {
+                    badge: '244p LOW',
+                    name: 'Low Resolution 244p (Data Saver)',
+                    meta: 'MP4 • Smallest Video Size for Low Bandwidth',
+                    code: '244',
+                    tier: ''
+                },
+                {
+                    badge: 'AUDIO ONLY',
+                    name: 'Audio Only (320kbps MP3 / Original M4A)',
+                    meta: 'MP3 • Extracted High-Quality Audio Track Without Video',
+                    code: 'audio',
+                    tier: 'tier-audio'
+                }
             ];
 
-            optionsContainer.innerHTML = '';
-            resolutions.forEach(item => {
+            resolutionContainer.innerHTML = '';
+            resolutionLadder.forEach(item => {
                 const row = document.createElement('div');
-                row.className = 'dl-option-row';
+                row.className = `res-item ${item.tier}`;
                 row.innerHTML = `
-                    <div class="dl-option-info">
-                        <span class="dl-option-title">${item.label}</span>
-                        <span class="dl-option-desc">${item.desc}</span>
+                    <div class="res-left">
+                        <span class="res-badge">${item.badge}</span>
+                        <div class="res-text">
+                            <span class="res-name">${item.name}</span>
+                            <span class="res-meta">${item.meta}</span>
+                        </div>
                     </div>
-                    <button class="dl-action-btn ${item.type === 'audio' ? 'audio-badge' : ''}" onclick="triggerDownload('${item.res}', '${platform}')">
-                        ${item.type === 'audio' ? '🎵 Download MP3' : '📥 Download ' + item.res}
+                    <button class="dl-trigger-btn">
+                        ${item.code === 'audio' ? '🎵 Download Audio Only' : '📥 Download ' + item.badge}
                     </button>
                 `;
-                optionsContainer.appendChild(row);
+                row.querySelector('.dl-trigger-btn').addEventListener('click', (e) => {
+                    handleResolutionDownload(rawUrl, item.code, item.badge, e.currentTarget);
+                });
+                resolutionContainer.appendChild(row);
             });
 
             resultsCard.style.display = 'flex';
-        });
-
-        function triggerDownload(quality, platform) {
-            alert(`Download initiated for ${quality} stream from ${platform}.`);
         }
 
-        // --- Image Studio Engine ---
-        const canvas = document.getElementById('studioCanvas');
-        const ctx = canvas.getContext('2d');
-        const workspaceContainer = document.getElementById('workspaceContainer');
-        const workspaceContextBar = document.getElementById('workspaceContextBar');
-
-        canvas.width = 1200;
-        canvas.height = 800;
-
-        const bgLayer = {
-            img: null,
-            buffer: document.createElement('canvas'),
-            blurLevel: 0,
-            grading: { exposure: 0, light: 0, contrast: 0, saturation: 0, hue: 0, warmth: 0 }
-        };
-        bgLayer.buffer.width = canvas.width;
-        bgLayer.buffer.height = canvas.height;
-        const bgCtx = bgLayer.buffer.getContext('2d');
-
-        let objects = [];
-        let selectedObj = null;
-        let internalClipboardObj = null;
-        let lastWorkspaceTargetPt = { x: canvas.width / 2, y: canvas.height / 2 };
-        let historyStack = [];
-        let historyIndex = -1;
-
-        let interaction = { mode: 'none', startMouse: { x: 0, y: 0 }, startObj: null };
-
-        function cloneCanvas(src) {
-            const c = document.createElement('canvas'); c.width = src.width; c.height = src.height;
-            c.getContext('2d').drawImage(src, 0, 0); return c;
-        }
-
-        function cloneLayer(o) {
-            return { ...o, grading: { ...o.grading }, sourceCanvas: o.type === 'image' ? cloneCanvas(o.sourceCanvas) : null };
-        }
-
-        function saveHistory() {
-            if (historyIndex < historyStack.length - 1) historyStack = historyStack.slice(0, historyIndex + 1);
-            historyStack.push({
-                bgImg: bgLayer.img, bgBuffer: cloneCanvas(bgLayer.buffer), blurLevel: bgLayer.blurLevel,
-                objects: objects.map(cloneLayer)
-            });
-            if (historyStack.length > 30) historyStack.shift(); else historyIndex++;
-            document.getElementById('undoBtn').disabled = historyIndex <= 0;
-            document.getElementById('redoBtn').disabled = historyIndex >= historyStack.length - 1;
-        }
-
-        function restoreHistory(snap) {
-            bgLayer.img = snap.bgImg;
-            bgLayer.buffer = cloneCanvas(snap.bgBuffer);
-            bgLayer.blurLevel = snap.blurLevel;
-            objects = snap.objects.map(cloneLayer);
-            selectedObj = null;
-            renderCompositeBoard();
-        }
-
-        document.getElementById('undoBtn').addEventListener('click', () => { if (historyIndex > 0) restoreHistory(historyStack[--historyIndex]); });
-        document.getElementById('redoBtn').addEventListener('click', () => { if (historyIndex < historyStack.length - 1) restoreHistory(historyStack[++historyIndex]); });
-
-        function hideContextBar() { workspaceContextBar.style.display = 'none'; }
-
-        workspaceContainer.addEventListener('contextmenu', e => {
-            e.preventDefault();
-            const rect = canvas.getBoundingClientRect();
-            lastWorkspaceTargetPt = { x: (e.clientX - rect.left) * (canvas.width / rect.width), y: (e.clientY - rect.top) * (canvas.height / rect.height) };
-            const wRect = workspaceContainer.getBoundingClientRect();
-            workspaceContextBar.style.left = (e.clientX - wRect.left) + 'px';
-            workspaceContextBar.style.top = (e.clientY - wRect.top) + 'px';
-            workspaceContextBar.style.display = 'flex';
-            document.getElementById('ctxCopyBtn').style.display = selectedObj ? 'inline-block' : 'none';
-            document.getElementById('ctxDuplicateBtn').style.display = selectedObj ? 'inline-block' : 'none';
-        });
-
-        document.getElementById('ctxPasteBtn').addEventListener('click', () => {
-            hideContextBar();
-            if (internalClipboardObj) {
-                const copy = cloneLayer(internalClipboardObj);
-                copy.x = lastWorkspaceTargetPt.x; copy.y = lastWorkspaceTargetPt.y;
-                objects.push(copy); selectedObj = copy; saveHistory(); renderCompositeBoard();
-            }
-        });
-
-        document.getElementById('ctxCopyBtn').addEventListener('click', () => {
-            if (selectedObj) internalClipboardObj = cloneLayer(selectedObj);
-            hideContextBar();
-        });
-
-        document.getElementById('ctxDuplicateBtn').addEventListener('click', () => {
-            if (selectedObj) {
-                const copy = cloneLayer(selectedObj);
-                copy.x += 30; copy.y += 30;
-                objects.push(copy); selectedObj = copy; saveHistory(); renderCompositeBoard();
-            }
-            hideContextBar();
-        });
-
-        function loadBackground(file) {
-            const url = URL.createObjectURL(file); const img = new Image();
-            img.onload = () => {
-                bgLayer.img = img; canvas.width = img.width; canvas.height = img.height;
-                bgLayer.buffer.width = img.width; bgLayer.buffer.height = img.height;
-                bgCtx.drawImage(img, 0, 0); saveHistory(); renderCompositeBoard();
-            };
-            img.src = url;
-        }
-
-        function loadOverlay(file) {
-            const url = URL.createObjectURL(file); const img = new Image();
-            img.onload = () => {
-                const offCanvas = document.createElement('canvas'); offCanvas.width = img.width; offCanvas.height = img.height;
-                offCanvas.getContext('2d').drawImage(img, 0, 0);
-                const scale = (canvas.width * 0.4) / img.width;
-                const newObj = {
-                    id: Date.now(), type: 'image', sourceCanvas: offCanvas,
-                    x: canvas.width / 2, y: canvas.height / 2, width: img.width * scale, height: img.height * scale,
-                    rotate: 0, opacity: 1, grading: { exposure: 0, light: 0, contrast: 0, saturation: 0, hue: 0, warmth: 0 }
-                };
-                objects.push(newObj); selectedObj = newObj; saveHistory(); renderCompositeBoard();
-            };
-            img.src = url;
-        }
-
-        document.getElementById('bgUpload').addEventListener('change', e => { if (e.target.files[0]) loadBackground(e.target.files[0]); });
-        document.getElementById('fgUpload').addEventListener('change', e => { if (e.target.files[0]) loadOverlay(e.target.files[0]); });
-
-        document.getElementById('addTextBtn').addEventListener('click', () => {
-            const text = (document.getElementById('textInput').value || 'Sample Text').trim();
-            const color = document.getElementById('activeColorPicker').value;
-            const font = document.getElementById('fontStyle').value;
-            const newObj = {
-                id: Date.now(), type: 'text', text: text, color: color, fontFamily: font,
-                x: canvas.width / 2, y: canvas.height / 2, width: 220, height: 60, rotate: 0, opacity: 1,
-                grading: { exposure: 0, light: 0, contrast: 0, saturation: 0, hue: 0, warmth: 0 }
-            };
-            objects.push(newObj); selectedObj = newObj; saveHistory(); renderCompositeBoard();
-        });
-
-        window.addShapeLayer = function(type) {
-            const color = document.getElementById('activeColorPicker').value;
-            const newObj = {
-                id: Date.now(), type: 'shape', shapeType: type, color: color === '#ffffff' ? '#3b82f6' : color,
-                x: canvas.width / 2, y: canvas.height / 2, width: 140, height: 140, rotate: 0, opacity: 1,
-                grading: { exposure: 0, light: 0, contrast: 0, saturation: 0, hue: 0, warmth: 0 }
-            };
-            objects.push(newObj); selectedObj = newObj; saveHistory(); renderCompositeBoard();
-        };
-
-        canvas.addEventListener('pointerdown', e => {
-            if (e.pointerType === 'mouse' && e.button !== 0) return;
-            hideContextBar();
-            const rect = canvas.getBoundingClientRect();
-            const pt = { x: (e.clientX - rect.left) * (canvas.width / rect.width), y: (e.clientY - rect.top) * (canvas.height / rect.height) };
-
-            for (let i = objects.length - 1; i >= 0; i--) {
-                const o = objects[i];
-                if (Math.abs(pt.x - o.x) <= o.width / 2 && Math.abs(pt.y - o.y) <= o.height / 2) {
-                    selectedObj = o; interaction.mode = 'drag'; interaction.startMouse = pt; interaction.startObj = { ...o };
-                    renderCompositeBoard(); return;
-                }
-            }
-            selectedObj = null; interaction.mode = 'none'; renderCompositeBoard();
-        });
-
-        window.addEventListener('pointermove', e => {
-            if (interaction.mode === 'drag' && selectedObj) {
-                const rect = canvas.getBoundingClientRect();
-                const pt = { x: (e.clientX - rect.left) * (canvas.width / rect.width), y: (e.clientY - rect.top) * (canvas.height / rect.height) };
-                selectedObj.x = interaction.startObj.x + (pt.x - interaction.startMouse.x);
-                selectedObj.y = interaction.startObj.y + (pt.y - interaction.startMouse.y);
-                renderCompositeBoard();
-            }
-        });
-
-        window.addEventListener('pointerup', () => {
-            if (interaction.mode !== 'none') { interaction.mode = 'none'; saveHistory(); renderCompositeBoard(); }
-        });
-
-        function renderCompositeBoard(exportMode = false) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            if (bgLayer.img) {
-                ctx.drawImage(bgLayer.buffer, 0, 0, canvas.width, canvas.height);
-            }
-            objects.forEach(o => {
-                ctx.save(); ctx.translate(o.x, o.y); ctx.rotate((o.rotate * Math.PI) / 180); ctx.globalAlpha = o.opacity ?? 1;
-                if (o.type === 'image') ctx.drawImage(o.sourceCanvas, -o.width / 2, -o.height / 2, o.width, o.height);
-                else if (o.type === 'shape') { ctx.fillStyle = o.color; ctx.fillRect(-o.width / 2, -o.height / 2, o.width, o.height); }
-                else if (o.type === 'text') { ctx.font = `bold 48px ${o.fontFamily}`; ctx.fillStyle = o.color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(o.text, 0, 0); }
-                ctx.restore();
-            });
-            if (!exportMode && selectedObj) {
-                ctx.save(); ctx.translate(selectedObj.x, selectedObj.y); ctx.rotate((selectedObj.rotate * Math.PI) / 180);
-                ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 2; ctx.strokeRect(-selectedObj.width / 2, -selectedObj.height / 2, selectedObj.width, selectedObj.height);
-                ctx.restore();
+        async function forceBlobDownload(streamUrl, filename, btnEl, origLabel) {
+            try {
+                btnEl.innerHTML = '⏳ Downloading...';
+                const resp = await fetch(streamUrl);
+                const blob = await resp.blob();
+                const blobUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(blobUrl);
+                btnEl.innerHTML = '✅ Downloaded!';
+                setTimeout(() => { btnEl.innerHTML = origLabel; btnEl.disabled = false; }, 2500);
+                return true;
+            } catch (_) {
+                return false;
             }
         }
 
-        document.getElementById('saveImage').addEventListener('click', () => {
-            renderCompositeBoard(true);
-            const a = document.createElement('a'); a.download = 'composite.png'; a.href = canvas.toDataURL('image/png'); a.click();
-            renderCompositeBoard(false);
-        });
+        async function handleResolutionDownload(sourceUrl, qualityCode, badgeLabel, btnEl) {
+            const origLabel = btnEl.innerHTML;
+            btnEl.disabled = true;
+            btnEl.innerHTML = '⏳ Fetching Stream...';
 
-        saveHistory();
-        renderCompositeBoard();
+            const ext = qualityCode === 'audio' ? 'mp3' : 'mp4';
+            const cleanName = (mediaTitle.textContent || 'video')
+                .replace(/[^a-z0-9_-]+/gi, '_')
+                .substring(0, 40) || 'video';
+            const filename = `${cleanName}_${qualityCode === 'audio' ? 'AudioOnly' : qualityCode + 'p'}.${ext}`;
+
+            // 1. If we already extracted a direct CDN stream (e.g., TikTok HD/SD/MP3 or direct .mp4/.mp3 URL)
+            const directStream = extractedStreams[qualityCode] || (/\.(mp4|webm|mov|mp3|m4a)(\?.*)?$/i.test(sourceUrl) ? sourceUrl : null);
+            if (directStream) {
+                const ok = await forceBlobDownload(directStream, filename, btnEl, origLabel);
+                if (ok) return;
+                window.open(directStream, '_blank');
+                btnEl.innerHTML = origLabel;
+                btnEl.disabled = false;
+                return;
+            }
+
+            // 2. For YouTube, Facebook, Instagram, Reels, Shorts, Dailymotion:
+            // Map requested resolution (max/1080/720/480/360/244/audio) to the embedded multi-platform stream transcoder
+            const formatParam = qualityCode === 'audio' ? 'mp3' : (qualityCode === 'max' ? '1080' : (qualityCode === '244' ? '240' : qualityCode));
+            extractorBox.style.display = 'flex';
+            extractorStatusText.textContent = `Transcoding [${badgeLabel}] stream for ${sourceUrl}...`;
+
+            extractorContent.innerHTML = `
+                <iframe
+                    src="https://loader.to/api/button/?url=${encodeURIComponent(sourceUrl)}&f=${encodeURIComponent(formatParam)}&color=3498db"
+                    style="width:100%; height:65px; border:none; border-radius:8px; background:#1a1f29;"
+                    allow="downloads"
+                ></iframe>
+                <div style="font-size:11px; color:#9ca3af; margin-top:6px; display:flex; justify-content:space-between; align-items:center;">
+                    <span>Click the blue button above once transcoding reaches 100% to save your ${badgeLabel} file.</span>
+                    <a href="https://cobalt.tools/#${encodeURIComponent(sourceUrl)}" target="_blank" style="color:#60a5fa; text-decoration:underline;">Open External Mirror ↗</a>
+                </div>
+            `;
+
+            btnEl.innerHTML = '✅ Ready Below';
+            setTimeout(() => {
+                btnEl.innerHTML = origLabel;
+                btnEl.disabled = false;
+            }, 2200);
+            extractorBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        fetchBtn.addEventListener('click', analyzeVideoUrl);
+        urlInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') analyzeVideoUrl();
+        });
     </script>
 </body>
 </html>
