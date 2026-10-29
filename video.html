@@ -1,24 +1,1496 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Sequencing Studio Pro</title>
+    <!-- Tailwind CSS for modern, responsive studio styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        studio: {
+                            950: '#090a0f',
+                            900: '#12131c',
+                            800: '#1c1e2b',
+                            700: '#2a2d3f',
+                            accent: '#9b59b6',
+                            accentHover: '#8e44ad',
+                            cyan: '#06b6d4'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body { font-family: system-ui, sans-serif; padding: 10px; margin: 0; color: #333; }
-        .placeholder-tool { border: 2px dashed #ccc; border-radius: 8px; padding: 40px; text-align: center; background-color: #fafafa; color: #7f8c8d; margin-top: 15px; }
-        .action-btn { color: white; border: none; padding: 12px 24px; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 15px; background-color: #9b59b6; }
+        /* Custom Scrollbars & Range Sliders */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #12131c; }
+        ::-webkit-scrollbar-thumb { background: #2a2d3f; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #9b59b6; }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-runnable-track {
+            background: #2a2d3f;
+            height: 6px;
+            border-radius: 999px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            margin-top: -5px;
+            background-color: #a855f7;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            border: 2px solid #ffffff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+            transition: transform 0.15s ease, background-color 0.15s ease;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            background-color: #c084fc;
+        }
+
+        /* Checkerboard pattern for transparent/canvas backdrop */
+        .canvas-backdrop {
+            background-color: #090a0f;
+            background-image: 
+                linear-gradient(45deg, #12131c 25%, transparent 25%), 
+                linear-gradient(-45deg, #12131c 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #12131c 75%), 
+                linear-gradient(-45deg, transparent 75%, #12131c 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
     </style>
 </head>
-<body>
-    <h2>Video Sequencing Studio</h2>
-    <p>Splice timelines, modify playback framerates, or encode file output tracks.</p>
-    <div class="placeholder-tool">
-        <p>Drop Video Tracks (.mp4, .mov) Here</p>
-        <input type="file" id="videoUpload" accept="video/*" style="display:none;">
-        <button class="action-btn" onclick="document.getElementById('videoUpload').click()">Import Video Clip</button>
+<body class="bg-studio-950 text-slate-100 font-sans min-h-screen flex flex-col selection:bg-purple-500 selection:text-white overflow-x-hidden">
+
+    <!-- Top Navigation & Action Bar -->
+    <header class="bg-studio-900 border-b border-studio-700/80 px-4 py-3 flex flex-wrap items-center justify-between gap-3 z-20">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-900/30">
+                <i class="fa-solid fa-film text-white text-lg"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="font-bold text-base sm:text-lg tracking-tight text-white">Video Sequencing Studio</h1>
+                    <span class="text-[11px] font-mono uppercase px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 font-semibold">Pro Canvas</span>
+                </div>
+                <p class="text-xs text-slate-400 hidden sm:block">Splice timelines, modify playback framerates, mask overlays, or encode output tracks.</p>
+            </div>
+        </div>
+
+        <!-- Quick Actions & Export -->
+        <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
+            <input type="file" id="videoUpload" accept="video/mp4,video/webm,video/quicktime,video/*" class="hidden">
+            
+            <button id="loadDemoBtn" class="px-3 py-2 rounded-lg bg-studio-800 hover:bg-studio-700 text-slate-200 border border-studio-700 text-xs font-medium flex items-center gap-2 transition">
+                <i class="fa-solid fa-wand-magic-sparkles text-purple-400"></i>
+                <span>Load Demo Stream</span>
+            </button>
+
+            <button onclick="document.getElementById('videoUpload').click()" class="px-3.5 py-2 rounded-lg bg-studio-800 hover:bg-studio-700 text-white border border-studio-700 text-xs font-semibold flex items-center gap-2 transition">
+                <i class="fa-solid fa-folder-open text-purple-400"></i>
+                <span>Import Video Clip</span>
+            </button>
+
+            <button id="snapshotBtn" disabled class="px-3.5 py-2 rounded-lg bg-studio-800 hover:bg-studio-700 disabled:opacity-40 disabled:pointer-events-none text-slate-200 border border-studio-700 text-xs font-medium flex items-center gap-2 transition" title="Save current frame as PNG">
+                <i class="fa-solid fa-camera text-cyan-400"></i>
+                <span class="hidden md:inline">Capture Frame</span>
+            </button>
+
+            <button id="exportVideoBtn" disabled class="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-40 disabled:pointer-events-none text-white text-xs font-semibold flex items-center gap-2 shadow-lg shadow-purple-900/30 transition">
+                <i class="fa-solid fa-circle-dot text-rose-300 animate-pulse hidden" id="recIndicator"></i>
+                <i class="fa-solid fa-file-export" id="exportIcon"></i>
+                <span id="exportBtnText">Export Sequence (.webm)</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Status Notification Banner (Replaces alert) -->
+    <div id="toastBanner" class="fixed bottom-5 right-5 z-50 hidden transform transition-all duration-300 translate-y-2 opacity-0">
+        <div class="bg-studio-800 border border-purple-500/40 text-slate-100 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 max-w-md">
+            <i id="toastIcon" class="fa-solid fa-circle-info text-purple-400 text-lg"></i>
+            <div class="text-xs sm:text-sm font-medium" id="toastMessage">Notification message</div>
+        </div>
     </div>
+
+    <!-- Main Workspace Container -->
+    <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-0 overflow-hidden">
+        
+        <!-- Left & Center Area: Video Viewport, Dropzone & Timeline (8 Cols on Desktop) -->
+        <section class="lg:col-span-8 xl:col-span-9 flex flex-col bg-studio-950 border-b lg:border-b-0 lg:border-r border-studio-700/80">
+            
+            <!-- Viewport Wrapper -->
+            <div class="relative flex-1 min-h-[340px] sm:min-h-[440px] flex items-center justify-center p-4 canvas-backdrop overflow-hidden select-none" id="viewportContainer">
+                
+                <!-- Drag and Drop Upload Placeholder (Shown initially or when dragging files) -->
+                <div id="dropZone" class="w-full max-w-xl border-2 border-dashed border-studio-700 hover:border-purple-500/70 rounded-2xl p-8 sm:p-12 text-center bg-studio-900/90 backdrop-blur-md transition-all cursor-pointer group shadow-2xl">
+                    <div class="w-16 h-16 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 group-hover:bg-purple-500/20 transition">
+                        <i class="fa-solid fa-cloud-arrow-up text-3xl text-purple-400"></i>
+                    </div>
+                    <h3 class="text-base sm:text-lg font-bold text-white mb-1">Drop Video Tracks (.mp4, .mov, .webm) Here</h3>
+                    <p class="text-xs sm:text-sm text-slate-400 mb-6">Or click below to import from your device, or test immediately with our procedural studio stream.</p>
+                    <div class="flex flex-wrap items-center justify-center gap-3">
+                        <button type="button" onclick="document.getElementById('videoUpload').click()" class="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs sm:text-sm shadow-lg shadow-purple-900/40 transition">
+                            <i class="fa-solid fa-upload mr-2"></i>Import Video Clip
+                        </button>
+                        <button type="button" id="dropZoneDemoBtn" class="px-5 py-2.5 rounded-xl bg-studio-800 hover:bg-studio-700 text-slate-200 border border-studio-700 font-semibold text-xs sm:text-sm transition">
+                            <i class="fa-solid fa-play mr-2 text-purple-400"></i>Load Sample Track
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Hidden Source HTML5 Video Element -->
+                <video id="sourceVideo" class="hidden" playsinline crossorigin="anonymous"></video>
+
+                <!-- Interactive Rendering Canvas Container -->
+                <div id="canvasWrapper" class="relative hidden max-w-full max-h-full flex items-center justify-center shadow-2xl rounded-lg overflow-hidden border border-studio-700">
+                    <canvas id="editorCanvas" class="block max-w-full max-h-[58vh] w-auto h-auto cursor-crosshair"></canvas>
+                    
+                    <!-- Top-left Live Badges -->
+                    <div class="absolute top-3 left-3 flex items-center gap-2 pointer-events-none">
+                        <span id="resolutionBadge" class="px-2.5 py-1 rounded-md bg-black/70 backdrop-blur-md text-[11px] font-mono text-slate-200 border border-white/10">1280x720</span>
+                        <span id="maskActiveBadge" class="hidden px-2.5 py-1 rounded-md bg-cyan-500/20 backdrop-blur-md text-[11px] font-mono text-cyan-300 border border-cyan-400/30">
+                            <i class="fa-solid fa-vector-square mr-1"></i>Mask Active (Drag on video to reposition)
+                        </span>
+                        <span id="recordingBadge" class="hidden px-2.5 py-1 rounded-md bg-rose-600/90 backdrop-blur-md text-[11px] font-mono text-white font-semibold animate-pulse">
+                            <i class="fa-solid fa-circle mr-1 text-[8px]"></i>ENCODING OUTPUT
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transport Playback Controls & Precision Timeline Bar -->
+            <div class="bg-studio-900 border-t border-studio-700/80 p-3 sm:p-4 flex flex-col gap-3">
+                
+                <!-- Primary Transport Row -->
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <!-- Left Transport Buttons -->
+                    <div class="flex items-center gap-2">
+                        <button id="playPauseBtn" disabled class="w-10 h-10 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-40 disabled:pointer-events-none text-white flex items-center justify-center shadow-md transition" title="Play / Pause (Space)">
+                            <i class="fa-solid fa-play" id="playPauseIcon"></i>
+                        </button>
+                        <button id="restartTrimBtn" disabled class="w-9 h-9 rounded-lg bg-studio-800 hover:bg-studio-700 disabled:opacity-40 disabled:pointer-events-none text-slate-200 border border-studio-700 flex items-center justify-center transition" title="Jump to Trim Start">
+                            <i class="fa-solid fa-backward-step text-xs"></i>
+                        </button>
+                        <button id="stepBackBtn" disabled class="w-9 h-9 rounded-lg bg-studio-800 hover:bg-studio-700 disabled:opacity-40 disabled:pointer-events-none text-slate-200 border border-studio-700 flex items-center justify-center transition" title="Step Back 1 Frame">
+                            <i class="fa-solid fa-chevron-left text-xs"></i>
+                        </button>
+                        <button id="stepForwardBtn" disabled class="w-9 h-9 rounded-lg bg-studio-800 hover:bg-studio-700 disabled:opacity-40 disabled:pointer-events-none text-slate-200 border border-studio-700 flex items-center justify-center transition" title="Step Forward 1 Frame">
+                            <i class="fa-solid fa-chevron-right text-xs"></i>
+                        </button>
+
+                        <!-- Timecode Readout -->
+                        <div class="ml-2 px-3 py-1.5 rounded-lg bg-studio-950 border border-studio-700 font-mono text-xs sm:text-sm text-slate-200 flex items-center gap-1.5">
+                            <span id="currentTimeDisplay" class="text-purple-400 font-semibold">00:00.0</span>
+                            <span class="text-slate-600">/</span>
+                            <span id="durationDisplay" class="text-slate-400">00:00.0</span>
+                        </div>
+                    </div>
+
+                    <!-- Right Transport Controls: Loop, Volume, Framerate / Speed -->
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <!-- Loop Trim Toggle -->
+                        <label class="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer bg-studio-800 px-2.5 py-1.5 rounded-lg border border-studio-700">
+                            <input type="checkbox" id="loopToggle" checked class="accent-purple-500 rounded">
+                            <span>Loop Trim</span>
+                        </label>
+
+                        <!-- Audio Volume -->
+                        <div class="flex items-center gap-2 bg-studio-800 px-2.5 py-1.5 rounded-lg border border-studio-700">
+                            <button id="muteBtn" class="text-slate-300 hover:text-white text-xs w-4">
+                                <i class="fa-solid fa-volume-high" id="volumeIcon"></i>
+                            </button>
+                            <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="1" class="w-16 sm:w-20">
+                        </div>
+
+                        <!-- Playback Speed / Framerate Selector -->
+                        <div class="flex items-center gap-1.5 bg-studio-800 px-2.5 py-1.5 rounded-lg border border-studio-700 text-xs">
+                            <i class="fa-solid fa-gauge-high text-purple-400"></i>
+                            <span class="text-slate-400 hidden sm:inline">Speed:</span>
+                            <select id="playbackSpeed" class="bg-transparent text-white font-semibold focus:outline-none cursor-pointer">
+                                <option value="0.25" class="bg-studio-900">0.25x (Slow-Mo)</option>
+                                <option value="0.5" class="bg-studio-900">0.50x (Half)</option>
+                                <option value="0.75" class="bg-studio-900">0.75x</option>
+                                <option value="1" selected class="bg-studio-900">1.00x (Normal)</option>
+                                <option value="1.25" class="bg-studio-900">1.25x</option>
+                                <option value="1.5" class="bg-studio-900">1.50x (Fast)</option>
+                                <option value="2" class="bg-studio-900">2.00x (Double)</option>
+                            </select>
+                        </div>
+
+                        <!-- Target Render FPS -->
+                        <div class="flex items-center gap-1.5 bg-studio-800 px-2.5 py-1.5 rounded-lg border border-studio-700 text-xs">
+                            <span class="text-slate-400 hidden sm:inline">FPS:</span>
+                            <select id="exportFps" class="bg-transparent text-cyan-300 font-mono font-semibold focus:outline-none cursor-pointer">
+                                <option value="24" class="bg-studio-900">24 fps</option>
+                                <option value="30" selected class="bg-studio-900">30 fps</option>
+                                <option value="60" class="bg-studio-900">60 fps</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interactive Timeline Seek & Trim Track -->
+                <div class="bg-studio-950 p-3 rounded-xl border border-studio-700/90 flex flex-col gap-2.5">
+                    <!-- Main Playhead Scrubber -->
+                    <div class="flex items-center gap-3">
+                        <span class="text-[11px] font-mono uppercase text-slate-400 w-16">Playhead</span>
+                        <div class="relative flex-1 flex items-center">
+                            <input type="range" id="seekBar" min="0" max="100" step="0.01" value="0" disabled class="w-full z-10">
+                        </div>
+                    </div>
+
+                    <!-- Start & End Trim Markers -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-studio-800">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[11px] font-mono text-emerald-400 uppercase w-16 flex items-center gap-1">
+                                <i class="fa-solid fa-bracket-square"></i> In Point
+                            </span>
+                            <input type="range" id="trimStartSlider" min="0" max="100" step="0.05" value="0" disabled class="flex-1">
+                            <span id="trimStartLabel" class="text-xs font-mono text-slate-300 w-14 text-right">0.0s</span>
+                            <button id="setInCurrentBtn" disabled class="px-2 py-1 text-[11px] bg-studio-800 hover:bg-studio-700 disabled:opacity-40 rounded border border-studio-700 text-emerald-300" title="Set Trim Start to Current Playhead">Set In</button>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <span class="text-[11px] font-mono text-amber-400 uppercase w-16 flex items-center gap-1">
+                                <i class="fa-solid fa-bracket-square"></i> Out Point
+                            </span>
+                            <input type="range" id="trimEndSlider" min="0" max="100" step="0.05" value="100" disabled class="flex-1">
+                            <span id="trimEndLabel" class="text-xs font-mono text-slate-300 w-14 text-right">0.0s</span>
+                            <button id="setOutCurrentBtn" disabled class="px-2 py-1 text-[11px] bg-studio-800 hover:bg-studio-700 disabled:opacity-40 rounded border border-studio-700 text-amber-300" title="Set Trim End to Current Playhead">Set Out</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Inspector Sidebar: Masking, Color Grading, Text Overlay (4 Cols on Desktop) -->
+        <aside class="lg:col-span-4 xl:col-span-3 bg-studio-900 flex flex-col h-full overflow-hidden">
+            
+            <!-- Inspector Tool Tabs -->
+            <div class="grid grid-cols-3 border-b border-studio-700 bg-studio-950/60 p-1.5 gap-1">
+                <button data-tab="tab-mask" class="inspector-tab active-tab py-2 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 bg-purple-600 text-white shadow transition">
+                    <i class="fa-solid fa-eraser"></i>
+                    <span>Mask / Blur</span>
+                </button>
+                <button data-tab="tab-filters" class="inspector-tab py-2 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 text-slate-400 hover:text-white hover:bg-studio-800 transition">
+                    <i class="fa-solid fa-sliders"></i>
+                    <span>Color Grade</span>
+                </button>
+                <button data-tab="tab-text" class="inspector-tab py-2 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 text-slate-400 hover:text-white hover:bg-studio-800 transition">
+                    <i class="fa-solid fa-font"></i>
+                    <span>Text Layer</span>
+                </button>
+            </div>
+
+            <!-- Inspector Content Panels -->
+            <div class="p-4 overflow-y-auto flex-1 space-y-5">
+
+                <!-- TAB 1: REGION BLUR / OVERLAY & BLEMISH MASKING TOOL -->
+                <div id="tab-mask" class="tab-panel space-y-4">
+                    <div class="bg-studio-800/90 border border-cyan-500/30 rounded-xl p-3.5">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-wand-sparkles text-cyan-400"></i>
+                                <h3 class="text-xs sm:text-sm font-bold text-white">Region Blur & Overlay Mask</h3>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="maskEnableToggle" class="sr-only peer">
+                                <div class="w-9 h-5 bg-studio-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500"></div>
+                            </label>
+                        </div>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Select a bounding box on the video canvas or use quick corner presets to obscure unwanted overlays, timestamps, blemishes, or badges in real time.
+                        </p>
+                    </div>
+
+                    <!-- Mask Synthesis Mode -->
+                    <div class="space-y-2">
+                        <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider block">Masking Algorithm</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button type="button" data-mask-mode="delogo" class="mask-mode-btn py-2 px-2.5 rounded-lg border border-cyan-500 bg-cyan-500/20 text-cyan-200 text-xs font-semibold text-center transition">
+                                Smart Inpaint
+                            </button>
+                            <button type="button" data-mask-mode="blur" class="mask-mode-btn py-2 px-2.5 rounded-lg border border-studio-700 bg-studio-800 text-slate-300 hover:bg-studio-700 text-xs font-semibold text-center transition">
+                                Gaussian Blur
+                            </button>
+                            <button type="button" data-mask-mode="pixelate" class="mask-mode-btn py-2 px-2.5 rounded-lg border border-studio-700 bg-studio-800 text-slate-300 hover:bg-studio-700 text-xs font-semibold text-center transition">
+                                Pixel Mosaic
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Quick Corner / Region Presets -->
+                    <div class="space-y-2">
+                        <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider block">Quick Region Presets</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" onclick="applyMaskPreset('bottom-right')" class="px-3 py-2 rounded-lg bg-studio-800 hover:bg-studio-700 border border-studio-700 text-xs text-slate-200 flex items-center justify-between transition">
+                                <span>Bottom Right Corner</span>
+                                <i class="fa-solid fa-arrow-down-right text-cyan-400"></i>
+                            </button>
+                            <button type="button" onclick="applyMaskPreset('bottom-left')" class="px-3 py-2 rounded-lg bg-studio-800 hover:bg-studio-700 border border-studio-700 text-xs text-slate-200 flex items-center justify-between transition">
+                                <span>Bottom Left Corner</span>
+                                <i class="fa-solid fa-arrow-down-left text-cyan-400"></i>
+                            </button>
+                            <button type="button" onclick="applyMaskPreset('top-right')" class="px-3 py-2 rounded-lg bg-studio-800 hover:bg-studio-700 border border-studio-700 text-xs text-slate-200 flex items-center justify-between transition">
+                                <span>Top Right Corner</span>
+                                <i class="fa-solid fa-arrow-up-right text-cyan-400"></i>
+                            </button>
+                            <button type="button" onclick="applyMaskPreset('top-left')" class="px-3 py-2 rounded-lg bg-studio-800 hover:bg-studio-700 border border-studio-700 text-xs text-slate-200 flex items-center justify-between transition">
+                                <span>Top Left Corner</span>
+                                <i class="fa-solid fa-arrow-up-left text-cyan-400"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Bounding Box X, Y, Width, Height Sliders (% of Video Frame) -->
+                    <div class="bg-studio-950 p-3.5 rounded-xl border border-studio-800 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-slate-300">Bounding Box Coordinates</span>
+                            <label class="flex items-center gap-1.5 text-xs text-cyan-400 cursor-pointer">
+                                <input type="checkbox" id="showMaskGuideToggle" checked class="accent-cyan-400 rounded">
+                                <span>Show Guide Box</span>
+                            </label>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-400">Position X (%)</span>
+                                <span id="maskXVal" class="font-mono text-cyan-300">74%</span>
+                            </div>
+                            <input type="range" id="maskXSlider" min="0" max="95" step="0.5" value="74" class="w-full">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-400">Position Y (%)</span>
+                                <span id="maskYVal" class="font-mono text-cyan-300">82%</span>
+                            </div>
+                            <input type="range" id="maskYSlider" min="0" max="95" step="0.5" value="82" class="w-full">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-400">Mask Width (%)</span>
+                                <span id="maskWVal" class="font-mono text-cyan-300">22%</span>
+                            </div>
+                            <input type="range" id="maskWSlider" min="2" max="80" step="0.5" value="22" class="w-full">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-400">Mask Height (%)</span>
+                                <span id="maskHVal" class="font-mono text-cyan-300">12%</span>
+                            </div>
+                            <input type="range" id="maskHSlider" min="2" max="80" step="0.5" value="12" class="w-full">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-400">Strength / Blur Radius</span>
+                                <span id="maskIntensityVal" class="font-mono text-cyan-300">18px</span>
+                            </div>
+                            <input type="range" id="maskIntensitySlider" min="4" max="45" step="1" value="18" class="w-full">
+                        </div>
+                    </div>
+
+                    <p class="text-[11px] text-slate-400 italic">
+                        <i class="fa-solid fa-hand-pointer mr-1 text-purple-400"></i>
+                        Tip: When Region Mask is enabled, you can also click and drag directly on the video preview canvas to draw your custom mask box!
+                    </p>
+                </div>
+
+                <!-- TAB 2: VISUAL FILTERS & COLOR GRADING -->
+                <div id="tab-filters" class="tab-panel hidden space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xs sm:text-sm font-bold text-white">Color Grading & Adjustments</h3>
+                        <button id="resetFiltersBtn" class="text-xs text-purple-400 hover:text-purple-300 font-medium">
+                            <i class="fa-solid fa-rotate-left mr-1"></i>Reset All
+                        </button>
+                    </div>
+
+                    <div class="bg-studio-950 p-3.5 rounded-xl border border-studio-800 space-y-3.5">
+                        <!-- Brightness -->
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-300">Brightness</span>
+                                <span id="brightnessVal" class="font-mono text-purple-400">100%</span>
+                            </div>
+                            <input type="range" id="brightnessSlider" min="20" max="200" value="100" class="w-full">
+                        </div>
+
+                        <!-- Contrast -->
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-300">Contrast</span>
+                                <span id="contrastVal" class="font-mono text-purple-400">100%</span>
+                            </div>
+                            <input type="range" id="contrastSlider" min="20" max="200" value="100" class="w-full">
+                        </div>
+
+                        <!-- Saturation -->
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-300">Saturation</span>
+                                <span id="saturationVal" class="font-mono text-purple-400">100%</span>
+                            </div>
+                            <input type="range" id="saturationSlider" min="0" max="250" value="100" class="w-full">
+                        </div>
+
+                        <!-- Grayscale -->
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-300">Grayscale</span>
+                                <span id="grayscaleVal" class="font-mono text-purple-400">0%</span>
+                            </div>
+                            <input type="range" id="grayscaleSlider" min="0" max="100" value="0" class="w-full">
+                        </div>
+
+                        <!-- Sepia -->
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-300">Sepia Tone</span>
+                                <span id="sepiaVal" class="font-mono text-purple-400">0%</span>
+                            </div>
+                            <input type="range" id="sepiaSlider" min="0" max="100" value="0" class="w-full">
+                        </div>
+                    </div>
+
+                    <!-- Quick LUT Look Presets -->
+                    <div class="space-y-2">
+                        <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider block">Studio Look Presets</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" onclick="applyColorPreset('vivid')" class="px-3 py-2 rounded-lg bg-studio-800 hover:bg-studio-700 border border-studio-700 text-xs text-slate-200 transition">Vivid Cinema</button>
+                            <button type="button" onclick="applyColorPreset('noir')" class="px-3 py-2 rounded-lg bg-studio-800 hover:bg-studio-700 border border-studio-700 text-xs text-slate-200 transition">Classic Noir B&W</button>
+                            <button type="button" onclick="applyColorPreset('vintage')" class="px-3 py-2 rounded-lg bg-studio-800 hover:bg-studio-700 border border-studio-700 text-xs text-slate-200 transition">Warm Vintage</button>
+                            <button type="button" onclick="applyColorPreset('matte')" class="px-3 py-2 rounded-lg bg-studio-800 hover:bg-studio-700 border border-studio-700 text-xs text-slate-200 transition">High Contrast</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: TEXT OVERLAY GENERATOR -->
+                <div id="tab-text" class="tab-panel hidden space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xs sm:text-sm font-bold text-white">Dynamic Text Overlay</h3>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="textEnableToggle" class="sr-only peer">
+                            <div class="w-9 h-5 bg-studio-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-500"></div>
+                        </label>
+                    </div>
+
+                    <div class="space-y-3 bg-studio-950 p-3.5 rounded-xl border border-studio-800">
+                        <div>
+                            <label class="text-xs text-slate-400 block mb-1">Caption / Title Text</label>
+                            <input type="text" id="overlayTextInput" value="SEQUENCING STUDIO PRO" placeholder="Enter caption text..." class="w-full px-3 py-2 rounded-lg bg-studio-800 border border-studio-700 text-xs sm:text-sm text-white focus:outline-none focus:border-purple-500">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-xs text-slate-400 block mb-1">Text Color</label>
+                                <input type="color" id="overlayTextColor" value="#ffffff" class="w-full h-9 rounded-lg bg-studio-800 border border-studio-700 cursor-pointer p-1">
+                            </div>
+                            <div>
+                                <label class="text-xs text-slate-400 block mb-1">Backdrop Pill</label>
+                                <select id="overlayBgStyle" class="w-full h-9 px-2 rounded-lg bg-studio-800 border border-studio-700 text-xs text-white focus:outline-none">
+                                    <option value="semi">Dark Translucent</option>
+                                    <option value="solid">Solid Black</option>
+                                    <option value="none">Drop Shadow Only</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-400">Font Size</span>
+                                <span id="textSizeVal" class="font-mono text-purple-400">36px</span>
+                            </div>
+                            <input type="range" id="textSizeSlider" min="16" max="96" value="36" class="w-full">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-400">Horizontal Position (X)</span>
+                                <span id="textXVal" class="font-mono text-purple-400">50%</span>
+                            </div>
+                            <input type="range" id="textXSlider" min="5" max="95" value="50" class="w-full">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-400">Vertical Position (Y)</span>
+                                <span id="textYVal" class="font-mono text-purple-400">12%</span>
+                            </div>
+                            <input type="range" id="textYSlider" min="5" max="95" value="12" class="w-full">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Bottom Studio Telemetry Footer -->
+            <div class="p-3 bg-studio-950 border-t border-studio-700/80 text-[11px] text-slate-400 flex items-center justify-between font-mono">
+                <span id="statusTelemetry">READY • NO TRACK LOADED</span>
+                <span class="text-purple-400">HTML5 CANVAS ENGINE</span>
+            </div>
+        </aside>
+    </main>
+
     <script>
-        // FUTURE COMPLEX CODE OR AI API CALLS FOR VIDEOS GO HERE
-        console.log("Video sub-application script loaded cleanly.");
+        /**
+         * Video Sequencing Studio - Full Browser-Based Video Editor & Region Masking Engine
+         */
+        const sourceVideo = document.getElementById('sourceVideo');
+        const editorCanvas = document.getElementById('editorCanvas');
+        const ctx = editorCanvas.getContext('2d', { willReadFrequently: true });
+
+        // Offscreen helper canvas for localized blur / pixelation / smart edge patch
+        const helperCanvas = document.createElement('canvas');
+        const helperCtx = helperCanvas.getContext('2d');
+
+        // UI Elements
+        const dropZone = document.getElementById('dropZone');
+        const canvasWrapper = document.getElementById('canvasWrapper');
+        const videoUpload = document.getElementById('videoUpload');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const playPauseIcon = document.getElementById('playPauseIcon');
+        const seekBar = document.getElementById('seekBar');
+        const currentTimeDisplay = document.getElementById('currentTimeDisplay');
+        const durationDisplay = document.getElementById('durationDisplay');
+        const resolutionBadge = document.getElementById('resolutionBadge');
+        const statusTelemetry = document.getElementById('statusTelemetry');
+
+        // Trim Controls
+        const trimStartSlider = document.getElementById('trimStartSlider');
+        const trimEndSlider = document.getElementById('trimEndSlider');
+        const trimStartLabel = document.getElementById('trimStartLabel');
+        const trimEndLabel = document.getElementById('trimEndLabel');
+        const setInCurrentBtn = document.getElementById('setInCurrentBtn');
+        const setOutCurrentBtn = document.getElementById('setOutCurrentBtn');
+        const restartTrimBtn = document.getElementById('restartTrimBtn');
+        const stepBackBtn = document.getElementById('stepBackBtn');
+        const stepForwardBtn = document.getElementById('stepForwardBtn');
+        const loopToggle = document.getElementById('loopToggle');
+
+        // Audio & Speed Controls
+        const volumeSlider = document.getElementById('volumeSlider');
+        const muteBtn = document.getElementById('muteBtn');
+        const volumeIcon = document.getElementById('volumeIcon');
+        const playbackSpeed = document.getElementById('playbackSpeed');
+        const exportFps = document.getElementById('exportFps');
+
+        // Export & Snapshot Buttons
+        const snapshotBtn = document.getElementById('snapshotBtn');
+        const exportVideoBtn = document.getElementById('exportVideoBtn');
+        const exportBtnText = document.getElementById('exportBtnText');
+        const recIndicator = document.getElementById('recIndicator');
+        const exportIcon = document.getElementById('exportIcon');
+        const recordingBadge = document.getElementById('recordingBadge');
+
+        // Editor State Object
+        const state = {
+            isLoaded: false,
+            isDemoMode: false,
+            demoTime: 0,
+            duration: 0,
+            trimStart: 0,
+            trimEnd: 0,
+            isRecording: false,
+            mediaRecorder: null,
+            recordedChunks: [],
+            filters: {
+                brightness: 100,
+                contrast: 100,
+                saturation: 100,
+                grayscale: 0,
+                sepia: 0
+            },
+            mask: {
+                enabled: false,
+                mode: 'delogo', // 'delogo', 'blur', 'pixelate'
+                x: 74,          // Percentage (0-100)
+                y: 82,          // Percentage (0-100)
+                w: 22,          // Percentage (2-100)
+                h: 12,          // Percentage (2-100)
+                intensity: 18,
+                showGuide: true,
+                isDragging: false,
+                dragStartX: 0,
+                dragStartY: 0
+            },
+            textOverlay: {
+                enabled: false,
+                text: 'SEQUENCING STUDIO PRO',
+                color: '#ffffff',
+                bgStyle: 'semi',
+                size: 36,
+                x: 50,
+                y: 12
+            }
+        };
+
+        // Toast Notification Helper (never uses alert)
+        let toastTimeout = null;
+        function showNotification(message, iconClass = 'fa-circle-info text-purple-400') {
+            const banner = document.getElementById('toastBanner');
+            const msgEl = document.getElementById('toastMessage');
+            const iconEl = document.getElementById('toastIcon');
+            msgEl.textContent = message;
+            iconEl.className = `fa-solid ${iconClass} text-lg`;
+            banner.classList.remove('hidden', 'translate-y-2', 'opacity-0');
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                banner.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => banner.classList.add('hidden'), 300);
+            }, 3400);
+        }
+
+        // Format seconds into MM:SS.d
+        function formatTimecode(seconds) {
+            if (!isFinite(seconds) || seconds < 0) return '00:00.0';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            const tenths = Math.floor((seconds % 1) * 10);
+            return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}.${tenths}`;
+        }
+
+        // Tab Switching Logic
+        document.querySelectorAll('.inspector-tab').forEach(tabBtn => {
+            tabBtn.addEventListener('click', () => {
+                document.querySelectorAll('.inspector-tab').forEach(b => {
+                    b.classList.remove('bg-purple-600', 'text-white', 'shadow');
+                    b.classList.add('text-slate-400');
+                });
+                tabBtn.classList.add('bg-purple-600', 'text-white', 'shadow');
+                tabBtn.classList.remove('text-slate-400');
+
+                const targetId = tabBtn.getAttribute('data-tab');
+                document.querySelectorAll('.tab-panel').forEach(panel => {
+                    panel.classList.toggle('hidden', panel.id !== targetId);
+                });
+            });
+        });
+
+        // File Upload & Drag-and-Drop Handlers
+        videoUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) loadVideoFile(file);
+        });
+
+        ['dragenter', 'dragover'].forEach(evtName => {
+            window.addEventListener(evtName, (e) => {
+                e.preventDefault();
+                dropZone.classList.add('border-purple-500', 'scale-[1.01]');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(evtName => {
+            window.addEventListener(evtName, (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('border-purple-500', 'scale-[1.01]');
+            });
+        });
+
+        window.addEventListener('drop', (e) => {
+            const files = e.dataTransfer?.files;
+            if (files && files.length > 0) {
+                const file = files[0];
+                if (file.type.startsWith('video/')) {
+                    loadVideoFile(file);
+                } else {
+                    showNotification('Please drop a valid video file (.mp4, .webm, .mov).', 'fa-triangle-exclamation text-amber-400');
+                }
+            }
+        });
+
+        function loadVideoFile(file) {
+            state.isDemoMode = false;
+            const fileURL = URL.createObjectURL(file);
+            sourceVideo.src = fileURL;
+            sourceVideo.load();
+            statusTelemetry.textContent = `LOADING: ${file.name.toUpperCase()}`;
+            showNotification(`Imported track: ${file.name}`, 'fa-check-circle text-emerald-400');
+        }
+
+        sourceVideo.addEventListener('loadedmetadata', () => {
+            state.isLoaded = true;
+            state.isDemoMode = false;
+            state.duration = sourceVideo.duration || 10;
+            state.trimStart = 0;
+            state.trimEnd = state.duration;
+
+            editorCanvas.width = sourceVideo.videoWidth || 1280;
+            editorCanvas.height = sourceVideo.videoHeight || 720;
+            resolutionBadge.textContent = `${editorCanvas.width}x${editorCanvas.height}`;
+
+            enableTransportControls();
+            updateTrimUI();
+            sourceVideo.currentTime = 0;
+            statusTelemetry.textContent = `TRACK READY • ${editorCanvas.width}x${editorCanvas.height}`;
+        });
+
+        // Procedural Demo Track Generator (Allows instant testing without local video files)
+        function startProceduralDemoStream() {
+            sourceVideo.pause();
+            sourceVideo.removeAttribute('src');
+            state.isLoaded = true;
+            state.isDemoMode = true;
+            state.demoPlaying = true;
+            state.demoTime = 0;
+            state.duration = 15.0;
+            state.trimStart = 0;
+            state.trimEnd = 15.0;
+
+            editorCanvas.width = 1280;
+            editorCanvas.height = 720;
+            resolutionBadge.textContent = '1280x720 (SYNTH STREAM)';
+
+            // Enable Region Mask automatically on the demo badge in the bottom-right corner so the user can see it in action
+            state.mask.enabled = true;
+            document.getElementById('maskEnableToggle').checked = true;
+            document.getElementById('maskActiveBadge').classList.remove('hidden');
+            applyMaskPreset('bottom-right');
+
+            enableTransportControls();
+            updateTrimUI();
+            updatePlayPauseButton(true);
+            statusTelemetry.textContent = 'DEMO STREAM ACTIVE • MASKING ENABLED';
+            showNotification('Demo sequence loaded! Toggle "Region Blur & Overlay Mask" to compare before/after.', 'fa-wand-magic-sparkles text-cyan-400');
+        }
+
+        document.getElementById('loadDemoBtn').addEventListener('click', startProceduralDemoStream);
+        document.getElementById('dropZoneDemoBtn').addEventListener('click', startProceduralDemoStream);
+
+        function enableTransportControls() {
+            dropZone.classList.add('hidden');
+            canvasWrapper.classList.remove('hidden');
+            playPauseBtn.disabled = false;
+            seekBar.disabled = false;
+            trimStartSlider.disabled = false;
+            trimEndSlider.disabled = false;
+            setInCurrentBtn.disabled = false;
+            setOutCurrentBtn.disabled = false;
+            restartTrimBtn.disabled = false;
+            stepBackBtn.disabled = false;
+            stepForwardBtn.disabled = false;
+            snapshotBtn.disabled = false;
+            exportVideoBtn.disabled = false;
+        }
+
+        function updateTrimUI() {
+            seekBar.max = state.duration;
+            trimStartSlider.max = state.duration;
+            trimEndSlider.max = state.duration;
+            trimStartSlider.value = state.trimStart;
+            trimEndSlider.value = state.trimEnd;
+            trimStartLabel.textContent = `${state.trimStart.toFixed(1)}s`;
+            trimEndLabel.textContent = `${state.trimEnd.toFixed(1)}s`;
+            durationDisplay.textContent = formatTimecode(state.duration);
+        }
+
+        // Play / Pause Controls
+        function togglePlayPause() {
+            if (!state.isLoaded) return;
+            if (state.isDemoMode) {
+                state.demoPlaying = !state.demoPlaying;
+                updatePlayPauseButton(state.demoPlaying);
+            } else {
+                if (sourceVideo.paused || sourceVideo.ended) {
+                    if (sourceVideo.currentTime >= state.trimEnd || sourceVideo.currentTime < state.trimStart) {
+                        sourceVideo.currentTime = state.trimStart;
+                    }
+                    sourceVideo.play();
+                    updatePlayPauseButton(true);
+                } else {
+                    sourceVideo.pause();
+                    updatePlayPauseButton(false);
+                }
+            }
+        }
+
+        function updatePlayPauseButton(isPlaying) {
+            playPauseIcon.className = isPlaying ? 'fa-solid fa-pause' : 'fa-solid fa-play';
+        }
+
+        playPauseBtn.addEventListener('click', togglePlayPause);
+
+        // Spacebar shortcut for play/pause when not typing in text input
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && document.activeElement.tagName !== 'INPUT') {
+                e.preventDefault();
+                togglePlayPause();
+            }
+        });
+
+        // Seek & Frame Stepping
+        seekBar.addEventListener('input', () => {
+            const target = parseFloat(seekBar.value);
+            if (state.isDemoMode) {
+                state.demoTime = target;
+            } else {
+                sourceVideo.currentTime = target;
+            }
+            currentTimeDisplay.textContent = formatTimecode(target);
+        });
+
+        restartTrimBtn.addEventListener('click', () => {
+            if (state.isDemoMode) state.demoTime = state.trimStart;
+            else sourceVideo.currentTime = state.trimStart;
+        });
+
+        stepBackBtn.addEventListener('click', () => {
+            const step = 1 / parseInt(exportFps.value || 30, 10);
+            if (state.isDemoMode) {
+                state.demoPlaying = false;
+                state.demoTime = Math.max(state.trimStart, state.demoTime - step);
+            } else {
+                sourceVideo.pause();
+                sourceVideo.currentTime = Math.max(state.trimStart, sourceVideo.currentTime - step);
+            }
+            updatePlayPauseButton(false);
+        });
+
+        stepForwardBtn.addEventListener('click', () => {
+            const step = 1 / parseInt(exportFps.value || 30, 10);
+            if (state.isDemoMode) {
+                state.demoPlaying = false;
+                state.demoTime = Math.min(state.trimEnd, state.demoTime + step);
+            } else {
+                sourceVideo.pause();
+                sourceVideo.currentTime = Math.min(state.trimEnd, sourceVideo.currentTime + step);
+            }
+            updatePlayPauseButton(false);
+        });
+
+        // Trim Sliders
+        trimStartSlider.addEventListener('input', () => {
+            let val = parseFloat(trimStartSlider.value);
+            if (val >= state.trimEnd - 0.2) {
+                val = Math.max(0, state.trimEnd - 0.2);
+                trimStartSlider.value = val;
+            }
+            state.trimStart = val;
+            trimStartLabel.textContent = `${val.toFixed(1)}s`;
+        });
+
+        trimEndSlider.addEventListener('input', () => {
+            let val = parseFloat(trimEndSlider.value);
+            if (val <= state.trimStart + 0.2) {
+                val = Math.min(state.duration, state.trimStart + 0.2);
+                trimEndSlider.value = val;
+            }
+            state.trimEnd = val;
+            trimEndLabel.textContent = `${val.toFixed(1)}s`;
+        });
+
+        setInCurrentBtn.addEventListener('click', () => {
+            const cur = state.isDemoMode ? state.demoTime : sourceVideo.currentTime;
+            if (cur < state.trimEnd - 0.2) {
+                state.trimStart = cur;
+                trimStartSlider.value = cur;
+                trimStartLabel.textContent = `${cur.toFixed(1)}s`;
+                showNotification(`In-Point set to ${cur.toFixed(2)}s`);
+            }
+        });
+
+        setOutCurrentBtn.addEventListener('click', () => {
+            const cur = state.isDemoMode ? state.demoTime : sourceVideo.currentTime;
+            if (cur > state.trimStart + 0.2) {
+                state.trimEnd = cur;
+                trimEndSlider.value = cur;
+                trimEndLabel.textContent = `${cur.toFixed(1)}s`;
+                showNotification(`Out-Point set to ${cur.toFixed(2)}s`);
+            }
+        });
+
+        // Volume & Speed Controls
+        volumeSlider.addEventListener('input', () => {
+            sourceVideo.volume = parseFloat(volumeSlider.value);
+            sourceVideo.muted = sourceVideo.volume === 0;
+            updateVolumeIcon();
+        });
+
+        muteBtn.addEventListener('click', () => {
+            sourceVideo.muted = !sourceVideo.muted;
+            updateVolumeIcon();
+        });
+
+        function updateVolumeIcon() {
+            if (sourceVideo.muted || sourceVideo.volume === 0) {
+                volumeIcon.className = 'fa-solid fa-volume-xmark text-rose-400';
+            } else if (sourceVideo.volume < 0.5) {
+                volumeIcon.className = 'fa-solid fa-volume-low';
+            } else {
+                volumeIcon.className = 'fa-solid fa-volume-high';
+            }
+        }
+
+        playbackSpeed.addEventListener('change', () => {
+            sourceVideo.playbackRate = parseFloat(playbackSpeed.value);
+            showNotification(`Playback speed set to ${playbackSpeed.value}x`);
+        });
+
+        // Color Grading Filter Controls
+        const filterMap = [
+            { id: 'brightnessSlider', label: 'brightnessVal', key: 'brightness' },
+            { id: 'contrastSlider', label: 'contrastVal', key: 'contrast' },
+            { id: 'saturationSlider', label: 'saturationVal', key: 'saturation' },
+            { id: 'grayscaleSlider', label: 'grayscaleVal', key: 'grayscale' },
+            { id: 'sepiaSlider', label: 'sepiaVal', key: 'sepia' }
+        ];
+
+        filterMap.forEach(item => {
+            const slider = document.getElementById(item.id);
+            const valLabel = document.getElementById(item.label);
+            slider.addEventListener('input', () => {
+                state.filters[item.key] = parseInt(slider.value, 10);
+                valLabel.textContent = `${slider.value}%`;
+            });
+        });
+
+        document.getElementById('resetFiltersBtn').addEventListener('click', () => {
+            state.filters = { brightness: 100, contrast: 100, saturation: 100, grayscale: 0, sepia: 0 };
+            filterMap.forEach(item => {
+                document.getElementById(item.id).value = state.filters[item.key];
+                document.getElementById(item.label).textContent = `${state.filters[item.key]}%`;
+            });
+            showNotification('Color grading filters reset.');
+        });
+
+        window.applyColorPreset = function(preset) {
+            if (preset === 'vivid') {
+                state.filters = { brightness: 105, contrast: 120, saturation: 145, grayscale: 0, sepia: 0 };
+            } else if (preset === 'noir') {
+                state.filters = { brightness: 100, contrast: 145, saturation: 0, grayscale: 100, sepia: 0 };
+            } else if (preset === 'vintage') {
+                state.filters = { brightness: 102, contrast: 95, saturation: 85, grayscale: 0, sepia: 55 };
+            } else if (preset === 'matte') {
+                state.filters = { brightness: 96, contrast: 155, saturation: 110, grayscale: 0, sepia: 0 };
+            }
+            filterMap.forEach(item => {
+                document.getElementById(item.id).value = state.filters[item.key];
+                document.getElementById(item.label).textContent = `${state.filters[item.key]}%`;
+            });
+            showNotification(`Applied "${preset.toUpperCase()}" color grade preset.`);
+        };
+
+        // Region Blur & Overlay Masking Controls
+        const maskEnableToggle = document.getElementById('maskEnableToggle');
+        const showMaskGuideToggle = document.getElementById('showMaskGuideToggle');
+        const maskActiveBadge = document.getElementById('maskActiveBadge');
+
+        maskEnableToggle.addEventListener('change', () => {
+            state.mask.enabled = maskEnableToggle.checked;
+            maskActiveBadge.classList.toggle('hidden', !state.mask.enabled);
+        });
+
+        showMaskGuideToggle.addEventListener('change', () => {
+            state.mask.showGuide = showMaskGuideToggle.checked;
+        });
+
+        document.querySelectorAll('.mask-mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mask-mode-btn').forEach(b => {
+                    b.className = 'mask-mode-btn py-2 px-2.5 rounded-lg border border-studio-700 bg-studio-800 text-slate-300 hover:bg-studio-700 text-xs font-semibold text-center transition';
+                });
+                btn.className = 'mask-mode-btn py-2 px-2.5 rounded-lg border border-cyan-500 bg-cyan-500/20 text-cyan-200 text-xs font-semibold text-center transition';
+                state.mask.mode = btn.getAttribute('data-mask-mode');
+            });
+        });
+
+        const maskSliders = [
+            { id: 'maskXSlider', label: 'maskXVal', key: 'x', unit: '%' },
+            { id: 'maskYSlider', label: 'maskYVal', key: 'y', unit: '%' },
+            { id: 'maskWSlider', label: 'maskWVal', key: 'w', unit: '%' },
+            { id: 'maskHSlider', label: 'maskHVal', key: 'h', unit: '%' },
+            { id: 'maskIntensitySlider', label: 'maskIntensityVal', key: 'intensity', unit: 'px' }
+        ];
+
+        maskSliders.forEach(item => {
+            const slider = document.getElementById(item.id);
+            const label = document.getElementById(item.label);
+            slider.addEventListener('input', () => {
+                state.mask[item.key] = parseFloat(slider.value);
+                label.textContent = `${slider.value}${item.unit}`;
+                if (!state.mask.enabled) {
+                    state.mask.enabled = true;
+                    maskEnableToggle.checked = true;
+                    maskActiveBadge.classList.remove('hidden');
+                }
+            });
+        });
+
+        function syncMaskSliders() {
+            maskSliders.forEach(item => {
+                const val = Math.round(state.mask[item.key] * 2) / 2;
+                document.getElementById(item.id).value = val;
+                document.getElementById(item.label).textContent = `${val}${item.unit}`;
+            });
+        }
+
+        window.applyMaskPreset = function(corner) {
+            state.mask.enabled = true;
+            maskEnableToggle.checked = true;
+            maskActiveBadge.classList.remove('hidden');
+            state.mask.w = 24;
+            state.mask.h = 12;
+
+            if (corner === 'bottom-right') {
+                state.mask.x = 73; state.mask.y = 84;
+            } else if (corner === 'bottom-left') {
+                state.mask.x = 3; state.mask.y = 84;
+            } else if (corner === 'top-right') {
+                state.mask.x = 73; state.mask.y = 4;
+            } else if (corner === 'top-left') {
+                state.mask.x = 3; state.mask.y = 4;
+            }
+            syncMaskSliders();
+        };
+
+        // Interactive Mouse & Touch Bounding Box Selection on Canvas
+        function getCanvasRelativeCoords(e) {
+            const rect = editorCanvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            const pctX = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
+            const pctY = Math.max(0, Math.min(100, ((clientY - rect.top) / rect.height) * 100));
+            return { pctX, pctY };
+        }
+
+        function startCanvasMaskDrag(e) {
+            if (!state.isLoaded || !state.mask.enabled) return;
+            e.preventDefault();
+            const { pctX, pctY } = getCanvasRelativeCoords(e);
+            state.mask.isDragging = true;
+            state.mask.dragStartX = pctX;
+            state.mask.dragStartY = pctY;
+            state.mask.x = pctX;
+            state.mask.y = pctY;
+            state.mask.w = 2;
+            state.mask.h = 2;
+            syncMaskSliders();
+        }
+
+        function moveCanvasMaskDrag(e) {
+            if (!state.mask.isDragging) return;
+            e.preventDefault();
+            const { pctX, pctY } = getCanvasRelativeCoords(e);
+            const minX = Math.min(state.mask.dragStartX, pctX);
+            const minY = Math.min(state.mask.dragStartY, pctY);
+            const width = Math.max(3, Math.abs(pctX - state.mask.dragStartX));
+            const height = Math.max(3, Math.abs(pctY - state.mask.dragStartY));
+
+            state.mask.x = minX;
+            state.mask.y = minY;
+            state.mask.w = Math.min(100 - minX, width);
+            state.mask.h = Math.min(100 - minY, height);
+            syncMaskSliders();
+        }
+
+        function endCanvasMaskDrag() {
+            state.mask.isDragging = false;
+        }
+
+        editorCanvas.addEventListener('mousedown', startCanvasMaskDrag);
+        window.addEventListener('mousemove', moveCanvasMaskDrag);
+        window.addEventListener('mouseup', endCanvasMaskDrag);
+
+        editorCanvas.addEventListener('touchstart', startCanvasMaskDrag, { passive: false });
+        window.addEventListener('touchmove', moveCanvasMaskDrag, { passive: false });
+        window.addEventListener('touchend', endCanvasMaskDrag);
+
+        // Text Overlay Controls
+        document.getElementById('textEnableToggle').addEventListener('change', (e) => {
+            state.textOverlay.enabled = e.target.checked;
+        });
+        document.getElementById('overlayTextInput').addEventListener('input', (e) => {
+            state.textOverlay.text = e.target.value;
+            if (!state.textOverlay.enabled && e.target.value.trim().length > 0) {
+                state.textOverlay.enabled = true;
+                document.getElementById('textEnableToggle').checked = true;
+            }
+        });
+        document.getElementById('overlayTextColor').addEventListener('input', (e) => {
+            state.textOverlay.color = e.target.value;
+        });
+        document.getElementById('overlayBgStyle').addEventListener('change', (e) => {
+            state.textOverlay.bgStyle = e.target.value;
+        });
+        document.getElementById('textSizeSlider').addEventListener('input', (e) => {
+            state.textOverlay.size = parseInt(e.target.value, 10);
+            document.getElementById('textSizeVal').textContent = `${e.target.value}px`;
+        });
+        document.getElementById('textXSlider').addEventListener('input', (e) => {
+            state.textOverlay.x = parseInt(e.target.value, 10);
+            document.getElementById('textXVal').textContent = `${e.target.value}%`;
+        });
+        document.getElementById('textYSlider').addEventListener('input', (e) => {
+            state.textOverlay.y = parseInt(e.target.value, 10);
+            document.getElementById('textYVal').textContent = `${e.target.value}%`;
+        });
+
+        // Render Procedural Demo Frame (when user clicks Load Demo Stream)
+        function drawProceduralDemoFrame(t, width, height) {
+            // Animated cyber-studio gradient background
+            const grad = ctx.createLinearGradient(0, 0, width, height);
+            grad.addColorStop(0, `hsl(${(t * 25) % 360}, 65%, 18%)`);
+            grad.addColorStop(0.5, `hsl(${(t * 25 + 60) % 360}, 60%, 14%)`);
+            grad.addColorStop(1, `hsl(${(t * 25 + 140) % 360}, 70%, 22%)`);
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, width, height);
+
+            // Moving perspective grid lines
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+            ctx.lineWidth = 2;
+            const spacing = 80;
+            const offset = (t * 60) % spacing;
+            for (let x = offset; x < width; x += spacing) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
+            }
+            for (let y = offset; y < height; y += spacing) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
+            }
+
+            // Animated geometric studio elements
+            const cx = width * 0.5 + Math.cos(t * 1.4) * 220;
+            const cy = height * 0.48 + Math.sin(t * 2.1) * 90;
+            const rad = 85 + Math.sin(t * 3) * 15;
+
+            const orbGrad = ctx.createRadialGradient(cx - 20, cy - 20, 10, cx, cy, rad);
+            orbGrad.addColorStop(0, '#c084fc');
+            orbGrad.addColorStop(1, '#4f46e5');
+            ctx.fillStyle = orbGrad;
+            ctx.beginPath();
+            ctx.arc(cx, cy, rad, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Studio Timecode clapper information
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+            ctx.font = 'bold 34px Inter, sans-serif';
+            ctx.fillText('SYNTHETIC STUDIO FEED // 720P', 60, 85);
+            ctx.font = '500 20px JetBrains Mono, monospace';
+            ctx.fillStyle = 'rgba(168, 85, 247, 0.95)';
+            ctx.fillText(`TIMECODE: ${formatTimecode(t)}  |  SPEED: ${playbackSpeed.value}x`, 60, 120);
+
+            // Simulated Corner Overlay Badge (Placed in Bottom Right so user can test the Region Mask tool)
+            const wmX = width * 0.74;
+            const wmY = height * 0.85;
+            const wmW = width * 0.22;
+            const wmH = height * 0.10;
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.22)';
+            ctx.fillRect(wmX, wmY, wmW, wmH);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+            ctx.strokeRect(wmX, wmY, wmW, wmH);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+            ctx.font = 'bold 22px JetBrains Mono, monospace';
+            ctx.fillText('SAMPLE BADGE', wmX + 24, wmY + 44);
+        }
+
+        // Apply Localized Region Blur / Smart Inpaint / Pixelation Mask
+        function renderRegionMask(width, height) {
+            if (!state.mask.enabled) return;
+
+            const rx = Math.round((state.mask.x / 100) * width);
+            const ry = Math.round((state.mask.y / 100) * height);
+            const rw = Math.max(8, Math.round((state.mask.w / 100) * width));
+            const rh = Math.max(8, Math.round((state.mask.h / 100) * height));
+            const intensity = state.mask.intensity;
+
+            ctx.save();
+            // Create rounded clipping path for smooth blending
+            ctx.beginPath();
+            ctx.rect(rx, ry, rw, rh);
+            ctx.clip();
+
+            if (state.mask.mode === 'blur') {
+                // High-grade localized Gaussian blur
+                ctx.filter = `blur(${intensity}px)`;
+                ctx.drawImage(editorCanvas, rx - 20, ry - 20, rw + 40, rh + 40, rx - 20, ry - 20, rw + 40, rh + 40);
+            } else if (state.mask.mode === 'pixelate') {
+                // Downsample region into helperCanvas and draw back without smoothing
+                const blockSize = Math.max(4, Math.floor(intensity * 0.8));
+                const sw = Math.max(2, Math.floor(rw / blockSize));
+                const sh = Math.max(2, Math.floor(rh / blockSize));
+                helperCanvas.width = sw;
+                helperCanvas.height = sh;
+                helperCtx.imageSmoothingEnabled = true;
+                helperCtx.drawImage(editorCanvas, rx, ry, rw, rh, 0, 0, sw, sh);
+
+                ctx.imageSmoothingEnabled = false;
+                ctx.drawImage(helperCanvas, 0, 0, sw, sh, rx, ry, rw, rh);
+                ctx.imageSmoothingEnabled = true;
+            } else {
+                // 'delogo' Smart Inpaint: Multi-directional border cloning + heavy feather blur to smoothly replace badges
+                helperCanvas.width = rw;
+                helperCanvas.height = rh;
+
+                // Sample surrounding top/bottom/left/right border strips and stretch across mask region
+                const pad = Math.min(14, Math.max(4, Math.floor(intensity / 2)));
+                const topSampleY = Math.max(0, ry - pad);
+                const leftSampleX = Math.max(0, rx - pad);
+
+                helperCtx.globalAlpha = 0.6;
+                helperCtx.drawImage(editorCanvas, rx, topSampleY, rw, pad, 0, 0, rw, rh);
+                helperCtx.globalAlpha = 0.6;
+                helperCtx.drawImage(editorCanvas, leftSampleX, ry, pad, rh, 0, 0, rw, rh);
+                helperCtx.globalAlpha = 1.0;
+
+                ctx.filter = `blur(${Math.max(8, intensity)}px)`;
+                ctx.drawImage(helperCanvas, 0, 0, rw, rh, rx - 8, ry - 8, rw + 16, rh + 16);
+            }
+            ctx.restore();
+
+            // Draw interactive guide dashed border (hidden automatically during video export recording)
+            if (state.mask.showGuide && !state.isRecording) {
+                ctx.save();
+                ctx.strokeStyle = '#06b6d4';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([6, 4]);
+                ctx.strokeRect(rx, ry, rw, rh);
+
+                // Corner resize handles visual cue
+                ctx.fillStyle = '#06b6d4';
+                ctx.fillRect(rx - 4, ry - 4, 8, 8);
+                ctx.fillRect(rx + rw - 4, ry + rh - 4, 8, 8);
+                ctx.restore();
+            }
+        }
+
+        // Render Dynamic Text Overlay
+        function renderTextOverlay(width, height) {
+            if (!state.textOverlay.enabled || !state.textOverlay.text.trim()) return;
+
+            ctx.save();
+            const fontSize = Math.round((state.textOverlay.size / 720) * height);
+            ctx.font = `bold ${fontSize}px Inter, system-ui, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            const tx = (state.textOverlay.x / 100) * width;
+            const ty = (state.textOverlay.y / 100) * height;
+            const textMetrics = ctx.measureText(state.textOverlay.text);
+            const padX = fontSize * 0.6;
+            const padY = fontSize * 0.45;
+            const boxW = textMetrics.width + padX * 2;
+            const boxH = fontSize + padY * 1.4;
+
+            if (state.textOverlay.bgStyle === 'semi' || state.textOverlay.bgStyle === 'solid') {
+                ctx.fillStyle = state.textOverlay.bgStyle === 'solid' ? '#090a0f' : 'rgba(9, 10, 15, 0.68)';
+                ctx.beginPath();
+                ctx.roundRect(tx - boxW / 2, ty - boxH / 2, boxW, boxH, 10);
+                ctx.fill();
+            } else {
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+                ctx.shadowBlur = 10;
+                ctx.shadowOffsetX = 2;
+                ctx.shadowOffsetY = 2;
+            }
+
+            ctx.fillStyle = state.textOverlay.color;
+            ctx.fillText(state.textOverlay.text, tx, ty);
+            ctx.restore();
+        }
+
+        // Main Real-Time Compositing Loop
+        let lastFrameTime = performance.now();
+        function renderLoop(now) {
+            const dt = (now - lastFrameTime) / 1000;
+            lastFrameTime = now;
+
+            if (state.isLoaded) {
+                const width = editorCanvas.width;
+                const height = editorCanvas.height;
+
+                // Update timecode & enforce Trim In/Out points
+                let curTime = 0;
+                if (state.isDemoMode) {
+                    if (state.demoPlaying) {
+                        state.demoTime += dt * parseFloat(playbackSpeed.value || 1);
+                        if (state.demoTime >= state.trimEnd) {
+                            if (state.isRecording) {
+                                stopExportRecording();
+                            } else if (loopToggle.checked) {
+                                state.demoTime = state.trimStart;
+                            } else {
+                                state.demoTime = state.trimEnd;
+                                state.demoPlaying = false;
+                                updatePlayPauseButton(false);
+                            }
+                        }
+                    }
+                    curTime = state.demoTime;
+                } else {
+                    curTime = sourceVideo.currentTime;
+                    if (!sourceVideo.paused && curTime >= state.trimEnd) {
+                        if (state.isRecording) {
+                            stopExportRecording();
+                        } else if (loopToggle.checked) {
+                            sourceVideo.currentTime = state.trimStart;
+                        } else {
+                            sourceVideo.pause();
+                            sourceVideo.currentTime = state.trimEnd;
+                            updatePlayPauseButton(false);
+                        }
+                    }
+                }
+
+                seekBar.value = curTime;
+                currentTimeDisplay.textContent = formatTimecode(curTime);
+
+                // Clear & apply CSS-grade filter chain to Canvas
+                ctx.clearRect(0, 0, width, height);
+                ctx.save();
+                const f = state.filters;
+                ctx.filter = `brightness(${f.brightness}%) contrast(${f.contrast}%) saturate(${f.saturation}%) grayscale(${f.grayscale}%) sepia(${f.sepia}%)`;
+
+                if (state.isDemoMode) {
+                    drawProceduralDemoFrame(curTime, width, height);
+                } else if (sourceVideo.readyState >= 2) {
+                    ctx.drawImage(sourceVideo, 0, 0, width, height);
+                }
+                ctx.restore();
+
+                // Apply Region Blur / Overlay Mask
+                renderRegionMask(width, height);
+
+                // Apply Text Layer
+                renderTextOverlay(width, height);
+            }
+
+            requestAnimationFrame(renderLoop);
+        }
+
+        // Snapshot Frame Capture (PNG Download)
+        snapshotBtn.addEventListener('click', () => {
+            if (!state.isLoaded) return;
+            const prevGuide = state.mask.showGuide;
+            state.mask.showGuide = false; // Hide guide border for clean frame capture
+
+            setTimeout(() => {
+                const dataUrl = editorCanvas.toDataURL('image/png');
+                state.mask.showGuide = prevGuide;
+                const a = document.createElement('a');
+                a.href = dataUrl;
+                a.download = `studio-frame-${Date.now()}.png`;
+                a.click();
+                showNotification('Clean PNG frame captured and downloaded!', 'fa-camera text-cyan-400');
+            }, 40);
+        });
+
+        // MediaRecorder Video Export Pipeline
+        exportVideoBtn.addEventListener('click', () => {
+            if (!state.isLoaded) return;
+            if (state.isRecording) {
+                stopExportRecording();
+            } else {
+                startExportRecording();
+            }
+        });
+
+        function startExportRecording() {
+            try {
+                const targetFps = parseInt(exportFps.value || 30, 10);
+                const canvasStream = editorCanvas.captureStream(targetFps);
+
+                let mimeType = 'video/webm;codecs=vp9';
+                if (!MediaRecorder.isTypeSupported(mimeType)) {
+                    mimeType = 'video/webm;codecs=vp8';
+                }
+                if (!MediaRecorder.isTypeSupported(mimeType)) {
+                    mimeType = 'video/webm';
+                }
+
+                state.recordedChunks = [];
+                state.mediaRecorder = new MediaRecorder(canvasStream, {
+                    mimeType,
+                    videoBitsPerSecond: 6000000 // 6 Mbps high clarity
+                });
+
+                state.mediaRecorder.ondataavailable = (e) => {
+                    if (e.data && e.data.size > 0) {
+                        state.recordedChunks.push(e.data);
+                    }
+                };
+
+                state.mediaRecorder.onstop = () => {
+                    const blob = new Blob(state.recordedChunks, { type: mimeType });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `sequenced-track-${Date.now()}.webm`;
+                    a.click();
+                    showNotification('Encoded video track exported successfully!', 'fa-check-circle text-emerald-400');
+                };
+
+                // Jump to Trim Start and begin playback + recording
+                state.isRecording = true;
+                if (state.isDemoMode) {
+                    state.demoTime = state.trimStart;
+                    state.demoPlaying = true;
+                } else {
+                    sourceVideo.currentTime = state.trimStart;
+                    sourceVideo.play();
+                }
+                updatePlayPauseButton(true);
+                state.mediaRecorder.start(100);
+
+                // Update UI to reflect active encoding
+                recIndicator.classList.remove('hidden');
+                exportIcon.classList.add('hidden');
+                recordingBadge.classList.remove('hidden');
+                exportBtnText.textContent = 'Stop & Save Track';
+                statusTelemetry.textContent = `ENCODING WEBM @ ${targetFps}FPS...`;
+                showNotification('Recording trimmed sequence in real-time. Click "Stop & Save" anytime or wait for Out-Point.', 'fa-circle-dot text-rose-400');
+            } catch (err) {
+                console.error(err);
+                showNotification('MediaRecorder export is not supported in this browser context.', 'fa-triangle-exclamation text-amber-400');
+            }
+        }
+
+        function stopExportRecording() {
+            if (!state.isRecording) return;
+            state.isRecording = false;
+            if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') {
+                state.mediaRecorder.stop();
+            }
+            if (state.isDemoMode) {
+                state.demoPlaying = false;
+            } else {
+                sourceVideo.pause();
+            }
+            updatePlayPauseButton(false);
+
+            recIndicator.classList.add('hidden');
+            exportIcon.classList.remove('hidden');
+            recordingBadge.classList.add('hidden');
+            exportBtnText.textContent = 'Export Sequence (.webm)';
+            statusTelemetry.textContent = 'EXPORT COMPLETE • READY';
+        }
+
+        // Start animation loop on window load
+        window.onload = function () {
+            requestAnimationFrame(renderLoop);
+        };
     </script>
 </body>
 </html>
