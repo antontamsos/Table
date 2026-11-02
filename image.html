@@ -111,8 +111,14 @@
             justify-content: space-between;
             align-items: center;
             color: #bfdbfe;
+            gap: 8px;
         }
         .target-banner strong { color: #fff; }
+        .target-links {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
 
         .control-card {
             background: var(--panel-bg);
@@ -442,7 +448,10 @@
 
         <div class="target-banner">
             <span>Editing Target: <strong id="activeTargetLabel">Background Layer</strong></span>
-            <span id="deselectLink" style="cursor:pointer; text-decoration:underline; display:none;" onclick="selectObject(null); renderCompositeBoard();">Select BG</span>
+            <div class="target-links">
+                <span id="recenterBgLink" style="cursor:pointer; text-decoration:underline; display:none; color:#93c5fd;" onclick="recenterBackground(true);">Recenter BG</span>
+                <span id="deselectLink" style="cursor:pointer; text-decoration:underline; display:none;" onclick="selectObject(null); renderCompositeBoard();">Select BG</span>
+            </div>
         </div>
 
         <!-- 1. Media Import & Clipboard Paste -->
@@ -576,7 +585,7 @@
     <div class="canvas-container" id="workspaceContainer">
         <div class="floating-status" id="statusBanner">
             <span class="status-dot"></span>
-            <span id="statusText">Right-click or long-press on touch screen to show Paste / Copy menu</span>
+            <span id="statusText">Drag/Resize background or layers; click background to recenter</span>
         </div>
 
         <!-- On-Canvas Floating Action Menu (Shows ONLY on Right-Click or Long-Press) -->
@@ -614,10 +623,18 @@
             return { exposure: 0, light: 0, contrast: 0, saturation: 0, hue: 0, warmth: 0 };
         }
 
-        // Dedicated Background Layer State
+        // Dedicated Background Layer State (now supports drag, 8-handle resize, and rotate like an overlay)
         const bgLayer = {
+            id: 'bg-layer',
+            type: 'background',
             img: null,
             buffer: document.createElement('canvas'),
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            width: canvas.width,
+            height: canvas.height,
+            rotate: 0,
+            opacity: 1,
             blurLevel: 0,
             grading: createDefaultGrading()
         };
@@ -664,13 +681,48 @@
         // Interaction State
         let interaction = {
             mode: 'none', // 'none' | 'drag' | 'resize' | 'rotate' | 'pinch'
+            targetObj: null,
             handle: null,
             startMouse: { x: 0, y: 0 },
             startObj: null,
             startAngle: 0,
             isHorizontalSnap: false,
-            moved: false
+            moved: false,
+            isBgClickCandidate: false
         };
+
+        // Helper: returns the currently transformable object (selected overlay OR background layer if loaded)
+        function getActiveTransformObj() {
+            if (selectedObj) return selectedObj;
+            if (bgLayer.img) return bgLayer;
+            return null;
+        }
+
+        function isBgOffCenter() {
+            if (!bgLayer.img) return false;
+            return (
+                Math.abs(bgLayer.x - canvas.width / 2) > 0.5 ||
+                Math.abs(bgLayer.y - canvas.height / 2) > 0.5 ||
+                Math.abs(bgLayer.rotate % 360) > 0.5
+            );
+        }
+
+        function recenterBackground(saveHist = true) {
+            if (!bgLayer.img) return false;
+            const changed = isBgOffCenter();
+            bgLayer.x = canvas.width / 2;
+            bgLayer.y = canvas.height / 2;
+            bgLayer.rotate = 0;
+            syncSidebarToActiveTarget();
+            if (changed && saveHist) {
+                saveHistoryState();
+            }
+            renderCompositeBoard();
+            if (changed) {
+                document.getElementById('statusText').textContent = 'Background recentered! Drag to move or use handles to resize.';
+            }
+            return changed;
+        }
 
         // ============================================================================
         // UNDO / REDO HISTORY ENGINE
@@ -702,6 +754,12 @@
                 bg: {
                     img: bgLayer.img,
                     buffer: cloneCanvas(bgLayer.buffer),
+                    x: bgLayer.x,
+                    y: bgLayer.y,
+                    width: bgLayer.width,
+                    height: bgLayer.height,
+                    rotate: bgLayer.rotate,
+                     opacity: bgLayer.opacity ?? 1,
                     blurLevel: bgLayer.blurLevel,
                     grading: { ...bgLayer.grading }
                 },
@@ -721,6 +779,7 @@
                 historyIndex++;
             }
             updateHistoryButtons();
+            syncSidebarToActiveTarget();
         }
 
         function restoreSnapshot(snap) {
@@ -729,6 +788,12 @@
 
             bgLayer.img = snap.bg.img;
             bgLayer.buffer = cloneCanvas(snap.bg.buffer);
+            bgLayer.x = snap.bg.x ?? canvas.width / 2;
+            bgLayer.y = snap.bg.y ?? canvas.height / 2;
+            bgLayer.width = snap.bg.width ?? canvas.width;
+            bgLayer.height = snap.bg.height ?? canvas.height;
+            bgLayer.rotate = snap.bg.rotate ?? 0;
+            bgLayer.opacity = snap.bg.opacity ?? 1;
             bgLayer.blurLevel = snap.bg.blurLevel;
             bgLayer.grading = { ...snap.bg.grading };
 
@@ -783,6 +848,7 @@
                 longPressTimer = null;
                 if (interaction.mode === 'drag' && !interaction.moved) {
                     interaction.mode = 'none';
+                    interaction.isBgClickCandidate = false;
                 }
                 lastWorkspaceTargetPt = canvasPt;
                 lastContainerScreenPt = screenPt;
@@ -897,12 +963,19 @@
                 bgLayer.img = img;
                 canvas.width = img.width;
                 canvas.height = img.height;
+                bgLayer.x = canvas.width / 2;
+                bgLayer.y = canvas.height / 2;
+                bgLayer.width = canvas.width;
+                bgLayer.height = canvas.height;
+                bgLayer.rotate = 0;
+                bgLayer.opacity = 1;
                 resetBgBuffer();
+                selectObject(null);
                 hideWorkspaceContextBar();
                 saveHistoryState();
                 renderCompositeBoard();
                 URL.revokeObjectURL(url);
-                document.getElementById('statusText').textContent = 'Background image loaded!';
+                document.getElementById('statusText').textContent = 'Background loaded! Drag or resize with handles; click background to recenter.';
             };
             img.src = url;
         }
@@ -949,7 +1022,7 @@
             hideWorkspaceContextBar();
             if (!bgLayer.img && objects.length === 0) {
                 loadAsBackgroundFromBlob(blob);
-                showSmartHint('📋 First copied image set as Background! Paste again to add Overlay layers.');
+                showSmartHint('📋 First copied image set as Background! Drag/resize it freely, or click it to recenter.');
             } else {
                 loadAsOverlayFromBlob(blob, targetPt);
                 showSmartHint('📋 Copied image pasted at your target workspace point!');
@@ -1132,12 +1205,14 @@
         }
 
         function resetBgBuffer() {
-            bgLayer.buffer.width = canvas.width;
-            bgLayer.buffer.height = canvas.height;
+            const w = bgLayer.img ? bgLayer.img.width : canvas.width;
+            const h = bgLayer.img ? bgLayer.img.height : canvas.height;
+            bgLayer.buffer.width = w;
+            bgLayer.buffer.height = h;
             const bCtx = bgLayer.buffer.getContext('2d');
-            bCtx.clearRect(0, 0, bgLayer.buffer.width, bgLayer.buffer.height);
+            bCtx.clearRect(0, 0, w, h);
             if (bgLayer.img) {
-                bCtx.drawImage(bgLayer.img, 0, 0, bgLayer.buffer.width, bgLayer.buffer.height);
+                bCtx.drawImage(bgLayer.img, 0, 0, w, h);
             }
         }
 
@@ -1258,13 +1333,12 @@
         document.getElementById('layerOpacity').addEventListener('input', (e) => {
             const val = parseInt(e.target.value, 10);
             document.getElementById('opacityVal').textContent = val + '%';
-            if (selectedObj) {
-                selectedObj.opacity = val / 100;
-                renderCompositeBoard();
-            }
+            const target = getActiveTarget();
+            target.opacity = val / 100;
+            renderCompositeBoard();
         });
         document.getElementById('layerOpacity').addEventListener('change', () => {
-            if (selectedObj) saveHistoryState();
+            saveHistoryState();
         });
 
         // Layer Management Buttons
@@ -1301,6 +1375,8 @@
 
             const targetLabel = document.getElementById('activeTargetLabel');
             const deselectLink = document.getElementById('deselectLink');
+            const recenterBgLink = document.getElementById('recenterBgLink');
+
             if (!selectedObj) {
                 targetLabel.textContent = 'Background Layer';
                 deselectLink.style.display = 'none';
@@ -1309,6 +1385,8 @@
                 targetLabel.textContent = typeNames[selectedObj.type] || 'Selected Layer';
                 deselectLink.style.display = 'inline';
             }
+
+            recenterBgLink.style.display = isBgOffCenter() ? 'inline' : 'none';
 
             gradingMap.forEach(item => {
                 const val = g[item.key] || 0;
@@ -1326,19 +1404,17 @@
                 blurBtn.classList.remove('active-tool');
             }
 
+            const op = Math.round((target.opacity ?? 1) * 100);
+            document.getElementById('layerOpacity').value = op;
+            document.getElementById('opacityVal').textContent = op + '%';
+
             if (selectedObj) {
-                const op = Math.round((selectedObj.opacity ?? 1) * 100);
-                document.getElementById('layerOpacity').value = op;
-                document.getElementById('opacityVal').textContent = op + '%';
                 if (selectedObj.type === 'text') {
                     document.getElementById('textInput').value = selectedObj.text;
                     document.getElementById('activeColorPicker').value = selectedObj.color;
                 } else if (selectedObj.type === 'shape') {
                     document.getElementById('activeColorPicker').value = selectedObj.color;
                 }
-            } else {
-                document.getElementById('layerOpacity').value = 100;
-                document.getElementById('opacityVal').textContent = '100%';
             }
         }
 
@@ -1481,7 +1557,7 @@
             renderCompositeBoard();
         });
 
-        // Overridden by the Object Remover Upgrade block below
+        // Replaced by the Object Remover Upgrade below
         function runAppleCleanUpInpaint(strokePoints) {}
 
         function applyBlurBrushStroke(worldPt) {
@@ -1503,11 +1579,18 @@
                 oCtx.filter = 'blur(14px)';
                 oCtx.drawImage(selectedObj.sourceCanvas, 0, 0);
                 oCtx.restore();
-            } else {
+            } else if (bgLayer.img) {
+                const localPt = toLocalSpace(worldPt, bgLayer);
+                const scaleX = bgLayer.buffer.width / bgLayer.width;
+                const scaleY = bgLayer.buffer.height / bgLayer.height;
+                const texX = (localPt.x + bgLayer.width / 2) * scaleX;
+                const texY = (localPt.y + bgLayer.height / 2) * scaleY;
+                const texR = worldRadius * ((scaleX + scaleY) / 2);
+
                 const bCtx = bgLayer.buffer.getContext('2d');
                 bCtx.save();
                 bCtx.beginPath();
-                bCtx.arc(worldPt.x, worldPt.y, worldRadius, 0, Math.PI * 2);
+                bCtx.arc(texX, texY, texR, 0, Math.PI * 2);
                 bCtx.clip();
                 bCtx.filter = 'blur(14px)';
                 bCtx.drawImage(bgLayer.buffer, 0, 0);
@@ -1549,7 +1632,7 @@
         }
 
         // ============================================================================
-        // UNIFIED POINTER EVENTS
+        // UNIFIED POINTER EVENTS (SUPPORTS OVERLAYS + DRAGGABLE/RESIZABLE BACKGROUND)
         // ============================================================================
         function getCanvasPointer(e) {
             const rect = canvas.getBoundingClientRect();
@@ -1655,7 +1738,8 @@
         }
 
         function startCornerHoverCountdown(cornerKey, autoSwitchTouchRotate = false) {
-            if (hoveredCorner === cornerKey || rotateUnlockedCorner === cornerKey) return;
+            const activeObj = getActiveTransformObj();
+            if (!activeObj || hoveredCorner === cornerKey || rotateUnlockedCorner === cornerKey) return;
             clearCornerHoverTimer();
             hoveredCorner = cornerKey;
             cornerHoverStartTime = performance.now();
@@ -1673,10 +1757,12 @@
                 rotateUnlockedCorner = cornerKey;
                 hoveredCorner = null;
                 document.getElementById('statusText').textContent = 'Rotate Arrow unlocked! Drag to freely rotate.';
-                if (autoSwitchTouchRotate && selectedObj && interaction.mode === 'resize' && !interaction.moved) {
+                const target = getActiveTransformObj();
+                if (autoSwitchTouchRotate && target && interaction.mode === 'resize' && !interaction.moved) {
                     interaction.mode = 'rotate';
-                    interaction.startObj = { ...selectedObj };
-                    interaction.startAngle = Math.atan2(mousePos.y - selectedObj.y, mousePos.x - selectedObj.x);
+                    interaction.targetObj = target;
+                    interaction.startObj = { ...target };
+                    interaction.startAngle = Math.atan2(mousePos.y - target.y, mousePos.x - target.x);
                 }
                 renderCompositeBoard();
             }, CORNER_HOVER_DURATION);
@@ -1701,14 +1787,19 @@
             const isTouch = e.pointerType === 'touch' || e.pointerType === 'pen';
             activePointers.set(e.pointerId, pt);
 
-            if (activePointers.size === 2 && selectedObj && !activeBrushTool) {
+            const activeTransformObj = getActiveTransformObj();
+
+            // Multi-touch (2 fingers): Pinch to Scale & Twist to Rotate Active Object (Overlay or Background)
+            if (activePointers.size === 2 && activeTransformObj && !activeBrushTool) {
                 clearCornerHoverTimer();
                 clearLongPressTimer();
                 const pts = Array.from(activePointers.values());
                 lastPinchDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
                 lastPinchAngle = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
                 interaction.mode = 'pinch';
+                interaction.targetObj = activeTransformObj;
                 interaction.moved = false;
+                interaction.isBgClickCandidate = false;
                 return;
             }
 
@@ -1724,25 +1815,28 @@
                 return;
             }
 
-            if (selectedObj) {
-                const local = toLocalSpace(pt, selectedObj);
-                const handleHit = hitTestHandle(local, selectedObj, isTouch);
+            // 1. Check handles on currently active object (Selected Overlay OR Background Layer)
+            if (activeTransformObj) {
+                const local = toLocalSpace(pt, activeTransformObj);
+                const handleHit = hitTestHandle(local, activeTransformObj, isTouch);
                 if (handleHit) {
                     clearCornerHoverTimer();
                     clearLongPressTimer();
                     interaction.moved = false;
+                    interaction.isBgClickCandidate = false;
+                    interaction.targetObj = activeTransformObj;
                     if (handleHit.startsWith('rotate_')) {
                         interaction.mode = 'rotate';
                         interaction.startMouse = pt;
-                        interaction.startObj = { ...selectedObj };
-                        interaction.startAngle = Math.atan2(pt.y - selectedObj.y, pt.x - selectedObj.x);
+                        interaction.startObj = { ...activeTransformObj };
+                        interaction.startAngle = Math.atan2(pt.y - activeTransformObj.y, pt.x - activeTransformObj.x);
                     } else {
                         interaction.mode = 'resize';
                         interaction.handle = handleHit;
                         interaction.startMouse = pt;
-                        interaction.startObj = { ...selectedObj };
+                        interaction.startObj = { ...activeTransformObj };
 
-                        const handleInfo = getHandleCoords(selectedObj)[handleHit];
+                        const handleInfo = getHandleCoords(activeTransformObj)[handleHit];
                         if (isTouch && handleInfo && handleInfo.isCorner) {
                             startCornerHoverCountdown(handleHit, true);
                         }
@@ -1751,13 +1845,16 @@
                 }
             }
 
+            // 2. Check hit on any overlay object from top-most to bottom-most
             for (let i = objects.length - 1; i >= 0; i--) {
                 const obj = objects[i];
                 const local = toLocalSpace(pt, obj);
                 if (hitTestBody(local, obj)) {
                     selectObject(obj);
                     interaction.mode = 'drag';
+                    interaction.targetObj = obj;
                     interaction.moved = false;
+                    interaction.isBgClickCandidate = false;
                     interaction.startMouse = pt;
                     interaction.startObj = { ...obj };
                     renderCompositeBoard();
@@ -1768,8 +1865,20 @@
                 }
             }
 
+            // 3. Clicked or pressed on Background / Workspace
             selectObject(null);
-            interaction.mode = 'none';
+            if (bgLayer.img) {
+                interaction.mode = 'drag';
+                interaction.targetObj = bgLayer;
+                interaction.moved = false;
+                interaction.isBgClickCandidate = true;
+                interaction.startMouse = pt;
+                interaction.startObj = { ...bgLayer };
+            } else {
+                interaction.mode = 'none';
+                interaction.targetObj = null;
+                interaction.isBgClickCandidate = false;
+            }
             renderCompositeBoard();
 
             if (isTouch) {
@@ -1796,21 +1905,25 @@
                 }
             }
 
-            if (interaction.mode === 'pinch' && activePointers.size === 2 && selectedObj) {
+            const targetObj = interaction.targetObj || getActiveTransformObj();
+
+            // Handle 2-Finger Pinch Zoom & Rotate (Overlay or Background)
+            if (interaction.mode === 'pinch' && activePointers.size === 2 && targetObj) {
                 clearLongPressTimer();
+                interaction.isBgClickCandidate = false;
                 const pts = Array.from(activePointers.values());
                 const dist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
                 const angle = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
 
                 if (lastPinchDist > 10) {
                     const scale = dist / lastPinchDist;
-                    selectedObj.width = Math.max(28, selectedObj.width * scale);
-                    selectedObj.height = Math.max(28, selectedObj.height * scale);
+                    targetObj.width = Math.max(28, targetObj.width * scale);
+                    targetObj.height = Math.max(28, targetObj.height * scale);
                     interaction.moved = true;
                 }
 
                 const deltaDeg = ((angle - lastPinchAngle) * 180) / Math.PI;
-                let newDeg = (selectedObj.rotate + deltaDeg) % 360;
+                let newDeg = (targetObj.rotate + deltaDeg) % 360;
                 if (newDeg < 0) newDeg += 360;
 
                 const snapTolerance = 3.5;
@@ -1823,7 +1936,7 @@
                 } else {
                     interaction.isHorizontalSnap = false;
                 }
-                selectedObj.rotate = newDeg;
+                targetObj.rotate = newDeg;
 
                 lastPinchDist = dist;
                 lastPinchAngle = angle;
@@ -1846,17 +1959,19 @@
                 return;
             }
 
+            // Desktop Hover State (when not dragging)
             if (interaction.mode === 'none' && !isTouch) {
-                if (selectedObj) {
-                    const local = toLocalSpace(pt, selectedObj);
-                    const handle = hitTestHandle(local, selectedObj, false);
+                const hoverTarget = getActiveTransformObj();
+                if (hoverTarget) {
+                    const local = toLocalSpace(pt, hoverTarget);
+                    const handle = hitTestHandle(local, hoverTarget, false);
 
                     if (handle) {
                         if (handle.startsWith('rotate_')) {
                             canvas.style.cursor = 'grab';
                             return;
                         }
-                        const handleInfo = getHandleCoords(selectedObj)[handle];
+                        const handleInfo = getHandleCoords(hoverTarget)[handle];
                         canvas.style.cursor = handleInfo.cursor;
 
                         if (handleInfo.isCorner) {
@@ -1867,13 +1982,13 @@
                         return;
                     } else {
                         if (rotateUnlockedCorner) {
-                            const cPos = getHandleCoords(selectedObj)[rotateUnlockedCorner];
-                            const rPos = getRotateArrowPos(rotateUnlockedCorner, selectedObj);
+                            const cPos = getHandleCoords(hoverTarget)[rotateUnlockedCorner];
+                            const rPos = getRotateArrowPos(rotateUnlockedCorner, hoverTarget);
                             const distCorner = Math.hypot(local.x - cPos.x, local.y - cPos.y);
                             const distArrow = Math.hypot(local.x - rPos.x, local.y - rPos.y);
                             if (distCorner > getVisualHandleRadius() * 4.5 && distArrow > getVisualHandleRadius() * 4.5) {
                                 rotateUnlockedCorner = null;
-                                document.getElementById('statusText').textContent = 'Right-click or long-press on touch screen to show Paste / Copy menu';
+                                document.getElementById('statusText').textContent = 'Drag/Resize background or layers; click background to recenter';
                                 renderCompositeBoard();
                             }
                         }
@@ -1883,35 +1998,41 @@
                         }
                     }
 
-                    if (hitTestBody(local, selectedObj)) {
+                    if (hitTestBody(local, hoverTarget)) {
                         canvas.style.cursor = 'move';
                         return;
                     }
                 }
 
                 const hoveringAny = objects.some(o => hitTestBody(toLocalSpace(pt, o), o));
-                canvas.style.cursor = hoveringAny ? 'pointer' : 'default';
+                canvas.style.cursor = hoveringAny ? 'pointer' : (bgLayer.img ? 'move' : 'default');
                 return;
             }
 
-            if (interaction.mode === 'drag' && selectedObj) {
+            // Dragging Object (Overlay or Background)
+            if (interaction.mode === 'drag' && targetObj) {
                 const dx = pt.x - interaction.startMouse.x;
                 const dy = pt.y - interaction.startMouse.y;
-                if (Math.hypot(dx, dy) > 3) {
+                if (Math.hypot(dx, dy) > 3 * getVisualScale()) {
                     interaction.moved = true;
+                    interaction.isBgClickCandidate = false;
                     clearLongPressTimer();
                     hideWorkspaceContextBar();
                 }
-                selectedObj.x = interaction.startObj.x + dx;
-                selectedObj.y = interaction.startObj.y + dy;
-                renderCompositeBoard();
+                if (interaction.moved) {
+                    targetObj.x = interaction.startObj.x + dx;
+                    targetObj.y = interaction.startObj.y + dy;
+                    renderCompositeBoard();
+                }
             }
 
-            else if (interaction.mode === 'rotate' && selectedObj) {
+            // Rotating Object + Horizontal Red Dashed Line Snap
+            else if (interaction.mode === 'rotate' && targetObj) {
                 canvas.style.cursor = 'grabbing';
                 interaction.moved = true;
+                interaction.isBgClickCandidate = false;
                 clearLongPressTimer();
-                const currentAngle = Math.atan2(pt.y - selectedObj.y, pt.x - selectedObj.x);
+                const currentAngle = Math.atan2(pt.y - targetObj.y, pt.x - targetObj.x);
                 const deltaDeg = ((currentAngle - interaction.startAngle) * 180) / Math.PI;
                 let newDeg = (interaction.startObj.rotate + deltaDeg) % 360;
                 if (newDeg < 0) newDeg += 360;
@@ -1927,14 +2048,16 @@
                     interaction.isHorizontalSnap = false;
                 }
 
-                selectedObj.rotate = newDeg;
+                targetObj.rotate = newDeg;
                 renderCompositeBoard();
             }
 
-            else if (interaction.mode === 'resize' && selectedObj) {
+            // Resizing Object (8-point resize for Overlay or Background)
+            else if (interaction.mode === 'resize' && targetObj) {
                 const moveDist = Math.hypot(pt.x - interaction.startMouse.x, pt.y - interaction.startMouse.y);
-                if (moveDist > 6 * getVisualScale()) {
+                if (moveDist > 4 * getVisualScale()) {
                     interaction.moved = true;
+                    interaction.isBgClickCandidate = false;
                     clearCornerHoverTimer();
                     clearLongPressTimer();
                 } else if (!interaction.moved) {
@@ -1981,10 +2104,10 @@
                 const localOffset = { x: (left + right) / 2, y: (top + bottom) / 2 };
                 const worldCenter = toWorldSpace(localOffset, s);
 
-                selectedObj.width = newW;
-                selectedObj.height = newH;
-                selectedObj.x = worldCenter.x;
-                selectedObj.y = worldCenter.y;
+                targetObj.width = newW;
+                targetObj.height = newH;
+                targetObj.x = worldCenter.x;
+                targetObj.y = worldCenter.y;
 
                 renderCompositeBoard();
             }
@@ -2007,12 +2130,22 @@
             if (interaction.mode !== 'none' && activePointers.size === 0) {
                 clearCornerHoverTimer();
                 const didChange = interaction.moved;
+                const clickedBgWithoutMove = !didChange && interaction.isBgClickCandidate && bgLayer.img;
+
                 interaction.isHorizontalSnap = false;
                 interaction.mode = 'none';
+                interaction.targetObj = null;
                 interaction.handle = null;
                 interaction.moved = false;
-                if (didChange) {
+                interaction.isBgClickCandidate = false;
+
+                if (clickedBgWithoutMove && isBgOffCenter()) {
+                    // Clicking the background (without dragging) recenters it
+                    recenterBackground(true);
+                } else if (didChange) {
                     saveHistoryState();
+                } else {
+                    syncSidebarToActiveTarget();
                 }
                 renderCompositeBoard();
             }
@@ -2118,17 +2251,37 @@
         function renderCompositeBoard(exportMode = false) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Layer 1: Background Layer
+            // Layer 1: Background Layer (Transformable: Drag, Resize, Rotate, Click-to-Recenter)
             if (bgLayer.img) {
-                layerScratch.width = canvas.width;
-                layerScratch.height = canvas.height;
-                scratchCtx.clearRect(0, 0, canvas.width, canvas.height);
-                scratchCtx.filter = buildLayerFilterString(bgLayer.grading, bgLayer.blurLevel);
-                scratchCtx.drawImage(bgLayer.buffer, 0, 0, canvas.width, canvas.height);
-                scratchCtx.filter = 'none';
-                applyScopedWarmth(scratchCtx, bgLayer.grading.warmth, 0, 0, canvas.width, canvas.height);
+                const pad = Math.ceil((bgLayer.blurLevel || 0) * 2.5 + 20);
+                const sw = Math.max(1, Math.ceil(bgLayer.width + pad * 2));
+                const sh = Math.max(1, Math.ceil(bgLayer.height + pad * 2));
+                layerScratch.width = sw;
+                layerScratch.height = sh;
 
-                ctx.drawImage(layerScratch, 0, 0);
+                scratchCtx.save();
+                scratchCtx.clearRect(0, 0, sw, sh);
+                scratchCtx.translate(sw / 2, sh / 2);
+                scratchCtx.filter = buildLayerFilterString(bgLayer.grading, bgLayer.blurLevel);
+                scratchCtx.drawImage(
+                    bgLayer.buffer,
+                    -bgLayer.width / 2,
+                    -bgLayer.height / 2,
+                    bgLayer.width,
+                    bgLayer.height
+                );
+                scratchCtx.restore();
+
+                if (bgLayer.grading && bgLayer.grading.warmth !== 0) {
+                    applyScopedWarmth(scratchCtx, bgLayer.grading.warmth, 0, 0, sw, sh);
+                }
+
+                ctx.save();
+                ctx.translate(bgLayer.x, bgLayer.y);
+                ctx.rotate((bgLayer.rotate * Math.PI) / 180);
+                ctx.globalAlpha = bgLayer.opacity ?? 1;
+                ctx.drawImage(layerScratch, -sw / 2, -sh / 2, sw, sh);
+                ctx.restore();
             } else if (objects.length === 0 && !exportMode) {
                 ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
                 ctx.font = "600 24px Inter, system-ui, sans-serif";
@@ -2193,9 +2346,10 @@
                 ctx.restore();
             }
 
-            // Layer 3: UI Overlays
-            if (!exportMode && selectedObj) {
-                const obj = selectedObj;
+            // Layer 3: UI Overlays (Transform Handles for Selected Overlay OR Active Background Layer)
+            const activeBoxObj = (!exportMode && !activeBrushTool) ? getActiveTransformObj() : null;
+            if (activeBoxObj) {
+                const obj = activeBoxObj;
                 const r = getVisualHandleRadius();
                 const lw = Math.max(1.5, r * 0.25);
 
@@ -2226,7 +2380,7 @@
                 ctx.translate(obj.x, obj.y);
                 ctx.rotate((obj.rotate * Math.PI) / 180);
 
-                ctx.strokeStyle = '#3b82f6';
+                ctx.strokeStyle = obj === bgLayer ? '#60a5fa' : '#3b82f6';
                 ctx.lineWidth = lw;
                 ctx.strokeRect(-obj.width / 2, -obj.height / 2, obj.width, obj.height);
 
@@ -2317,7 +2471,7 @@
         renderCompositeBoard();
 
         // ============================================================================
-        // OBJECT REMOVER UPGRADE (LaMa ONNX AI + Multi-Scale PatchMatch)
+        // OBJECT REMOVER UPGRADE (LaMa ONNX WASM SIMD + Multi-Scale PatchMatch)
         // ============================================================================
         (() => {
             const ORT_BASE = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/';
@@ -2484,7 +2638,7 @@
             }
             // @PM-END
 
-            // ---------------------------------------------------------------- AI engine (LaMa)
+            // ---------------------------------------------------------------- AI engine (LaMa via WASM SIMD)
             function loadScript(src) {
                 return new Promise((res, rej) => {
                     const s = document.createElement('script');
@@ -2523,21 +2677,28 @@
             function getLama() {
                 if (!lamaPromise) lamaPromise = (async () => {
                     if (!window.ort) {
-                        for (const f of ['ort.webgpu.min.js', 'ort.all.min.js', 'ort.min.js']) {
+                        for (const f of ['ort.wasm.min.js', 'ort.min.js', 'ort.all.min.js']) {
                             try { await loadScript(ORT_BASE + f); } catch (_) {}
                             if (window.ort) break;
                         }
                     }
                     if (!window.ort) throw new Error('could not load ONNX Runtime');
                     ort.env.wasm.wasmPaths = ORT_BASE;
+                    ort.env.wasm.simd = true;
+                    ort.env.wasm.numThreads = window.crossOriginIsolated
+                        ? Math.min(4, navigator.hardwareConcurrency || 1)
+                        : 1;
+
                     const buf = await fetchModel(LAMA_URL, (p) => say('Downloading AI model… ' + Math.round(p * 100) + '% (one time, then cached)'));
-                    say('Starting AI engine…');
+                    say('Starting AI engine (WASM SIMD)…');
                     await tick();
-                    let err = null;
-                    for (const ep of (navigator.gpu ? [['webgpu'], ['wasm']] : [['wasm']])) {
-                        try { return await ort.InferenceSession.create(buf, { executionProviders: ep }); } catch (e) { err = e; }
-                    }
-                    throw err || new Error('could not start the model');
+                    // Use 'wasm' execution provider because LaMa's Fast Fourier Convolution (ffc/convg2g)
+                    // triggers a known tensor-shape bug in ONNX Runtime Web's WebGPU backend.
+                    return await ort.InferenceSession.create(buf, {
+                        executionProviders: ['wasm'],
+                        graphOptimizationLevel: 'all',
+                        enableCpuMemArena: true
+                    });
                 })().catch((e) => { lamaPromise = null; throw e; });
                 return lamaPromise;
             }
@@ -2545,7 +2706,7 @@
             async function lamaFill(k) {
                 const session = await getLama();
                 say('AI is removing the object…');
-                await tick();
+                await tick(50);
                 const n = 512, n2 = n * n, d = k.img.data;
                 const imgT = new Float32Array(3 * n2), mT = new Float32Array(n2);
                 for (let i = 0; i < n2; i++) {
@@ -2555,10 +2716,16 @@
                 const names = session.inputNames;
                 const mName = names.find((s) => /mask/i.test(s)) || names[1];
                 const iName = names.find((s) => s !== mName) || names[0];
-                const out = await session.run({
-                    [iName]: new ort.Tensor('float32', imgT, [1, 3, n, n]),
-                    [mName]: new ort.Tensor('float32', mT, [1, 1, n, n])
-                });
+                let out;
+                try {
+                    out = await session.run({
+                        [iName]: new ort.Tensor('float32', imgT, [1, 3, n, n]),
+                        [mName]: new ort.Tensor('float32', mT, [1, 1, n, n])
+                    });
+                } catch (runErr) {
+                    lamaPromise = null;
+                    throw runErr;
+                }
                 const o = out[session.outputNames[0]].data;
                 let mn = Infinity, mx = -Infinity;
                 for (let i = 0; i < o.length; i += 53) { if (o[i] < mn) mn = o[i]; if (o[i] > mx) mx = o[i]; }
@@ -2584,7 +2751,13 @@
                         return { x: (l.x + selectedObj.width / 2) * sx, y: (l.y + selectedObj.height / 2) * sy };
                     });
                 } else if (bgLayer.img) {
-                    target = bgLayer.buffer; texR = worldR; pts = strokePoints;
+                    target = bgLayer.buffer;
+                    const sx = target.width / bgLayer.width, sy = target.height / bgLayer.height;
+                    texR = worldR * (sx + sy) / 2;
+                    pts = strokePoints.map((p) => {
+                        const l = toLocalSpace(p, bgLayer);
+                        return { x: (l.x + bgLayer.width / 2) * sx, y: (l.y + bgLayer.height / 2) * sy };
+                    });
                 } else { say('Load a background image or select an overlay image first.'); return; }
 
                 const W = target.width, H = target.height, grow = Math.max(3, Math.round(texR * 0.15));
@@ -2660,8 +2833,6 @@
             }
 
             // ---------------------------------------------------------------- wiring
-            // Replace the old brush callback. The old pointer-up code already calls saveHistoryState() right after it,
-            // so when we finish we overwrite that duplicate snapshot with the real "after" state (one Undo step).
             window.runAppleCleanUpInpaint = function (strokePoints) {
                 if (busy || !strokePoints || !strokePoints.length) return;
                 const path = strokePoints.slice();
