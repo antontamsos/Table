@@ -1,0 +1,2061 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Vizzy Studio Pro — Layer-Based Audio Visualizer</title>
+    <style>
+        :root {
+            --bg-dark: #0b0d12;
+            --panel-bg: #131720;
+            --card-bg: #1b202c;
+            --border: #2a3142;
+            --accent: #8b5cf6;
+            --accent-hover: #7c3aed;
+            --cyan: #06b6d4;
+            --pink: #ec4899;
+            --green: #10b981;
+            --danger: #ef4444;
+            --text: #f3f4f6;
+            --muted: #9ca3af;
+        }
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            height: 100vh;
+            height: 100dvh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Top Navigation Bar */
+        .top-navbar {
+            height: 52px;
+            background: var(--panel-bg);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            flex-shrink: 0;
+            z-index: 20;
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 800;
+            font-size: 16px;
+            letter-spacing: -0.3px;
+        }
+        .brand-logo {
+            width: 28px;
+            height: 28px;
+            border-radius: 7px;
+            background: linear-gradient(135deg, #06b6d4, #8b5cf6, #ec4899);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+        }
+        .brand span {
+            background: linear-gradient(90deg, #38bdf8, #c084fc, #f472b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .top-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Buttons */
+        .btn {
+            background: #252b3b;
+            color: var(--text);
+            border: 1px solid #363f54;
+            padding: 7px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.14s ease;
+        }
+        .btn:hover { background: #30384c; border-color: #4b5672; }
+        .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+        .btn.primary:hover { background: var(--accent-hover); }
+        .btn.cyan { background: rgba(6, 182, 212, 0.18); border-color: #06b6d4; color: #67e8f9; }
+        .btn.cyan:hover { background: #06b6d4; color: #082f49; }
+        .btn.pink { background: rgba(236, 72, 153, 0.18); border-color: #ec4899; color: #f9a8d4; }
+        .btn.pink:hover { background: #ec4899; color: #fff; }
+        .btn.green { background: var(--green); border-color: var(--green); color: #052e16; font-weight: 700; }
+        .btn.green:hover { background: #059669; color: #fff; }
+        .btn.danger { background: rgba(239, 68, 68, 0.18); border-color: rgba(239, 68, 68, 0.45); color: #fca5a5; }
+        .btn.danger:hover { background: var(--danger); color: #fff; }
+        .btn.recording {
+            background: var(--danger);
+            border-color: #fff;
+            color: #fff;
+            animation: recPulse 1s infinite alternate;
+        }
+        @keyframes recPulse {
+            from { box-shadow: 0 0 0px #ef4444; }
+            to { box-shadow: 0 0 14px #ef4444; }
+        }
+
+        /* Main 3-Column Workspace */
+        .workspace {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            min-height: 0;
+        }
+
+        /* Left Sidebar: Audio, Quick Uploaders & Layer Stack */
+        .left-panel {
+            width: 310px;
+            background: var(--panel-bg);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 12px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        /* Right Sidebar: Custom Visualizer & Layer Inspector */
+        .right-panel {
+            width: 340px;
+            background: var(--panel-bg);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 12px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .left-panel::-webkit-scrollbar, .right-panel::-webkit-scrollbar { width: 5px; }
+        .left-panel::-webkit-scrollbar-thumb, .right-panel::-webkit-scrollbar-thumb { background: #333c4d; border-radius: 3px; }
+
+        .panel-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 11px;
+        }
+        .card-header {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--muted);
+            margin-bottom: 9px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .add-layer-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        /* Layer Stack List */
+        .layer-list {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .layer-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #141821;
+            border: 1px solid #262d3d;
+            border-radius: 6px;
+            padding: 7px 9px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.12s ease;
+        }
+        .layer-item:hover { background: #1f2634; }
+        .layer-item.selected {
+            background: rgba(139, 92, 246, 0.18);
+            border-color: #8b5cf6;
+            color: #e9d5ff;
+            box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.3);
+        }
+        .layer-name {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-weight: 600;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .layer-controls {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .icon-btn {
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            cursor: pointer;
+            padding: 3px 5px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .icon-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+        /* Center Stage Area */
+        .center-stage {
+            flex: 1;
+            background-color: #07090d;
+            background-image: radial-gradient(#1e2433 1px, transparent 1px);
+            background-size: 20px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            padding: 20px;
+        }
+        .canvas-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            max-width: 100%;
+            max-height: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.85), 0 0 0 1px #2a3142;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        #vizCanvas {
+            display: block;
+            max-width: 100%;
+            max-height: calc(100vh - 175px);
+            width: auto;
+            height: auto;
+            cursor: grab;
+        }
+        #vizCanvas:active { cursor: grabbing; }
+
+        .stage-overlay-pill {
+            position: absolute;
+            top: 12px;
+            left: 16px;
+            background: rgba(19, 23, 32, 0.85);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border);
+            padding: 6px 12px;
+            border-radius: 99px;
+            font-size: 11px;
+            color: #d1d5db;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .beat-led {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            transition: transform 0.05s ease;
+        }
+        .beat-led.hit {
+            transform: scale(1.7);
+            background: #fff;
+            box-shadow: 0 0 10px #ec4899;
+        }
+
+        /* Inspector Controls */
+        .control-row {
+            margin-bottom: 9px;
+        }
+        .control-row:last-child { margin-bottom: 0; }
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #d1d5db;
+            margin-bottom: 4px;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 5px;
+            accent-color: var(--accent);
+            background: #0f131a;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        select, input[type="text"] {
+            width: 100%;
+            padding: 7px 9px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: #0f131a;
+            color: var(--text);
+            font-size: 12px;
+            outline: none;
+            user-select: text;
+            -webkit-user-select: text;
+        }
+        select:focus, input[type="text"]:focus { border-color: var(--accent); }
+
+        .color-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .color-box {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #0f131a;
+            border: 1px solid var(--border);
+            padding: 5px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+        }
+        input[type="color"] {
+            width: 32px;
+            height: 24px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+            padding: 4px 0;
+        }
+        input[type="checkbox"] {
+            accent-color: var(--accent);
+            width: 15px;
+            height: 15px;
+            cursor: pointer;
+        }
+
+        /* Bottom Transport Timeline */
+        .bottom-transport {
+            height: 64px;
+            background: var(--panel-bg);
+            border-top: 1px solid var(--border);
+            padding: 0 18px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-shrink: 0;
+            z-index: 20;
+        }
+        .play-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            font-size: 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 4px 14px rgba(139, 92, 246, 0.4);
+        }
+        .play-btn:hover { background: var(--accent-hover); }
+        .timeline-wrap {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .timeline-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--muted);
+            font-variant-numeric: tabular-nums;
+        }
+        .freq-pills {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .freq-meter {
+            width: 44px;
+            height: 6px;
+            background: #0b0d12;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .freq-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--cyan);
+        }
+
+        @media (max-width: 1024px) {
+            .workspace { flex-direction: column; overflow-y: auto; }
+            .left-panel, .right-panel { width: 100%; height: auto; border: none; border-bottom: 1px solid var(--border); }
+            .center-stage { min-height: 420px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Hidden File Inputs -->
+    <input type="file" id="audioUpload" accept="audio/*" style="display:none;">
+    <input type="file" id="bgImageUpload" accept="image/*" style="display:none;">
+    <input type="file" id="logoImageUpload" accept="image/*" style="display:none;">
+    <input type="file" id="layerImageUpload" accept="image/*" style="display:none;">
+
+    <!-- Top Studio Bar -->
+    <div class="top-navbar">
+        <div class="brand">
+            <div class="brand-logo">⚡</div>
+            <div>Vizzy<span>Studio Pro</span></div>
+        </div>
+
+        <div class="top-actions">
+            <select id="aspectRatioSelect" style="width:auto; margin:0;" title="Canvas Resolution / Aspect Ratio">
+                <option value="16:9">📺 16:9 Widescreen (1280×720)</option>
+                <option value="9:16">📱 9:16 TikTok / Reels (720×1280)</option>
+                <option value="1:1">💿 1:1 Album Cover (900×900)</option>
+            </select>
+            <button class="btn cyan" onclick="document.getElementById('bgImageUpload').click()">🖼️ Upload Background</button>
+            <button class="btn pink" onclick="document.getElementById('logoImageUpload').click()">🎯 Upload Center Logo</button>
+            <button class="btn" id="recordVideoBtn" title="Record visualizer video with audio (.webm)">🔴 Export Video</button>
+        </div>
+    </div>
+
+    <!-- Main 3-Column Studio -->
+    <div class="workspace">
+
+        <!-- LEFT PANEL: Audio Source + Layer Stack -->
+        <div class="left-panel">
+            <!-- Audio Track Loader -->
+            <div class="panel-card">
+                <div class="card-header">
+                    <span>1. Audio Track Source</span>
+                    <span id="audioStateBadge" style="color:#10b981;">Ready</span>
+                </div>
+                <div class="add-layer-grid">
+                    <button class="btn green" onclick="document.getElementById('audioUpload').click()">🎵 Upload Audio</button>
+                    <button class="btn primary" id="demoBeatBtn" title="Play built-in synthwave beat to test visualizers">🎹 Test Synth Beat</button>
+                </div>
+                <div style="display:flex; gap:6px; margin-top:6px;">
+                    <button class="btn" style="flex:1" id="micToggleBtn">🎙️ Use Mic</button>
+                    <button class="btn" style="flex:1" id="presetSelectBtn" onclick="loadStarterTemplate()">✨ Reset Template</button>
+                </div>
+            </div>
+
+            <!-- Add New Visualizer / Media Layer -->
+            <div class="panel-card">
+                <div class="card-header">
+                    <span>2. + Add Visualizer / Layer</span>
+                </div>
+                <div class="add-layer-grid">
+                    <button class="btn" onclick="addNewLayer('radial')">⭕ Radial Spectrum</button>
+                    <button class="btn" onclick="addNewLayer('bars')">📊 Linear Spectrum</button>
+                    <button class="btn" onclick="addNewLayer('wave')">〰️ Soundwave</button>
+                    <button class="btn" onclick="addNewLayer('particles')">✨ Beat Particles</button>
+                    <button class="btn cyan" onclick="addNewLayer('image')">🖼️ Custom Image</button>
+                    <button class="btn pink" onclick="addNewLayer('text')">🔤 Beat Text</button>
+                </div>
+            </div>
+
+            <!-- Active Layer Stack -->
+            <div class="panel-card" style="flex:1; display:flex; flex-direction:column;">
+                <div class="card-header">
+                    <span>3. Composition Layers</span>
+                    <span style="font-size:10px; font-weight:normal;">Top = Front</span>
+                </div>
+                <div class="layer-list" id="layerListContainer"></div>
+            </div>
+
+            <!-- Global Camera Beat FX -->
+            <div class="panel-card">
+                <div class="card-header"><span>4. Global Beat Camera FX</span></div>
+                <div class="control-row">
+                    <div class="control-label"><span>Camera Bass Shake</span><span id="valCamShake">25%</span></div>
+                    <input type="range" id="camShakeSlider" min="0" max="100" value="25">
+                </div>
+                <div class="control-row">
+                    <div class="control-label"><span>Kick Flash / Vignette</span><span id="valCamFlash">30%</span></div>
+                    <input type="range" id="camFlashSlider" min="0" max="100" value="30">
+                </div>
+                <div class="checkbox-row">
+                    <span>RGB Chromatic Glitch on Kick</span>
+                    <input type="checkbox" id="rgbGlitchCheck" checked>
+                </div>
+            </div>
+        </div>
+
+        <!-- CENTER STAGE: Interactive Visualizer Canvas -->
+        <div class="center-stage" id="stageArea">
+            <div class="stage-overlay-pill">
+                <div class="beat-led" id="beatLed"></div>
+                <span id="stageHintText">Drag any layer on canvas to reposition • Scroll wheel on canvas to scale</span>
+            </div>
+
+            <div class="canvas-wrapper">
+                <canvas id="vizCanvas" width="1280" height="720"></canvas>
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL: Custom Visualizer & Layer Inspector -->
+        <div class="right-panel">
+            <div class="panel-card" id="inspectorPanel">
+                <div class="card-header">
+                    <span>Layer Inspector</span>
+                    <span id="inspectorLayerType" style="color:#c084fc;">None</span>
+                </div>
+                <div id="inspectorContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Audio Transport & Frequency Bar -->
+    <div class="bottom-transport">
+        <button class="play-btn" id="playPauseBtn" title="Play / Pause (Space)">▶</button>
+
+        <div class="timeline-wrap">
+            <div class="timeline-info">
+                <span id="trackNameDisplay">Click "🎵 Upload Audio" or "🎹 Test Synth Beat"</span>
+                <span><span id="curTimeText">00:00</span> / <span id="durTimeText">00:00</span></span>
+            </div>
+            <input type="range" id="timelineScrubber" min="0" max="1000" value="0">
+        </div>
+
+        <div class="freq-pills" title="Real-Time Sub / Mid / High Energy">
+            <span style="font-size:10px; color:var(--muted);">SUB</span>
+            <div class="freq-meter"><div class="freq-fill" id="subMeter" style="background:#ec4899;"></div></div>
+            <span style="font-size:10px; color:var(--muted);">MID</span>
+            <div class="freq-meter"><div class="freq-fill" id="midMeter" style="background:#8b5cf6;"></div></div>
+            <span style="font-size:10px; color:var(--muted);">HIGH</span>
+            <div class="freq-meter"><div class="freq-fill" id="highMeter" style="background:#06b6d4;"></div></div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:6px; width:100px;">
+            <span style="font-size:13px;">🔊</span>
+            <input type="range" id="volumeSlider" min="0" max="120" value="100">
+        </div>
+    </div>
+
+    <script>
+        // ============================================================================
+        // 1. AUDIO ENGINE & FREQUENCY BAND ANALYSER
+        // ============================================================================
+        const canvas = document.getElementById('vizCanvas');
+        const ctx = canvas.getContext('2d');
+        const audioEl = new Audio();
+        audioEl.crossOrigin = 'anonymous';
+        audioEl.loop = true;
+
+        let audioCtx = null;
+        let analyser = null;
+        let mediaNode = null;
+        let masterGain = null;
+        let synthGain = null;
+        let micStream = null;
+        let micNode = null;
+
+        let activeSource = 'none'; // 'none' | 'file' | 'synth' | 'mic'
+        let freqData = new Uint8Array(1024);
+        let timeData = new Uint8Array(1024);
+
+        // Smoothed Band Energies (0.0 -> 1.0)
+        const bands = {
+            sub: 0,      // 20 - 90 Hz (Kick drum thump)
+            bass: 0,     // 60 - 250 Hz
+            lowMid: 0,   // 250 - 900 Hz
+            highMid: 0,  // 900 - 4000 Hz
+            treble: 0,   // 4000 - 16000 Hz
+            full: 0
+        };
+        let beatPulse = 0;
+        let lastBeatMs = 0;
+        let subHistory = new Float32Array(40);
+        let subHistIdx = 0;
+
+        // Global Camera Effects
+        let camShakeAmount = 0.25;
+        let camFlashAmount = 0.30;
+        let rgbGlitchEnabled = true;
+
+        function ensureAudioContext() {
+            if (!audioCtx) {
+                const AC = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AC();
+                analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 2048;
+                analyser.smoothingTimeConstant = 0.76;
+
+                masterGain = audioCtx.createGain();
+                masterGain.gain.value = 1.0;
+
+                synthGain = audioCtx.createGain();
+                synthGain.gain.value = 0.85;
+
+                mediaNode = audioCtx.createMediaElementSource(audioEl);
+                mediaNode.connect(masterGain);
+                synthGain.connect(masterGain);
+                masterGain.connect(analyser);
+                analyser.connect(audioCtx.destination);
+
+                freqData = new Uint8Array(analyser.frequencyBinCount);
+                timeData = new Uint8Array(analyser.frequencyBinCount);
+            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function updateAudioAnalysis() {
+            if (!analyser || activeSource === 'none') {
+                bands.sub *= 0.85;
+                bands.bass *= 0.85;
+                bands.lowMid *= 0.85;
+                bands.highMid *= 0.85;
+                bands.treble *= 0.85;
+                bands.full *= 0.85;
+                beatPulse *= 0.85;
+                return;
+            }
+
+            analyser.getByteFrequencyData(freqData);
+            analyser.getByteTimeDomainData(timeData);
+
+            const avgRange = (start, end) => {
+                let s = 0;
+                for (let i = start; i <= end; i++) s += freqData[i];
+                return s / ((end - start + 1) * 255);
+            };
+
+            bands.sub     = avgRange(1, 5);
+            bands.bass    = avgRange(4, 16);
+            bands.lowMid  = avgRange(17, 55);
+            bands.highMid = avgRange(56, 180);
+            bands.treble  = avgRange(181, 420);
+            bands.full    = avgRange(1, 250);
+
+            document.getElementById('subMeter').style.width  = `${Math.min(100, bands.sub * 115)}%`;
+            document.getElementById('midMeter').style.width  = `${Math.min(100, bands.lowMid * 140)}%`;
+            document.getElementById('highMeter').style.width = `${Math.min(100, bands.treble * 180)}%`;
+
+            // Kick Beat Detection
+            let avgSub = 0;
+            for (let i = 0; i < subHistory.length; i++) avgSub += subHistory[i];
+            avgSub /= subHistory.length;
+            subHistory[subHistIdx] = bands.sub;
+            subHistIdx = (subHistIdx + 1) % subHistory.length;
+
+            const now = performance.now();
+            if (bands.sub > Math.max(0.26, avgSub * 1.28) && now - lastBeatMs > 210) {
+                lastBeatMs = now;
+                beatPulse = 1.0;
+                const led = document.getElementById('beatLed');
+                led.classList.add('hit');
+                setTimeout(() => led.classList.remove('hit'), 90);
+            } else {
+                beatPulse *= 0.86;
+            }
+        }
+
+        // ============================================================================
+        // 2. BUILT-IN SYNTH BEAT GENERATOR (FOR INSTANT TESTING)
+        // ============================================================================
+        let synthTimer = null;
+        let stepCount = 0;
+        const bassSeq = [55, 55, 65.41, 55, 73.42, 65.41, 82.41, 65.41];
+        const leadSeq = [220, 329.63, 440, 329.63, 261.63, 392, 523.25, 392];
+
+        function toggleSynthBeat() {
+            ensureAudioContext();
+            if (activeSource === 'synth' && synthTimer) {
+                clearInterval(synthTimer);
+                synthTimer = null;
+                activeSource = 'none';
+                updateTransportUI('Synth Stopped', false);
+                return;
+            }
+            stopMic();
+            audioEl.pause();
+            if (synthTimer) clearInterval(synthTimer);
+
+            activeSource = 'synth';
+            stepCount = 0;
+            const stepMs = (60 / 126 / 4) * 1000;
+
+            const playStep = () => {
+                if (activeSource !== 'synth') return;
+                const t = audioCtx.currentTime;
+                // Kick on 4-on-the-floor
+                if (stepCount % 4 === 0) {
+                    const o = audioCtx.createOscillator();
+                    const g = audioCtx.createGain();
+                    o.frequency.setValueAtTime(150, t);
+                    o.frequency.exponentialRampToValueAtTime(34, t + 0.14);
+                    g.gain.setValueAtTime(1.2, t);
+                    g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+                    o.connect(g); g.connect(synthGain);
+                    o.start(t); o.stop(t + 0.31);
+                }
+                // Hi-hat / Snare
+                if (stepCount % 2 === 1 || stepCount % 8 === 4) {
+                    const isSnare = stepCount % 8 === 4;
+                    const len = audioCtx.sampleRate * (isSnare ? 0.16 : 0.04);
+                    const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+                    const d = buf.getChannelData(0);
+                    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+                    const n = audioCtx.createBufferSource();
+                    n.buffer = buf;
+                    const f = audioCtx.createBiquadFilter();
+                    f.type = isSnare ? 'bandpass' : 'highpass';
+                    f.frequency.value = isSnare ? 1600 : 7000;
+                    const g = audioCtx.createGain();
+                    g.gain.setValueAtTime(isSnare ? 0.5 : 0.2, t);
+                    g.gain.exponentialRampToValueAtTime(0.01, t + (isSnare ? 0.16 : 0.04));
+                    n.connect(f); f.connect(g); g.connect(synthGain);
+                    n.start(t);
+                }
+                // Bass & Arp
+                const bo = audioCtx.createOscillator();
+                const bg = audioCtx.createGain();
+                bo.type = 'sawtooth';
+                bo.frequency.setValueAtTime(bassSeq[stepCount % bassSeq.length], t);
+                bg.gain.setValueAtTime(0.32, t);
+                bg.gain.exponentialRampToValueAtTime(0.01, t + 0.11);
+                bo.connect(bg); bg.connect(synthGain);
+                bo.start(t); bo.stop(t + 0.12);
+
+                const ao = audioCtx.createOscillator();
+                const ag = audioCtx.createGain();
+                ao.type = 'triangle';
+                ao.frequency.setValueAtTime(leadSeq[stepCount % leadSeq.length], t);
+                ag.gain.setValueAtTime(0.18, t);
+                ag.gain.exponentialRampToValueAtTime(0.008, t + 0.1);
+                ao.connect(ag); ag.connect(synthGain);
+                ao.start(t); ao.stop(t + 0.11);
+
+                stepCount++;
+            };
+            playStep();
+            synthTimer = setInterval(playStep, stepMs);
+            updateTransportUI('🎹 Built-In Synthwave Demo (126 BPM)', true);
+        }
+
+        function stopMic() {
+            if (micNode) { try { micNode.disconnect(); } catch (_) {} micNode = null; }
+            if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
+        }
+
+        document.getElementById('demoBeatBtn').addEventListener('click', toggleSynthBeat);
+
+        document.getElementById('micToggleBtn').addEventListener('click', async () => {
+            ensureAudioContext();
+            if (activeSource === 'mic') {
+                stopMic();
+                activeSource = 'none';
+                updateTransportUI('Mic Stopped', false);
+                return;
+            }
+            try {
+                if (synthTimer) { clearInterval(synthTimer); synthTimer = null; }
+                audioEl.pause();
+                micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                micNode = audioCtx.createMediaStreamSource(micStream);
+                micNode.connect(analyser);
+                activeSource = 'mic';
+                updateTransportUI('🎙️ Live Microphone Audio', true);
+            } catch (err) {
+                alert('Microphone permission denied.');
+            }
+        });
+
+        document.getElementById('audioUpload').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            ensureAudioContext();
+            if (synthTimer) { clearInterval(synthTimer); synthTimer = null; }
+            stopMic();
+            activeSource = 'file';
+            audioEl.src = URL.createObjectURL(file);
+            audioEl.play();
+            const cleanTitle = file.name.replace(/\.[^/.]+$/, '');
+            updateTransportUI(cleanTitle, true);
+            // Also update any Text layer if it still has the default title
+            const txtLayer = layers.find(l => l.type === 'text');
+            if (txtLayer && txtLayer.text === 'VIZZY STUDIO') {
+                txtLayer.text = cleanTitle.toUpperCase().slice(0, 24);
+                renderInspector();
+            }
+            e.target.value = '';
+        });
+
+        function updateTransportUI(label, playing) {
+            document.getElementById('trackNameDisplay').textContent = label;
+            document.getElementById('playPauseBtn').textContent = playing ? '⏸' : '▶';
+            document.getElementById('audioStateBadge').textContent = activeSource.toUpperCase();
+        }
+
+        // ============================================================================
+        // 3. VIZZY.IO LAYER SYSTEM & CUSTOM VISUALIZER MODEL
+        // ============================================================================
+        let layers = [];
+        let selectedLayerId = null;
+
+        // Default procedural fallback images so Background & Logo look great before user uploads
+        function createDefaultBgCanvas() {
+            const c = document.createElement('canvas');
+            c.width = 1280; c.height = 720;
+            const g = c.getContext('2d');
+            const grad = g.createRadialGradient(640, 360, 40, 640, 360, 750);
+            grad.addColorStop(0, '#1e1b4b');
+            grad.addColorStop(0.5, '#0f172a');
+            grad.addColorStop(1, '#04060b');
+            g.fillStyle = grad;
+            g.fillRect(0, 0, 1280, 720);
+            // Subtle nebula grid
+            g.strokeStyle = 'rgba(139, 92, 246, 0.12)';
+            g.lineWidth = 1;
+            for (let x = 0; x < 1280; x += 64) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, 720); g.stroke(); }
+            for (let y = 0; y < 720; y += 64) { g.beginPath(); g.moveTo(0, y); g.lineTo(1280, y); g.stroke(); }
+            return c;
+        }
+
+        function createDefaultLogoCanvas() {
+            const c = document.createElement('canvas');
+            c.width = 400; c.height = 400;
+            const g = c.getContext('2d');
+            const grad = g.createLinearGradient(0, 0, 400, 400);
+            grad.addColorStop(0, '#06b6d4');
+            grad.addColorStop(0.5, '#8b5cf6');
+            grad.addColorStop(1, '#ec4899');
+            g.fillStyle = grad;
+            g.fillRect(0, 0, 400, 400);
+            g.fillStyle = '#ffffff';
+            g.font = '900 54px Inter, sans-serif';
+            g.textAlign = 'center';
+            g.textBaseline = 'middle';
+            g.fillText('YOUR LOGO', 200, 185);
+            g.font = '600 22px Inter, sans-serif';
+            g.fillStyle = 'rgba(255,255,255,0.8)';
+            g.fillText('CLICK TO UPLOAD', 200, 235);
+            return c;
+        }
+
+        function createLayer(type, overrides = {}) {
+            const id = 'layer_' + Date.now() + '_' + Math.floor(Math.random() * 9999);
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+
+            const base = {
+                id,
+                type,
+                name: type.toUpperCase(),
+                visible: true,
+                x: cx,
+                y: cy,
+                scale: 1.0,
+                rotation: 0,
+                opacity: 1.0,
+                blendMode: 'source-over',
+                freqBand: 'bass',        // 'sub' | 'bass' | 'lowMid' | 'highMid' | 'treble' | 'full'
+                beatScalePulse: 0.22,    // How much this layer expands on the beat
+                beatRotSpeed: 0,         // Continuous/beat rotation
+                color1: '#06b6d4',
+                color2: '#ec4899',
+                glow: 18
+            };
+
+            if (type === 'image') {
+                return {
+                    ...base,
+                    name: '🖼️ Custom Image',
+                    imgSource: createDefaultLogoCanvas(),
+                    width: 220,
+                    height: 220,
+                    isBackground: false,
+                    cropShape: 'circle', // 'rect' | 'circle' | 'rounded'
+                    borderWidth: 5,
+                    borderColor: '#ffffff',
+                    blurPx: 0,
+                    dimness: 0,
+                    ...overrides
+                };
+            }
+            if (type === 'radial') {
+                return {
+                    ...base,
+                    name: '⭕ Radial Spectrum',
+                    subType: 'bars',     // 'bars' | 'wave' | 'dots' | 'dualRing'
+                    barCount: 96,
+                    innerRadius: 112,
+                    maxBarHeight: 145,
+                    barWidth: 4,
+                    mirror: true,
+                    freqStart: 2,
+                    freqEnd: 180,
+                    beatScalePulse: 0.20,
+                    beatRotSpeed: 0.25,
+                    ...overrides
+                };
+            }
+            if (type === 'bars') {
+                return {
+                    ...base,
+                    name: '📊 Linear Spectrum',
+                    y: canvas.height * 0.82,
+                    subType: 'bars',     // 'bars' | 'mirror' | 'mountain'
+                    barCount: 64,
+                    width: canvas.width * 0.78,
+                    maxBarHeight: 180,
+                    barWidth: 8,
+                    freqStart: 2,
+                    freqEnd: 200,
+                    beatScalePulse: 0.05,
+                    ...overrides
+                };
+            }
+            if (type === 'wave') {
+                return {
+                    ...base,
+                    name: '〰️ Oscilloscope Wave',
+                    width: canvas.width * 0.85,
+                    amplitude: 110,
+                    thickness: 4,
+                    subType: 'dual',     // 'single' | 'dual'
+                    beatScalePulse: 0.08,
+                    ...overrides
+                };
+            }
+            if (type === 'particles') {
+                return {
+                    ...base,
+                    name: '✨ Beat Particles',
+                    count: 110,
+                    speed: 1.6,
+                    size: 3.5,
+                    direction: 'outward', // 'outward' | 'rise'
+                    beatScalePulse: 0,
+                    pool: Array.from({ length: 160 }, () => ({
+                        x: (Math.random() - 0.5) * 1400,
+                        y: (Math.random() - 0.5) * 900,
+                        z: Math.random(),
+                        angle: Math.random() * Math.PI * 2,
+                        dist: 30 + Math.random() * 650,
+                        s: 1 + Math.random() * 3
+                    })),
+                    ...overrides
+                };
+            }
+            if (type === 'text') {
+                return {
+                    ...base,
+                    name: '🔤 Beat Text',
+                    text: 'VIZZY STUDIO',
+                    fontSize: 42,
+                    fontFamily: 'Inter, system-ui, sans-serif',
+                    y: canvas.height * 0.88,
+                    color1: '#ffffff',
+                    color2: '#8b5cf6',
+                    beatScalePulse: 0.18,
+                    ...overrides
+                };
+            }
+            return base;
+        }
+
+        function loadStarterTemplate() {
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            layers = [
+                createLayer('image', {
+                    name: '🖼️ Background Image',
+                    imgSource: createDefaultBgCanvas(),
+                    x: cx, y: cy,
+                    width: canvas.width,
+                    height: canvas.height,
+                    isBackground: true,
+                    cropShape: 'rect',
+                    borderWidth: 0,
+                    freqBand: 'sub',
+                    beatScalePulse: 0.06,
+                    glow: 0,
+                    dimness: 0.2
+                }),
+                createLayer('particles', {
+                    name: '✨ Bass Particles',
+                    color1: '#38bdf8',
+                    color2: '#f472b6',
+                    freqBand: 'sub',
+                    blendMode: 'screen'
+                }),
+                createLayer('radial', {
+                    name: '⭕ Outer Radial Glow',
+                    subType: 'wave',
+                    innerRadius: 118,
+                    maxBarHeight: 165,
+                    color1: '#8b5cf6',
+                    color2: '#ec4899',
+                    freqBand: 'bass',
+                    blendMode: 'screen',
+                    beatRotSpeed: -0.2
+                }),
+                createLayer('radial', {
+                    name: '⭕ Main Radial Bars',
+                    subType: 'bars',
+                    barCount: 96,
+                    innerRadius: 112,
+                    maxBarHeight: 140,
+                    barWidth: 4,
+                    color1: '#06b6d4',
+                    color2: '#ec4899',
+                    freqBand: 'sub'
+                }),
+                createLayer('image', {
+                    name: '🎯 Center Logo Image',
+                    imgSource: createDefaultLogoCanvas(),
+                    x: cx, y: cy,
+                    width: 216,
+                    height: 216,
+                    cropShape: 'circle',
+                    borderWidth: 5,
+                    borderColor: '#ffffff',
+                    freqBand: 'sub',
+                    beatScalePulse: 0.20,
+                    glow: 24
+                }),
+                createLayer('text', {
+                    name: '🔤 Track Title Text',
+                    text: 'VIZZY STUDIO',
+                    x: cx,
+                    y: canvas.height * 0.89,
+                    fontSize: 34,
+                    freqBand: 'sub',
+                    beatScalePulse: 0.14
+                })
+            ];
+            selectedLayerId = layers[3].id; // Select Main Radial Bars initially
+            renderLayerStack();
+            renderInspector();
+        }
+
+        function addNewLayer(type) {
+            const newL = createLayer(type);
+            layers.push(newL);
+            selectedLayerId = newL.id;
+            renderLayerStack();
+            renderInspector();
+            if (type === 'image') {
+                document.getElementById('layerImageUpload').click();
+            }
+        }
+
+        // Quick Top-Bar Uploaders for Background & Center Logo
+        function loadImageFromFile(file, callback) {
+            if (!file) return;
+            const url = URL.createObjectURL(file);
+            const img = new Image();
+            img.onload = () => callback(img);
+            img.src = url;
+        }
+
+        document.getElementById('bgImageUpload').addEventListener('change', (e) => {
+            loadImageFromFile(e.target.files[0], (img) => {
+                let bgL = layers.find(l => l.type === 'image' && l.isBackground);
+                if (!bgL) {
+                    bgL = createLayer('image', {
+                        name: '🖼️ Background Image',
+                        isBackground: true,
+                        cropShape: 'rect',
+                        borderWidth: 0,
+                        width: canvas.width,
+                        height: canvas.height,
+                        freqBand: 'sub',
+                        beatScalePulse: 0.06,
+                        glow: 0
+                    });
+                    layers.unshift(bgL);
+                }
+                bgL.imgSource = img;
+                bgL.width = canvas.width;
+                bgL.height = canvas.height;
+                bgL.x = canvas.width / 2;
+                bgL.y = canvas.height / 2;
+                selectedLayerId = bgL.id;
+                renderLayerStack();
+                renderInspector();
+            });
+            e.target.value = '';
+        });
+
+        document.getElementById('logoImageUpload').addEventListener('change', (e) => {
+            loadImageFromFile(e.target.files[0], (img) => {
+                let logoL = layers.find(l => l.type === 'image' && !l.isBackground);
+                if (!logoL) {
+                    logoL = createLayer('image', {
+                        name: '🎯 Center Logo Image',
+                        cropShape: 'circle',
+                        width: 216,
+                        height: 216
+                    });
+                    layers.push(logoL);
+                }
+                logoL.imgSource = img;
+                selectedLayerId = logoL.id;
+                renderLayerStack();
+                renderInspector();
+            });
+            e.target.value = '';
+        });
+
+        document.getElementById('layerImageUpload').addEventListener('change', (e) => {
+            loadImageFromFile(e.target.files[0], (img) => {
+                const sel = layers.find(l => l.id === selectedLayerId);
+                if (sel && sel.type === 'image') {
+                    sel.imgSource = img;
+                    renderInspector();
+                }
+            });
+            e.target.value = '';
+        });
+
+        // Also support Ctrl+V / Cmd+V Clipboard Image Paste into the selected Image Layer or new Image Layer
+        window.addEventListener('paste', (e) => {
+            const items = e.clipboardData?.items;
+            if (!items) return;
+            for (const item of items) {
+                if (item.type.startsWith('image/')) {
+                    const file = item.getAsFile();
+                    loadImageFromFile(file, (img) => {
+                        let target = layers.find(l => l.id === selectedLayerId && l.type === 'image');
+                        if (!target) {
+                            target = createLayer('image', { name: '🖼️ Pasted Image', imgSource: img });
+                            layers.push(target);
+                            selectedLayerId = target.id;
+                        } else {
+                            target.imgSource = img;
+                        }
+                        renderLayerStack();
+                        renderInspector();
+                    });
+                    return;
+                }
+            }
+        });
+
+        // ============================================================================
+        // 4. LAYER STACK & INSPECTOR UI BUILDER
+        // ============================================================================
+        function renderLayerStack() {
+            const container = document.getElementById('layerListContainer');
+            container.innerHTML = '';
+
+            // Display top-most layer first (reverse order of rendering array)
+            for (let i = layers.length - 1; i >= 0; i--) {
+                const layer = layers[i];
+                const row = document.createElement('div');
+                row.className = 'layer-item' + (layer.id === selectedLayerId ? ' selected' : '');
+                row.onclick = () => {
+                    selectedLayerId = layer.id;
+                    renderLayerStack();
+                    renderInspector();
+                };
+
+                const nameDiv = document.createElement('div');
+                nameDiv.className = 'layer-name';
+                nameDiv.style.opacity = layer.visible ? '1' : '0.4';
+                nameDiv.textContent = layer.name;
+
+                const ctrls = document.createElement('div');
+                ctrls.className = 'layer-controls';
+                ctrls.onclick = (ev) => ev.stopPropagation();
+
+                const visBtn = document.createElement('button');
+                visBtn.className = 'icon-btn';
+                visBtn.textContent = layer.visible ? '👁️' : '🚫';
+                visBtn.title = 'Toggle Visibility';
+                visBtn.onclick = () => { layer.visible = !layer.visible; renderLayerStack(); };
+
+                const upBtn = document.createElement('button');
+                upBtn.className = 'icon-btn';
+                upBtn.textContent = '▲';
+                upBtn.title = 'Move Layer Forward';
+                upBtn.onclick = () => {
+                    if (i < layers.length - 1) {
+                        [layers[i], layers[i + 1]] = [layers[i + 1], layers[i]];
+                        renderLayerStack();
+                    }
+                };
+
+                const downBtn = document.createElement('button');
+                downBtn.className = 'icon-btn';
+                downBtn.textContent = '▼';
+                downBtn.title = 'Move Layer Backward';
+                downBtn.onclick = () => {
+                    if (i > 0) {
+                        [layers[i], layers[i - 1]] = [layers[i - 1], layers[i]];
+                        renderLayerStack();
+                    }
+                };
+
+                const delBtn = document.createElement('button');
+                delBtn.className = 'icon-btn';
+                delBtn.textContent = '🗑️';
+                delBtn.title = 'Delete Layer';
+                delBtn.onclick = () => {
+                    layers.splice(i, 1);
+                    if (selectedLayerId === layer.id) {
+                        selectedLayerId = layers.length ? layers[layers.length - 1].id : null;
+                    }
+                    renderLayerStack();
+                    renderInspector();
+                };
+
+                ctrls.append(visBtn, upBtn, downBtn, delBtn);
+                row.append(nameDiv, ctrls);
+                container.appendChild(row);
+            }
+        }
+
+        function renderInspector() {
+            const box = document.getElementById('inspectorContent');
+            const badge = document.getElementById('inspectorLayerType');
+            const layer = layers.find(l => l.id === selectedLayerId);
+
+            if (!layer) {
+                badge.textContent = 'None';
+                box.innerHTML = `<p style="font-size:12px; color:var(--muted);">Select a layer on the left or click "+ Add Visualizer / Layer" to customize it.</p>`;
+                return;
+            }
+
+            badge.textContent = layer.type.toUpperCase();
+            let html = '';
+
+            // Layer Name
+            html += `
+                <div class="control-row">
+                    <div class="control-label"><span>Layer Name</span></div>
+                    <input type="text" id="inspName" value="${layer.name}">
+                </div>
+            `;
+
+            // Type-specific controls
+            if (layer.type === 'image') {
+                html += `
+                    <div class="control-row" style="display:flex; gap:6px;">
+                        <button class="btn cyan" style="flex:1" onclick="document.getElementById('layerImageUpload').click()">📂 Replace Image</button>
+                        <button class="btn" style="flex:1" id="inspFitBgBtn">↔ Fit Full Canvas</button>
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label"><span>Image Mask / Shape</span></div>
+                        <select id="inspCropShape">
+                            <option value="circle" ${layer.cropShape === 'circle' ? 'selected' : ''}>⭕ Circle Mask (Center Logo)</option>
+                            <option value="rounded" ${layer.cropShape === 'rounded' ? 'selected' : ''}>▢ Rounded Square</option>
+                            <option value="rect" ${layer.cropShape === 'rect' ? 'selected' : ''}>▭ Full Rectangle / Background</option>
+                        </select>
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label"><span>Width / Size</span><span id="lblImgW">${Math.round(layer.width)} px</span></div>
+                        <input type="range" id="inspImgW" min="40" max="1600" value="${layer.width}">
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label"><span>Height</span><span id="lblImgH">${Math.round(layer.height)} px</span></div>
+                        <input type="range" id="inspImgH" min="40" max="1600" value="${layer.height}">
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label"><span>Border Ring Width</span><span id="lblBorderW">${layer.borderWidth} px</span></div>
+                        <input type="range" id="inspBorderW" min="0" max="24" value="${layer.borderWidth}">
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label"><span>Background Blur</span><span id="lblBlur">${layer.blurPx || 0} px</span></div>
+                        <input type="range" id="inspBlur" min="0" max="40" value="${layer.blurPx || 0}">
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label"><span>Darken / Dim Overlay</span><span id="lblDim">${Math.round((layer.dimness || 0) * 100)}%</span></div>
+                        <input type="range" id="inspDim" min="0" max="85" value="${Math.round((layer.dimness || 0) * 100)}">
+                    </div>
+                `;
+            }
+
+            if (layer.type === 'radial') {
+                html += `
+                    <div class="control-row">
+                        <div class="control-label"><span>Radial Visualizer Style</span></div>
+                        <select id="inspSubType">
+                            <option value="bars" ${layer.subType === 'bars' ? 'selected' : ''}>📊 Radial Spectrum Bars</option>
+                            <option value="wave" ${layer.subType === 'wave' ? 'selected' : ''}>〰️ Connected Liquid Halo</option>
+                            <option value="dots" ${layer.subType === 'dots' ? 'selected' : ''}>••• Floating Peak Orbs</option>
+                            <option value="dualRing" ${layer.subType === 'dualRing' ? 'selected' : ''}>◎ Inside + Outside Mirror Ring</option>
+                        </select>
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label"><span>Inner Radius (Fits Around Logo)</span><span id="lblInnerR">${layer.innerRadius} px</span></div>
+                        <input type="range" id="inspInnerR" min="20" max="400" value="${layer.innerRadius}">
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label"><span>Max Bar Height / Amplitude</span><span id="lblMaxH">${layer.maxBarHeight} px</span></div>
+                        <input type="range" id="inspMaxH" min="20" max="350" value="${layer.maxBarHeight}">
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label"><span>Bar / Point Count</span><span id="lblBarCount">${layer.barCount}</span></div>
+                        <input type="range" id="inspBarCount" min="24" max="200" step="2" value="${layer.barCount}">
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label"><span>Bar Thickness</span><span id="lblBarW">${layer.barWidth} px</span></div>
+                        <input type="range" id="inspBarW" min="1" max="18" value="${layer.barWidth}">
+                    </div>
+                `;
+            }
+
+            if (layer.type === 'bars') {
+                html += `
+                    <div class="control-row">
+                        <div class="control-label"><span>Linear Spectrum Style</span></div>
+                        <select id="inspSubType">
+                            <option value="bars" ${layer.subType === 'bars' ? 'selected' : ''}>📊 Classic Vertical Bars</option>
+                            <option value="mirror" ${layer.subType === 'mirror' ? 'selected' : ''}>↕️ Mirrored Up & Down</option>
+                            <option value="mountain" ${layer.subType === 'mountain' ? 'selected' : ''}>⛰️ Smooth Filled Mountain</option>
+                        </select>
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label"><span>Spectrum Width</span><span id="lblSpecW">${Math.round(layer.width)} px</span></div>
+                        <input type="range" id="inspSpecW" min="200" max="1280" value="${layer.width}">
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label"><span>Max Height</span><span id="lblMaxH">${layer.maxBarHeight} px</span></div>
+                        <input type="range" id="inspMaxH" min="30" max="450" value="${layer.maxBarHeight}">
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label"><span>Bar Count</span><span id="lblBarCount">${layer.barCount}</span></div>
+                        <input type="range" id="inspBarCount" min="16" max="160" value="${layer.barCount}">
+                    </div>
+                `;
+            }
+
+            if (layer.type === 'wave') {
+                html += `
+                    <div class="control-row">
+                        <div class="control-label"><span>Wave Width</span><span id="lblWaveW">${Math.round(layer.width)} px</span></div>
+                        <input type="range" id="inspWaveW" min="200" max="1280" value="${layer.width}">
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label"><span>Wave Amplitude</span><span id="lblWaveAmp">${layer.amplitude} px</span></div>
+                        <input type="range" id="inspWaveAmp" min="20" max="320" value="${layer.amplitude}">
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label"><span>Line Thickness</span><span id="lblWaveThick">${layer.thickness} px</span></div>
+                        <input type="range" id="inspWaveThick" min="1" max="14" value="${layer.thickness}">
+                    </div>
+                `;
+            }
+
+            if (layer.type === 'particles') {
+                html += `
+                    <div class="control-row">
+                        <div class="control-label"><span>Particle Motion</span></div>
+                        <select id="inspDirection">
+                            <option value="outward" ${layer.direction === 'outward' ? 'selected' : ''}>💥 Radial Warp Outward</option>
+                            <option value="rise" ${layer.direction === 'rise' ? 'selected' : ''}>🔥 Rising Bass Embers</option>
+                        </select>
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label"><span>Particle Count</span><span id="lblPartCount">${layer.count}</span></div>
+                        <input type="range" id="inspPartCount" min="20" max="160" value="${layer.count}">
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label"><span>Base Speed</span><span id="lblPartSpeed">${layer.speed.toFixed(1)}</span></div>
+                        <input type="range" id="inspPartSpeed" min="2" max="50" value="${layer.speed * 10}">
+                    </div>
+                `;
+            }
+
+            if (layer.type === 'text') {
+                html += `
+                    <div class="control-row">
+                        <div class="control-label"><span>Custom Text Content</span></div>
+                        <input type="text" id="inspTextStr" value="${layer.text}">
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label"><span>Font Size</span><span id="lblFontSize">${layer.fontSize} px</span></div>
+                        <input type="range" id="inspFontSize" min="16" max="140" value="${layer.fontSize}">
+                    </div>
+                `;
+            }
+
+            // Shared Audio Reactivity & Colors Section
+            html += `
+                <hr style="border:none; border-top:1px solid var(--border); margin:12px 0;">
+                <div class="card-header"><span>🎵 Beat Sync & Reactivity</span></div>
+                <div class="control-row">
+                    <div class="control-label"><span>Sync to Frequency Band</span></div>
+                    <select id="inspFreqBand">
+                        <option value="sub" ${layer.freqBand === 'sub' ? 'selected' : ''}>🥁 Sub-Bass / Kick (20–90 Hz)</option>
+                        <option value="bass" ${layer.freqBand === 'bass' ? 'selected' : ''}>🎸 Bassline (60–250 Hz)</option>
+                        <option value="lowMid" ${layer.freqBand === 'lowMid' ? 'selected' : ''}>🎹 Low-Mids / Synths</option>
+                        <option value="highMid" ${layer.freqBand === 'highMid' ? 'selected' : ''}>🎤 Vocals / High-Mids</option>
+                        <option value="treble" ${layer.freqBand === 'treble' ? 'selected' : ''}>✨ Hi-Hats / Treble Air</option>
+                        <option value="full" ${layer.freqBand === 'full' ? 'selected' : ''}>🌈 Full Frequency Average</option>
+                    </select>
+                </div>
+                <div class="control-row">
+                    <div class="control-label"><span>Beat Scale Bounce</span><span id="lblBeatPulse">${Math.round(layer.beatScalePulse * 100)}%</span></div>
+                    <input type="range" id="inspBeatPulse" min="0" max="80" value="${Math.round(layer.beatScalePulse * 100)}">
+                </div>
+                <div class="control-row">
+                    <div class="control-label"><span>Auto Spin Speed</span><span id="lblRotSpeed">${layer.beatRotSpeed.toFixed(2)}</span></div>
+                    <input type="range" id="inspRotSpeed" min="-100" max="100" value="${Math.round(layer.beatRotSpeed * 100)}">
+                </div>
+
+                <hr style="border:none; border-top:1px solid var(--border); margin:12px 0;">
+                <div class="card-header"><span>🎨 Colors, Glow & Transform</span></div>
+                <div class="color-grid" style="margin-bottom:9px;">
+                    <div class="color-box">
+                        <span>Primary</span>
+                        <input type="color" id="inspColor1" value="${layer.color1}">
+                    </div>
+                    <div class="color-box">
+                        <span>Secondary</span>
+                        <input type="color" id="inspColor2" value="${layer.color2}">
+                    </div>
+                </div>
+                <div class="control-row">
+                    <div class="control-label"><span>Neon Glow Intensity</span><span id="lblGlow">${layer.glow} px</span></div>
+                    <input type="range" id="inspGlow" min="0" max="45" value="${layer.glow}">
+                </div>
+                <div class="control-row">
+                    <div class="control-label"><span>Base Scale</span><span id="lblScale">${Math.round(layer.scale * 100)}%</span></div>
+                    <input type="range" id="inspScale" min="20" max="250" value="${Math.round(layer.scale * 100)}">
+                </div>
+                <div class="control-row">
+                    <div class="control-label"><span>Layer Opacity</span><span id="lblOpacity">${Math.round(layer.opacity * 100)}%</span></div>
+                    <input type="range" id="inspOpacity" min="5" max="100" value="${Math.round(layer.opacity * 100)}">
+                </div>
+                <div class="control-row">
+                    <div class="control-label"><span>Blend Mode</span></div>
+                    <select id="inspBlend">
+                        <option value="source-over" ${layer.blendMode === 'source-over' ? 'selected' : ''}>Normal</option>
+                        <option value="screen" ${layer.blendMode === 'screen' ? 'selected' : ''}>Screen (Brighten)</option>
+                        <option value="lighter" ${layer.blendMode === 'lighter' ? 'selected' : ''}>Additive Neon</option>
+                    </select>
+                </div>
+                <button class="btn" style="width:100%; margin-top:6px;" id="inspCenterBtn">🎯 Center Layer on Stage</button>
+            `;
+
+            box.innerHTML = html;
+
+            // Wire up Inspector Listeners
+            const bind = (id, ev, fn) => { const el = document.getElementById(id); if (el) el.addEventListener(ev, fn); };
+
+            bind('inspName', 'input', (e) => { layer.name = e.target.value; renderLayerStack(); });
+            bind('inspFreqBand', 'change', (e) => { layer.freqBand = e.target.value; });
+            bind('inspBeatPulse', 'input', (e) => {
+                layer.beatScalePulse = parseFloat(e.target.value) / 100;
+                document.getElementById('lblBeatPulse').textContent = `${e.target.value}%`;
+            });
+            bind('inspRotSpeed', 'input', (e) => {
+                layer.beatRotSpeed = parseFloat(e.target.value) / 100;
+                document.getElementById('lblRotSpeed').textContent = layer.beatRotSpeed.toFixed(2);
+            });
+            bind('inspColor1', 'input', (e) => { layer.color1 = e.target.value; layer.borderColor = e.target.value; });
+            bind('inspColor2', 'input', (e) => { layer.color2 = e.target.value; });
+            bind('inspGlow', 'input', (e) => {
+                layer.glow = parseFloat(e.target.value);
+                document.getElementById('lblGlow').textContent = `${e.target.value} px`;
+            });
+            bind('inspScale', 'input', (e) => {
+                layer.scale = parseFloat(e.target.value) / 100;
+                document.getElementById('lblScale').textContent = `${e.target.value}%`;
+            });
+            bind('inspOpacity', 'input', (e) => {
+                layer.opacity = parseFloat(e.target.value) / 100;
+                document.getElementById('lblOpacity').textContent = `${e.target.value}%`;
+            });
+            bind('inspBlend', 'change', (e) => { layer.blendMode = e.target.value; });
+            bind('inspCenterBtn', 'click', () => {
+                layer.x = canvas.width / 2;
+                layer.y = canvas.height / 2;
+            });
+
+            // Image Specific
+            bind('inspCropShape', 'change', (e) => { layer.cropShape = e.target.value; });
+            bind('inspImgW', 'input', (e) => {
+                layer.width = parseFloat(e.target.value);
+                if (layer.cropShape === 'circle') {
+                    layer.height = layer.width;
+                    document.getElementById('inspImgH').value = layer.width;
+                    document.getElementById('lblImgH').textContent = `${Math.round(layer.height)} px`;
+                }
+                document.getElementById('lblImgW').textContent = `${Math.round(layer.width)} px`;
+            });
+            bind('inspImgH', 'input', (e) => {
+                layer.height = parseFloat(e.target.value);
+                document.getElementById('lblImgH').textContent = `${Math.round(layer.height)} px`;
+            });
+            bind('inspBorderW', 'input', (e) => {
+                layer.borderWidth = parseFloat(e.target.value);
+                document.getElementById('lblBorderW').textContent = `${e.target.value} px`;
+            });
+            bind('inspBlur', 'input', (e) => {
+                layer.blurPx = parseFloat(e.target.value);
+                document.getElementById('lblBlur').textContent = `${e.target.value} px`;
+            });
+            bind('inspDim', 'input', (e) => {
+                layer.dimness = parseFloat(e.target.value) / 100;
+                document.getElementById('lblDim').textContent = `${e.target.value}%`;
+            });
+            bind('inspFitBgBtn', 'click', () => {
+                layer.width = canvas.width;
+                layer.height = canvas.height;
+                layer.x = canvas.width / 2;
+                layer.y = canvas.height / 2;
+                layer.cropShape = 'rect';
+                layer.isBackground = true;
+                renderInspector();
+            });
+
+            // Radial & Linear Specific
+            bind('inspSubType', 'change', (e) => { layer.subType = e.target.value; });
+            bind('inspInnerR', 'input', (e) => {
+                layer.innerRadius = parseFloat(e.target.value);
+                document.getElementById('lblInnerR').textContent = `${e.target.value} px`;
+            });
+            bind('inspMaxH', 'input', (e) => {
+                layer.maxBarHeight = parseFloat(e.target.value);
+                document.getElementById('lblMaxH').textContent = `${e.target.value} px`;
+            });
+            bind('inspBarCount', 'input', (e) => {
+                layer.barCount = parseInt(e.target.value, 10);
+                document.getElementById('lblBarCount').textContent = e.target.value;
+            });
+            bind('inspBarW', 'input', (e) => {
+                layer.barWidth = parseFloat(e.target.value);
+                document.getElementById('lblBarW').textContent = `${e.target.value} px`;
+            });
+            bind('inspSpecW', 'input', (e) => {
+                layer.width = parseFloat(e.target.value);
+                document.getElementById('lblSpecW').textContent = `${Math.round(layer.width)} px`;
+            });
+
+            // Wave, Particles & Text
+            bind('inspWaveW', 'input', (e) => {
+                layer.width = parseFloat(e.target.value);
+                document.getElementById('lblWaveW').textContent = `${Math.round(layer.width)} px`;
+            });
+            bind('inspWaveAmp', 'input', (e) => {
+                layer.amplitude = parseFloat(e.target.value);
+                document.getElementById('lblWaveAmp').textContent = `${e.target.value} px`;
+            });
+            bind('inspWaveThick', 'input', (e) => {
+                layer.thickness = parseFloat(e.target.value);
+                document.getElementById('lblWaveThick').textContent = `${e.target.value} px`;
+            });
+            bind('inspDirection', 'change', (e) => { layer.direction = e.target.value; });
+            bind('inspPartCount', 'input', (e) => {
+                layer.count = parseInt(e.target.value, 10);
+                document.getElementById('lblPartCount').textContent = e.target.value;
+            });
+            bind('inspPartSpeed', 'input', (e) => {
+                layer.speed = parseFloat(e.target.value) / 10;
+                document.getElementById('lblPartSpeed').textContent = layer.speed.toFixed(1);
+            });
+            bind('inspTextStr', 'input', (e) => { layer.text = e.target.value; });
+            bind('inspFontSize', 'input', (e) => {
+                layer.fontSize = parseFloat(e.target.value);
+                document.getElementById('lblFontSize').textContent = `${e.target.value} px`;
+            });
+        }
+
+        // ============================================================================
+        // 5. DIRECT ON-CANVAS DRAGGING & WHEEL SCALING
+        // ============================================================================
+        let isDraggingLayer = false;
+        let dragStartPt = { x: 0, y: 0 };
+        let dragLayerStart = { x: 0, y: 0 };
+
+        function getStageCoords(e) {
+            const r = canvas.getBoundingClientRect();
+            return {
+                x: (e.clientX - r.left) * (canvas.width / r.width),
+                y: (e.clientY - r.top) * (canvas.height / r.height)
+            };
+        }
+
+        canvas.addEventListener('pointerdown', (e) => {
+            const pt = getStageCoords(e);
+            // Hit-test non-background layers from top to bottom first
+            let hit = null;
+            for (let i = layers.length - 1; i >= 0; i--) {
+                const l = layers[i];
+                if (!l.visible || l.isBackground) continue;
+                const radius = l.type === 'radial' ? (l.innerRadius + l.maxBarHeight * 0.6) : (l.width ? l.width / 2 : 140);
+                if (Math.hypot(pt.x - l.x, pt.y - l.y) <= radius * l.scale) {
+                    hit = l;
+                    break;
+                }
+            }
+            if (!hit) {
+                hit = layers.find(l => l.id === selectedLayerId) || layers[0];
+            }
+            if (hit) {
+                selectedLayerId = hit.id;
+                isDraggingLayer = true;
+                dragStartPt = pt;
+                dragLayerStart = { x: hit.x, y: hit.y };
+                canvas.setPointerCapture(e.pointerId);
+                renderLayerStack();
+                renderInspector();
+            }
+        });
+
+        canvas.addEventListener('pointermove', (e) => {
+            if (!isDraggingLayer) return;
+            const l = layers.find(x => x.id === selectedLayerId);
+            if (!l) return;
+            const pt = getStageCoords(e);
+            l.x = dragLayerStart.x + (pt.x - dragStartPt.x);
+            l.y = dragLayerStart.y + (pt.y - dragStartPt.y);
+        });
+
+        window.addEventListener('pointerup', () => { isDraggingLayer = false; });
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const l = layers.find(x => x.id === selectedLayerId);
+            if (!l) return;
+            const delta = e.deltaY < 0 ? 0.06 : -0.06;
+            l.scale = Math.max(0.2, Math.min(3.0, l.scale + delta));
+            renderInspector();
+        }, { passive: false });
+
+        // ============================================================================
+        // 6. MULTI-LAYER COMPOSITOR & RENDER ENGINE
+        // ============================================================================
+        function drawImageLayer(l, energy) {
+            if (!l.imgSource) return;
+            const w = l.width;
+            const h = l.height;
+
+            ctx.save();
+            if (l.blurPx > 0) {
+                ctx.filter = `blur(${l.blurPx}px)`;
+            }
+
+            ctx.beginPath();
+            if (l.cropShape === 'circle') {
+                ctx.arc(0, 0, Math.min(w, h) / 2, 0, Math.PI * 2);
+                ctx.clip();
+            } else if (l.cropShape === 'rounded') {
+                ctx.roundRect(-w / 2, -h / 2, w, h, Math.min(w, h) * 0.18);
+                ctx.clip();
+            }
+
+            ctx.drawImage(l.imgSource, -w / 2, -h / 2, w, h);
+
+            if (l.dimness > 0) {
+                ctx.fillStyle = `rgba(0, 0, 0, ${l.dimness})`;
+                ctx.fillRect(-w / 2, -h / 2, w, h);
+            }
+            ctx.restore();
+
+            // Glowing Border Ring (for circular/rounded logos)
+            if (l.borderWidth > 0 && l.cropShape !== 'rect') {
+                ctx.save();
+                ctx.strokeStyle = l.borderColor || l.color1;
+                ctx.lineWidth = l.borderWidth;
+                ctx.beginPath();
+                if (l.cropShape === 'circle') {
+                    ctx.arc(0, 0, Math.min(w, h) / 2, 0, Math.PI * 2);
+                } else {
+                    ctx.roundRect(-w / 2, -h / 2, w, h, Math.min(w, h) * 0.18);
+                }
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+
+        function drawRadialLayer(l, energy) {
+            const count = l.barCount;
+            const r0 = l.innerRadius;
+            const maxH = l.maxBarHeight;
+            const grad = ctx.createLinearGradient(-r0 - maxH, -r0 - maxH, r0 + maxH, r0 + maxH);
+            grad.addColorStop(0, l.color1);
+            grad.addColorStop(1, l.color2);
+
+            ctx.strokeStyle = grad;
+            ctx.fillStyle = grad;
+            ctx.lineWidth = l.barWidth;
+            ctx.lineCap = 'round';
+
+            if (l.subType === 'wave') {
+                ctx.beginPath();
+                for (let i = 0; i <= count; i++) {
+                    const idx = i % count;
+                    const half = count / 2;
+                    const mIdx = idx < half ? idx : count - idx;
+                    const bin = Math.floor((mIdx / half) * 140) + 2;
+                    const val = (freqData[bin] / 255);
+                    const rad = r0 + val * maxH;
+                    const ang = (idx / count) * Math.PI * 2 - Math.PI / 2;
+                    const x = Math.cos(ang) * rad;
+                    const y = Math.sin(ang) * rad;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.stroke();
+                ctx.globalAlpha *= 0.22;
+                ctx.fill();
+                return;
+            }
+
+            for (let i = 0; i < count; i++) {
+                const half = count / 2;
+                const mIdx = l.mirror ? (i < half ? i : count - i) : i;
+                const bin = Math.floor((mIdx / (l.mirror ? half : count)) * 150) + 2;
+                const val = freqData[bin] / 255;
+                const h = Math.max(3, val * maxH);
+                const ang = (i / count) * Math.PI * 2 - Math.PI / 2;
+                const cos = Math.cos(ang);
+                const sin = Math.sin(ang);
+
+                if (l.subType === 'dots') {
+                    ctx.beginPath();
+                    ctx.arc(cos * (r0 + h), sin * (r0 + h), l.barWidth * 1.1, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (l.subType === 'dualRing') {
+                    ctx.beginPath();
+                    ctx.moveTo(cos * (r0 - h * 0.45), sin * (r0 - h * 0.45));
+                    ctx.lineTo(cos * (r0 + h), sin * (r0 + h));
+                    ctx.stroke();
+                } else {
+                    ctx.beginPath();
+                    ctx.moveTo(cos * r0, sin * r0);
+                    ctx.lineTo(cos * (r0 + h), sin * (r0 + h));
+                    ctx.stroke();
+                }
+            }
+        }
+
+        function drawLinearBarsLayer(l, energy) {
+            const count = l.barCount;
+            const totalW = l.width;
+            const step = totalW / count;
+            const startX = -totalW / 2;
+            const grad = ctx.createLinearGradient(startX, 0, startX + totalW, 0);
+            grad.addColorStop(0, l.color1);
+            grad.addColorStop(1, l.color2);
+            ctx.fillStyle = grad;
+            ctx.strokeStyle = grad;
+
+            if (l.subType === 'mountain') {
+                ctx.beginPath();
+                ctx.moveTo(startX, 0);
+                for (let i = 0; i < count; i++) {
+                    const bin = Math.floor((i / count) * 160) + 2;
+                    const h = (freqData[bin] / 255) * l.maxBarHeight;
+                    ctx.lineTo(startX + i * step, -h);
+                }
+                ctx.lineTo(startX + totalW, 0);
+                ctx.closePath();
+                ctx.fill();
+                return;
+            }
+
+            const bw = Math.max(2, step * 0.7);
+            for (let i = 0; i < count; i++) {
+                const bin = Math.floor((i / count) * 160) + 2;
+                const h = Math.max(4, (freqData[bin] / 255) * l.maxBarHeight);
+                const x = startX + i * step;
+                if (l.subType === 'mirror') {
+                    ctx.fillRect(x, -h / 2, bw, h);
+                } else {
+                    ctx.fillRect(x, -h, bw, h);
+                }
+            }
+        }
+
+        function drawWaveLayer(l, energy) {
+            const w = l.width;
+            const startX = -w / 2;
+            const grad = ctx.createLinearGradient(startX, 0, startX + w, 0);
+            grad.addColorStop(0, l.color1);
+            grad.addColorStop(1, l.color2);
+            ctx.strokeStyle = grad;
+            ctx.lineWidth = l.thickness;
+            ctx.beginPath();
+
+            const pts = 180;
+            for (let i = 0; i < pts; i++) {
+                const v = (timeData[i * 2] - 128) / 128;
+                const x = startX + (i / (pts - 1)) * w;
+                const y = v * l.amplitude;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        }
+
+        function drawParticlesLayer(l, energy) {
+            const boost = 1 + energy * 4.5 + beatPulse * 3;
+            for (let i = 0; i < l.count; i++) {
+                const p = l.pool[i];
+                if (l.direction === 'outward') {
+                    p.dist += l.speed * boost;
+                    if (p.dist > Math.max(canvas.width, canvas.height) * 0.65) {
+                        p.dist = 20 + Math.random() * 60;
+                        p.angle = Math.random() * Math.PI * 2;
+                    }
+                    const x = Math.cos(p.angle) * p.dist;
+                    const y = Math.sin(p.angle) * p.dist;
+                    ctx.fillStyle = i % 2 === 0 ? l.color1 : l.color2;
+                    ctx.beginPath();
+                    ctx.arc(x, y, p.s * (0.7 + energy * 1.4), 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    p.y -= l.speed * boost;
+                    if (p.y < -canvas.height / 2) {
+                        p.y = canvas.height / 2;
+                        p.x = (Math.random() - 0.5) * canvas.width;
+                    }
+                    ctx.fillStyle = i % 2 === 0 ? l.color1 : l.color2;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.s * (0.7 + energy * 1.3), 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+
+        function drawTextLayer(l, energy) {
+            ctx.font = `900 ${l.fontSize}px ${l.fontFamily}`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = l.color1;
+            ctx.fillText(l.text, 0, 0);
+        }
+
+        function renderLoop() {
+            requestAnimationFrame(renderLoop);
+            updateAudioAnalysis();
+
+            const W = canvas.width;
+            const H = canvas.height;
+            ctx.clearRect(0, 0, W, H);
+            ctx.fillStyle = '#05070b';
+            ctx.fillRect(0, 0, W, H);
+
+            ctx.save();
+            // Global Camera Shake on Sub-Bass / Beat
+            if (camShakeAmount > 0 && beatPulse > 0.1) {
+                const shakePx = beatPulse * camShakeAmount * 22;
+                ctx.translate((Math.random() - 0.5) * shakePx, (Math.random() - 0.5) * shakePx);
+            }
+
+            // Render every visible layer from bottom to top
+            for (const l of layers) {
+                if (!l.visible) continue;
+                const bandEnergy = bands[l.freqBand] || 0;
+                const dynamicScale = l.scale * (1 + bandEnergy * l.beatScalePulse + beatPulse * (l.beatScalePulse * 0.45));
+
+                if (l.beatRotSpeed !== 0) {
+                    l.rotation += l.beatRotSpeed * (1 + bandEnergy * 2.5);
+                }
+
+                ctx.save();
+                ctx.translate(l.x, l.y);
+                ctx.rotate((l.rotation * Math.PI) / 180);
+                ctx.scale(dynamicScale, dynamicScale);
+                ctx.globalAlpha = l.opacity;
+                ctx.globalCompositeOperation = l.blendMode || 'source-over';
+
+                if (l.glow > 0) {
+                    ctx.shadowColor = l.color2 || l.color1;
+                    ctx.shadowBlur = l.glow * (1 + beatPulse * 0.6);
+                }
+
+                if (l.type === 'image') drawImageLayer(l, bandEnergy);
+                else if (l.type === 'radial') drawRadialLayer(l, bandEnergy);
+                else if (l.type === 'bars') drawLinearBarsLayer(l, bandEnergy);
+                else if (l.type === 'wave') drawWaveLayer(l, bandEnergy);
+                else if (l.type === 'particles') drawParticlesLayer(l, bandEnergy);
+                else if (l.type === 'text') drawTextLayer(l, bandEnergy);
+
+                ctx.restore();
+            }
+
+            // Optional RGB Chromatic Glitch Split on Heavy Beat Peaks
+            if (rgbGlitchEnabled && beatPulse > 0.65) {
+                ctx.save();
+                ctx.globalCompositeOperation = 'screen';
+                ctx.globalAlpha = 0.28;
+                ctx.drawImage(canvas, -6 * beatPulse, 0);
+                ctx.drawImage(canvas, 6 * beatPulse, 0);
+                ctx.restore();
+            }
+
+            // Global Beat Flash Vignette
+            if (camFlashAmount > 0 && beatPulse > 0.05) {
+                const radGrad = ctx.createRadialGradient(W / 2, H / 2, W * 0.25, W / 2, H / 2, W * 0.65);
+                radGrad.addColorStop(0, 'rgba(0,0,0,0)');
+                radGrad.addColorStop(1, `rgba(139, 92, 246, ${beatPulse * camFlashAmount * 0.55})`);
+                ctx.fillStyle = radGrad;
+                ctx.fillRect(0, 0, W, H);
+            }
+
+            ctx.restore();
+        }
+
+        // ============================================================================
+        // 7. TRANSPORT, ASPECT RATIO & VIDEO RECORDER (.WEBM EXPORT)
+        // ============================================================================
+        document.getElementById('playPauseBtn').addEventListener('click', () => {
+            ensureAudioContext();
+            if (activeSource === 'file') {
+                if (audioEl.paused) { audioEl.play(); updateTransportUI(document.getElementById('trackNameDisplay').textContent, true); }
+                else { audioEl.pause(); updateTransportUI(document.getElementById('trackNameDisplay').textContent, false); }
+            } else {
+                toggleSynthBeat();
+            }
+        });
+
+        const scrubber = document.getElementById('timelineScrubber');
+        let scrubbing = false;
+        scrubber.addEventListener('pointerdown', () => scrubbing = true);
+        scrubber.addEventListener('pointerup', () => {
+            if (activeSource === 'file' && audioEl.duration) {
+                audioEl.currentTime = (scrubber.value / 1000) * audioEl.duration;
+            }
+            scrubbing = false;
+        });
+
+        function fmtTime(s) {
+            if (!s || isNaN(s)) return '00:00';
+            return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+        }
+
+        audioEl.addEventListener('timeupdate', () => {
+            if (!scrubbing && audioEl.duration) {
+                scrubber.value = Math.round((audioEl.currentTime / audioEl.duration) * 1000);
+                document.getElementById('curTimeText').textContent = fmtTime(audioEl.currentTime);
+                document.getElementById('durTimeText').textContent = fmtTime(audioEl.duration);
+            }
+        });
+
+        document.getElementById('volumeSlider').addEventListener('input', (e) => {
+            ensureAudioContext();
+            masterGain.gain.value = parseFloat(e.target.value) / 100;
+        });
+
+        document.getElementById('camShakeSlider').addEventListener('input', (e) => {
+            camShakeAmount = parseFloat(e.target.value) / 100;
+            document.getElementById('valCamShake').textContent = `${e.target.value}%`;
+        });
+        document.getElementById('camFlashSlider').addEventListener('input', (e) => {
+            camFlashAmount = parseFloat(e.target.value) / 100;
+            document.getElementById('valCamFlash').textContent = `${e.target.value}%`;
+        });
+        document.getElementById('rgbGlitchCheck').addEventListener('change', (e) => {
+            rgbGlitchEnabled = e.target.checked;
+        });
+
+        document.getElementById('aspectRatioSelect').addEventListener('change', (e) => {
+            const val = e.target.value;
+            if (val === '16:9') { canvas.width = 1280; canvas.height = 720; }
+            else if (val === '9:16') { canvas.width = 720; canvas.height = 1280; }
+            else if (val === '1:1') { canvas.width = 900; canvas.height = 900; }
+
+            // Re-center layers on aspect ratio switch
+            layers.forEach(l => {
+                l.x = canvas.width / 2;
+                if (l.type === 'text') l.y = canvas.height * 0.88;
+                else if (l.type === 'bars') l.y = canvas.height * 0.82;
+                else l.y = canvas.height / 2;
+                if (l.isBackground) {
+                    l.width = canvas.width;
+                    l.height = canvas.height;
+                }
+            });
+            renderInspector();
+        });
+
+        // Built-In Video Recorder (Canvas + Audio Stream -> WebM)
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        const recordBtn = document.getElementById('recordVideoBtn');
+
+        recordBtn.addEventListener('click', () => {
+            ensureAudioContext();
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                recordBtn.classList.remove('recording');
+                recordBtn.textContent = '🔴 Export Video';
+                return;
+            }
+
+            recordedChunks = [];
+            const canvasStream = canvas.captureStream(60);
+            const dest = audioCtx.createMediaStreamDestination();
+            masterGain.connect(dest);
+            if (dest.stream.getAudioTracks().length > 0) {
+                canvasStream.addTrack(dest.stream.getAudioTracks()[0]);
+            }
+
+            mediaRecorder = new MediaRecorder(canvasStream, { mimeType: 'video/webm' });
+            mediaRecorder.ondataavailable = (ev) => {
+                if (ev.data && ev.data.size > 0) recordedChunks.push(ev.data);
+            };
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'vizzy-studio-visualizer.webm';
+                a.click();
+            };
+            mediaRecorder.start();
+            recordBtn.classList.add('recording');
+            recordBtn.textContent = '⏹ Stop & Save Video';
+        });
+
+        // Spacebar Play/Pause
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && document.activeElement.tagName !== 'INPUT') {
+                e.preventDefault();
+                document.getElementById('playPauseBtn').click();
+            }
+        });
+
+        // Boot up with starter Vizzy template
+        loadStarterTemplate();
+        requestAnimationFrame(renderLoop);
+    </script>
+</body>
+</html>
