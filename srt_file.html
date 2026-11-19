@@ -309,8 +309,9 @@
             <div class="relative rounded-xl bg-zinc-900/90 border border-zinc-800 p-3 space-y-2.5">
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <div class="flex items-center gap-2">
-                  <label for="geminiApiKeyInput" class="text-[11px] font-semibold uppercase tracking-wider text-zinc-300">Gemini API Key</label>
-                  <span id="apiKeySavedBadge" class="hidden px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Saved</span>
+                  <label for="geminiApiKeyInput" class="text-[11px] font-semibold uppercase tracking-wider text-zinc-300">Gemini API Key <span class="text-zinc-500 normal-case font-normal">(Optional)</span></label>
+                  <span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Built-in Ready</span>
+                  <span id="apiKeySavedBadge" class="hidden px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-500/15 text-violet-300 border border-violet-500/30">Custom Key Saved</span>
                 </div>
                 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" class="text-[11px] font-semibold text-violet-400 hover:text-violet-300 underline underline-offset-2 flex items-center gap-1 transition">
                   Get Free Key
@@ -327,7 +328,7 @@
                     type="password"
                     autocomplete="off"
                     spellcheck="false"
-                    placeholder="Paste your AIza... key here (saved locally in browser)"
+                    placeholder="Leave blank to use built-in AI (only needed if running offline)"
                     class="w-full bg-zinc-950 border border-zinc-800 focus:border-violet-500 focus:ring-1 focus:ring-violet-500 rounded-lg pl-3 pr-9 py-2 text-xs font-mono text-zinc-100 placeholder-zinc-500 outline-none transition"
                   />
                   <button
@@ -349,10 +350,11 @@
                 <select
                   id="geminiModelSelect"
                   aria-label="Gemini Model"
-                  class="bg-zinc-950 border border-zinc-800 focus:border-violet-500 rounded-lg px-2.5 py-2 text-xs font-mono text-violet-200 outline-none cursor-pointer sm:w-44 shrink-0"
+                  class="bg-zinc-950 border border-zinc-800 focus:border-violet-500 rounded-lg px-2.5 py-2 text-xs font-mono text-violet-200 outline-none cursor-pointer sm:w-52 shrink-0"
                 >
-                  <option value="gemini-2.5-flash" selected>gemini-2.5-flash</option>
-                  <option value="gemini-2.5-pro">gemini-2.5-pro</option>
+                  <option value="gemini-3-flash-preview" selected>gemini-3-flash-preview</option>
+                  <option value="gemini-2.5-flash">gemini-2.5-flash (custom key)</option>
+                  <option value="gemini-2.5-pro">gemini-2.5-pro (custom key)</option>
                 </select>
               </div>
             </div>
@@ -1297,14 +1299,9 @@
           return;
         }
 
+        // Leave apiKey empty ("") when using built-in gemini-3-flash-preview so runtime injects it automatically
         const apiKey = (els.geminiApiKeyInput.value || '').trim();
-        if (!apiKey) {
-          showToast('Please paste your free Gemini API key above (or use Vocal-Band Estimate / Tap-to-Sync).', 'warn');
-          els.geminiApiKeyInput.focus();
-          return;
-        }
-
-        const selectedModel = els.geminiModelSelect.value || 'gemini-2.5-flash';
+        const selectedModel = els.geminiModelSelect.value || 'gemini-3-flash-preview';
         state.isAiRunning = true;
         els.runAiSyncBtn.disabled = true;
 
@@ -2054,7 +2051,12 @@
           els.apiKeySavedBadge.classList.remove('hidden');
         }
         const savedModel = localStorage.getItem(STORAGE_MODEL_KEY);
-        if (savedModel && (savedModel === 'gemini-2.5-flash' || savedModel === 'gemini-2.5-pro')) {
+        if (
+          savedModel &&
+          (savedModel === 'gemini-3-flash-preview' ||
+            savedModel === 'gemini-2.5-flash' ||
+            savedModel === 'gemini-2.5-pro')
+        ) {
           els.geminiModelSelect.value = savedModel;
         }
       } catch (_) {}
