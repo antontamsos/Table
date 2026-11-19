@@ -233,7 +233,7 @@
         <textarea
           id="lyricsInput"
           rows="10"
-          placeholder="Paste your Suno lyrics here (Vietnamese UTF-8 & English supported)...&#10;&#10;[Verse 1]&#10;Sáu giờ sáng phố Huế, rào chắn bủa vây con đường&#10;Cắt điện toàn khu vực, phong tỏa kín hết bốn phương..."
+          placeholder="Paste your Suno lyrics here (Vietnamese UTF-8 &amp; English supported)...&#10;&#10;[Verse 1]&#10;Sáu giờ sáng phố Huế, rào chắn bủa vây con đường&#10;Cắt điện toàn khu vực, phong tỏa kín hết bốn phương..."
           class="w-full flex-1 bg-zinc-950 border border-zinc-800 focus:border-violet-500 focus:ring-1 focus:ring-violet-500 rounded-xl p-3.5 text-sm text-zinc-100 placeholder-zinc-500 outline-none resize-y leading-relaxed"
         ></textarea>
 
@@ -658,7 +658,542 @@
 
         aiProgressCard: document.getElementById('aiProgressCard'),
         aiStatusTitle: document.getElementById('aiStatusTitle'),
-// ... existing code ... -->
+        aiStepCounter: document.getElementById('aiStepCounter'),
+        aiStepBar1: document.getElementById('aiStepBar1'),
+        aiStepBar2: document.getElementById('aiStepBar2'),
+        aiStepBar3: document.getElementById('aiStepBar3'),
+        aiStatusSubtext: document.getElementById('aiStatusSubtext'),
+        runAiSyncBtn: document.getElementById('runAiSyncBtn'),
+
+        runVocalBandBtn: document.getElementById('runVocalBandBtn'),
+        vocalThresholdSlider: document.getElementById('vocalThresholdSlider'),
+        vocalThresholdVal: document.getElementById('vocalThresholdVal'),
+        vocalRegionsSummary: document.getElementById('vocalRegionsSummary'),
+
+        syncProgressLabel: document.getElementById('syncProgressLabel'),
+        syncProgressBar: document.getElementById('syncProgressBar'),
+        activeStateBadge: document.getElementById('activeStateBadge'),
+        resetSyncBtn: document.getElementById('resetSyncBtn'),
+        prevCueText: document.getElementById('prevCueText'),
+        prevCueTime: document.getElementById('prevCueTime'),
+        currentCueLabel: document.getElementById('currentCueLabel'),
+        currentCueTime: document.getElementById('currentCueTime'),
+        currentCueText: document.getElementById('currentCueText'),
+        nextCueText: document.getElementById('nextCueText'),
+        stampBtn: document.getElementById('stampBtn'),
+        endLineBtn: document.getElementById('endLineBtn'),
+        undoBtn: document.getElementById('undoBtn'),
+
+        globalMinus100Btn: document.getElementById('globalMinus100Btn'),
+        globalPlus100Btn: document.getElementById('globalPlus100Btn'),
+        customOffsetInput: document.getElementById('customOffsetInput'),
+        applyCustomOffsetBtn: document.getElementById('applyCustomOffsetBtn'),
+        cueTableBody: document.getElementById('cueTableBody'),
+
+        copySrtBtn: document.getElementById('copySrtBtn'),
+        downloadSrtBtn: document.getElementById('downloadSrtBtn'),
+        exportFileNamePreview: document.getElementById('exportFileNamePreview'),
+        exportStatsPreview: document.getElementById('exportStatsPreview'),
+        srtPreviewBox: document.getElementById('srtPreviewBox'),
+        toastContainer: document.getElementById('toastContainer'),
+      };
+
+      // ---------------------------------------------------------
+      // 3. UTILITY & FORMATTING HELPERS
+      // ---------------------------------------------------------
+
+      /** Non-blocking toast notification (replaces alert/confirm) */
+      function showToast(message, type = 'info') {
+        const styles = {
+          info: 'bg-zinc-900/95 border-zinc-700 text-zinc-100',
+          success: 'bg-emerald-950/95 border-emerald-500/50 text-emerald-200',
+          warn: 'bg-amber-950/95 border-amber-500/50 text-amber-200',
+          error: 'bg-rose-950/95 border-rose-500/50 text-rose-200',
+        };
+        const toast = document.createElement('div');
+        toast.className = `pointer-events-auto px-4 py-3 rounded-xl border text-xs sm:text-sm font-medium shadow-2xl backdrop-blur-md transition-all duration-300 opacity-0 translate-y-2 ${styles[type] || styles.info}`;
+        toast.textContent = message;
+        els.toastContainer.appendChild(toast);
+
+        requestAnimationFrame(() => {
+          toast.classList.remove('opacity-0', 'translate-y-2');
+        });
+
+        setTimeout(() => {
+          toast.classList.add('opacity-0', 'translate-y-2');
+          setTimeout(() => toast.remove(), 300);
+        }, type === 'error' ? 6500 : 3500);
+      }
+
+      /** Clamp number to [min, max] */
+      function clamp(val, min, max) {
+        return Math.max(min, Math.min(max, val));
+      }
+
+      /** Format seconds to MM:SS.mmm for UI display & inline inputs */
+      function formatDisplayTime(sec) {
+        if (sec === null || sec === undefined || Number.isNaN(sec) || !Number.isFinite(sec)) {
+          return '';
+        }
+        const safe = Math.max(0, sec);
+        const mins = Math.floor(safe / 60);
+        const secs = Math.floor(safe % 60);
+        const ms = Math.round((safe - Math.floor(safe)) * 1000);
+        if (ms === 1000) {
+          return formatDisplayTime(Math.floor(safe) + 1);
+        }
+        return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}.${String(ms).padStart(3, '0')}`;
+      }
+
+      /** Format seconds to strict SRT timestamp HH:MM:SS,mmm */
+      function formatSrtTime(sec) {
+        const safe = Math.max(0, sec || 0);
+        const hours = Math.floor(safe / 3600);
+        const mins = Math.floor((safe % 3600) / 60);
+        const secs = Math.floor(safe % 60);
+        const ms = Math.round((safe - Math.floor(safe)) * 1000);
+        if (ms === 1000) {
+          return formatSrtTime(Math.floor(safe) + 1);
+        }
+        return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')},${String(ms).padStart(3, '0')}`;
+      }
+
+      /** Parse MM:SS.mmm, HH:MM:SS,mmm, or raw seconds string into number|null */
+      function parseFlexibleTime(str) {
+        if (!str || !str.trim()) return null;
+        const clean = str.trim().replace(',', '.');
+        if (/^\d+(\.\d+)?$/.test(clean)) {
+          return parseFloat(clean);
+        }
+        const parts = clean.split(':');
+        if (parts.length === 2) {
+          const m = parseInt(parts[0], 10);
+          const s = parseFloat(parts[1]);
+          if (!Number.isNaN(m) && !Number.isNaN(s)) return Math.max(0, m * 60 + s);
+        } else if (parts.length === 3) {
+          const h = parseInt(parts[0], 10);
+          const m = parseInt(parts[1], 10);
+          const s = parseFloat(parts[2]);
+          if (!Number.isNaN(h) && !Number.isNaN(m) && !Number.isNaN(s)) {
+            return Math.max(0, h * 3600 + m * 60 + s);
+          }
+        }
+        return null;
+      }
+
+      /** Escape HTML special chars for safe rendering */
+      function escapeHtml(str) {
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+
+      /** Convert ArrayBuffer to Base64 in safe chunks (avoids call stack overflow) */
+      function arrayBufferToBase64(buffer) {
+        const bytes = new Uint8Array(buffer);
+        const chunkSize = 0x8000;
+        let binary = '';
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+          binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+        }
+        return btoa(binary);
+      }
+
+      /** Resolve MIME type for Gemini inlineData */
+      function resolveAudioMimeType(file) {
+        if (file.type && file.type.startsWith('audio/')) return file.type;
+        const lower = (file.name || '').toLowerCase();
+        if (lower.endsWith('.mp3')) return 'audio/mp3';
+        if (lower.endsWith('.wav')) return 'audio/wav';
+        if (lower.endsWith('.m4a')) return 'audio/mp4';
+        if (lower.endsWith('.ogg')) return 'audio/ogg';
+        return 'audio/mpeg';
+      }
+
+      /** Downsample AudioBuffer to 16kHz mono 16-bit PCM WAV Base64 for large files (>15MB) */
+      async function downsampleAudioBufferTo16kWavBase64(audioBuffer) {
+        const targetRate = 16000;
+        const length = Math.ceil(audioBuffer.duration * targetRate);
+        const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+        const offlineCtx = new OfflineCtx(1, length, targetRate);
+        const src = offlineCtx.createBufferSource();
+        src.buffer = audioBuffer;
+        src.connect(offlineCtx.destination);
+        src.start(0);
+        const rendered = await offlineCtx.startRendering();
+        const samples = rendered.getChannelData(0);
+
+        const wavBuf = new ArrayBuffer(44 + samples.length * 2);
+        const view = new DataView(wavBuf);
+
+        function writeStr(offset, s) {
+          for (let i = 0; i < s.length; i++) view.setUint8(offset + i, s.charCodeAt(i));
+        }
+
+        writeStr(0, 'RIFF');
+        view.setUint32(4, 36 + samples.length * 2, true);
+        writeStr(8, 'WAVE');
+        writeStr(12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true); // PCM
+        view.setUint16(22, 1, true); // Mono
+        view.setUint32(24, targetRate, true);
+        view.setUint32(28, targetRate * 2, true);
+        view.setUint16(32, 2, true);
+        view.setUint16(34, 16, true);
+        writeStr(36, 'data');
+        view.setUint32(40, samples.length * 2, true);
+
+        let offset = 44;
+        for (let i = 0; i < samples.length; i++) {
+          const s = clamp(samples[i], -1, 1);
+          view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+          offset += 2;
+        }
+
+        return {
+          base64: arrayBufferToBase64(wavBuf),
+          mimeType: 'audio/wav',
+        };
+      }
+
+      // ---------------------------------------------------------
+      // 4. AUDIO LOADING & WAVEFORM RENDERING
+      // ---------------------------------------------------------
+
+      /** Handle uploaded audio File */
+      async function handleAudioFile(file) {
+        if (!file) return;
+        try {
+          if (state.audioUrl) {
+            URL.revokeObjectURL(state.audioUrl);
+          }
+
+          state.audioFile = file;
+          state.audioFileName = file.name.replace(/\.[^/.]+$/, '') || 'suno_lyrics';
+          state.audioUrl = URL.createObjectURL(file);
+          els.audioPlayer.src = state.audioUrl;
+          els.audioPlayer.playbackRate = state.playbackRate;
+
+          els.dropZone.classList.add('hidden');
+          els.playerContainer.classList.remove('hidden');
+          els.changeAudioBtn.classList.remove('hidden');
+          els.decodingOverlay.classList.remove('hidden');
+
+          const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+          els.audioFileMeta.textContent = `${file.name} (${sizeMB} MB)`;
+          els.exportFileNamePreview.textContent = `${state.audioFileName}.srt`;
+          els.statusDot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-pulse';
+          els.statusText.textContent = 'Decoding audio...';
+
+          const arrayBuf = await file.arrayBuffer();
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          const ctx = new AudioCtx();
+          const decoded = await ctx.decodeAudioData(arrayBuf.slice(0));
+          await ctx.close();
+
+          state.audioBuffer = decoded;
+          state.duration = decoded.duration;
+          state.waveformPeaks = extractWaveformPeaks(decoded, 420);
+
+          els.totalDurationDisplay.textContent = formatDisplayTime(state.duration);
+          els.currentTimeDisplay.textContent = formatDisplayTime(0);
+          els.decodingOverlay.classList.add('hidden');
+          els.statusDot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+          els.statusText.textContent = `Ready • ${formatDisplayTime(state.duration)}`;
+          els.vocalRegionsSummary.textContent = `Ready (${state.duration.toFixed(1)}s track)`;
+
+          resizeWaveformCanvas();
+          drawWaveform();
+          showToast(`Loaded "${file.name}"`, 'success');
+        } catch (err) {
+          console.error('Audio decode error:', err);
+          els.decodingOverlay.classList.add('hidden');
+          els.statusDot.className = 'w-2 h-2 rounded-full bg-rose-500';
+          els.statusText.textContent = 'Decode failed';
+          showToast('Could not decode audio file. Please try a standard MP3, WAV, M4A, or OGG file.', 'error');
+        }
+      }
+
+      /** Downsample decoded AudioBuffer into normalized peak bars */
+      function extractWaveformPeaks(audioBuffer, barCount) {
+        const channelData = audioBuffer.getChannelData(0);
+        const blockSize = Math.max(1, Math.floor(channelData.length / barCount));
+        const peaks = new Float32Array(barCount);
+        let maxPeak = 0.001;
+
+        for (let i = 0; i < barCount; i++) {
+          const start = i * blockSize;
+          const end = Math.min(channelData.length, start + blockSize);
+          let peak = 0;
+          // Sample stride for fast decoding on long tracks
+          const step = Math.max(1, Math.floor((end - start) / 256));
+          for (let j = start; j < end; j += step) {
+            const abs = Math.abs(channelData[j]);
+            if (abs > peak) peak = abs;
+          }
+          peaks[i] = peak;
+          if (peak > maxPeak) maxPeak = peak;
+        }
+
+        for (let i = 0; i < barCount; i++) {
+          peaks[i] = peaks[i] / maxPeak;
+        }
+        return peaks;
+      }
+
+      /** Size canvas crisply for container & devicePixelRatio */
+      function resizeWaveformCanvas() {
+        const rect = els.waveformWrapper.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        const dpr = window.devicePixelRatio || 1;
+        els.waveformCanvas.width = Math.floor(rect.width * dpr);
+        els.waveformCanvas.height = Math.floor(rect.height * dpr);
+        const ctx = els.waveformCanvas.getContext('2d');
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        drawWaveform();
+      }
+
+      /** Draw waveform bars, synced subtitle region blocks, and playhead */
+      function drawWaveform() {
+        const canvas = els.waveformCanvas;
+        const ctx = canvas.getContext('2d');
+        const rect = els.waveformWrapper.getBoundingClientRect();
+        const width = rect.width;
+        const height = rect.height;
+        if (!width || !height) return;
+
+        ctx.clearRect(0, 0, width, height);
+
+        // Background subtle center axis
+        ctx.strokeStyle = 'rgba(63, 63, 70, 0.45)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, height / 2);
+        ctx.lineTo(width, height / 2);
+        ctx.stroke();
+
+        const duration = state.duration || els.audioPlayer.duration || 0;
+        const currentTime = els.audioPlayer.currentTime || 0;
+        const progressRatio = duration > 0 ? clamp(currentTime / duration, 0, 1) : 0;
+
+        // 1. Draw synced subtitle cue blocks behind/over waveform
+        if (duration > 0 && state.cues.length > 0) {
+          state.cues.forEach((cue, idx) => {
+            if (cue.start === null) return;
+            const cueEnd = cue.end !== null ? cue.end : Math.min(duration, cue.start + 1.5);
+            if (cueEnd <= cue.start) return;
+
+            const x1 = (cue.start / duration) * width;
+            const x2 = (cueEnd / duration) * width;
+            const blockW = Math.max(2, x2 - x1);
+            const palette = CUE_BLOCK_COLORS[idx % CUE_BLOCK_COLORS.length];
+            const isActive = cue.id === state.activePlayingCueId;
+
+            ctx.fillStyle = isActive ? 'rgba(139, 92, 246, 0.42)' : palette.fill;
+            ctx.fillRect(x1, 4, blockW, height - 8);
+
+            // Top colored cap bar
+            ctx.fillStyle = isActive ? '#e879f9' : palette.border;
+            ctx.fillRect(x1, 4, blockW, 3);
+
+            // Left edge hairline
+            ctx.fillStyle = palette.border;
+            ctx.fillRect(x1, 4, 1, height - 8);
+
+            // Small index number if block is wide enough
+            if (blockW >= 18) {
+              ctx.fillStyle = isActive ? '#ffffff' : 'rgba(228, 228, 231, 0.85)';
+              ctx.font = '600 10px "JetBrains Mono", monospace';
+              ctx.fillText(String(idx + 1), x1 + 4, 19);
+            }
+          });
+        }
+
+        // 2. Draw waveform amplitude bars
+        const peaks = state.waveformPeaks;
+        if (peaks.length > 0) {
+          const barStep = width / peaks.length;
+          const barW = Math.max(1.2, barStep * 0.68);
+          const maxBarH = height * 0.72;
+          const midY = height / 2;
+
+          for (let i = 0; i < peaks.length; i++) {
+            const x = i * barStep;
+            const barH = Math.max(2, peaks[i] * maxBarH);
+            const isPlayed = (i / peaks.length) <= progressRatio;
+            ctx.fillStyle = isPlayed ? '#a78bfa' : 'rgba(113, 113, 122, 0.65)';
+            ctx.fillRect(x, midY - barH / 2, barW, barH);
+          }
+        }
+
+        // 3. Draw playhead line
+        if (duration > 0) {
+          const playX = progressRatio * width;
+          ctx.strokeStyle = '#f43f5e';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(playX, 0);
+          ctx.lineTo(playX, height);
+          ctx.stroke();
+
+          // Playhead triangle cap
+          ctx.fillStyle = '#f43f5e';
+          ctx.beginPath();
+          ctx.moveTo(playX - 5, 0);
+          ctx.lineTo(playX + 5, 0);
+          ctx.lineTo(playX, 7);
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+
+      /** Seek audio to X coordinate inside waveformWrapper */
+      function seekFromClientX(clientX) {
+        const duration = state.duration || els.audioPlayer.duration || 0;
+        if (!duration) return;
+        const rect = els.waveformWrapper.getBoundingClientRect();
+        const ratio = clamp((clientX - rect.left) / rect.width, 0, 1);
+        els.audioPlayer.currentTime = ratio * duration;
+        updatePlaybackUI();
+      }
+
+      // ---------------------------------------------------------
+      // 5. PLAYBACK LOOP & LIVE SUBTITLE PREVIEW
+      // ---------------------------------------------------------
+
+      function togglePlayPause() {
+        if (!state.audioUrl) {
+          showToast('Please upload an audio track in Step 1 first.', 'warn');
+          return;
+        }
+        if (els.audioPlayer.paused) {
+          els.audioPlayer.play().catch((err) => {
+            console.error('Playback error:', err);
+            showToast('Could not start audio playback.', 'error');
+          });
+        } else {
+          els.audioPlayer.pause();
+        }
+      }
+
+      function updatePlayButtonVisuals() {
+        const paused = els.audioPlayer.paused;
+        state.isPlaying = !paused;
+        els.playIcon.classList.toggle('hidden', !paused);
+        els.pauseIcon.classList.toggle('hidden', paused);
+        els.playPauseLabel.textContent = paused ? 'Play' : 'Pause';
+      }
+
+      function updatePlaybackUI() {
+        const t = els.audioPlayer.currentTime || 0;
+        els.currentTimeDisplay.textContent = formatDisplayTime(t);
+
+        // Determine currently active subtitle cue
+        let activeCue = null;
+        for (let i = 0; i < state.cues.length; i++) {
+          const c = state.cues[i];
+          if (c.start !== null) {
+            const endVal = c.end !== null ? c.end : (state.duration || t + 1);
+            if (t >= c.start && t <= endVal) {
+              activeCue = c;
+              break;
+            }
+          }
+        }
+
+        const nextActiveId = activeCue ? activeCue.id : null;
+        if (nextActiveId !== state.activePlayingCueId) {
+          // Update highlighted row in cue table
+          if (state.activePlayingCueId !== null) {
+            const prevRow = els.cueTableBody.querySelector(`tr[data-id="${state.activePlayingCueId}"]`);
+            if (prevRow) prevRow.classList.remove('bg-violet-500/15');
+          }
+          if (nextActiveId !== null) {
+            const newRow = els.cueTableBody.querySelector(`tr[data-id="${nextActiveId}"]`);
+            if (newRow) newRow.classList.add('bg-violet-500/15');
+          }
+          state.activePlayingCueId = nextActiveId;
+        }
+
+        if (activeCue) {
+          els.liveSubtitleText.textContent = activeCue.text;
+        } else if (state.cues.some((c) => c.start !== null)) {
+          els.liveSubtitleText.innerHTML = '<span class="text-zinc-500 font-normal text-sm italic">♪ Instrumental / Pause ♪</span>';
+        } else {
+          els.liveSubtitleText.innerHTML = '<span class="text-zinc-500 font-normal text-sm">Load lyrics and run AI Auto-Sync or Tap-to-Sync to preview subtitles...</span>';
+        }
+
+        drawWaveform();
+      }
+
+      function playbackAnimationLoop() {
+        if (!els.audioPlayer.paused) {
+          updatePlaybackUI();
+        }
+        requestAnimationFrame(playbackAnimationLoop);
+      }
+
+      // ---------------------------------------------------------
+      // 6. SMART SUNO LYRICS CLEANER
+      // ---------------------------------------------------------
+
+      function loadCleanedLyrics() {
+        const raw = els.lyricsInput.value || '';
+        const stripBrackets = els.stripBracketTagsCheckbox.checked;
+        const stripParens = els.stripParenCuesCheckbox.checked;
+
+        const lines = raw.split(/\r?\n/);
+        const cleaned = [];
+
+        for (let line of lines) {
+          if (stripBrackets) {
+            // Remove [Verse 1], [Chorus], [Intro: ...], etc.
+            line = line.replace(/\[[^\]]*\]/g, '');
+          }
+          if (stripParens) {
+            // Remove (ad-libs), (sound effects), etc.
+            line = line.replace(/\([^)]*\)/g, '');
+          }
+          line = line.trim();
+          if (line.length > 0) {
+            cleaned.push(line);
+          }
+        }
+
+        if (cleaned.length === 0) {
+          showToast('No lyric lines found after cleaning. Paste your lyrics first.', 'warn');
+          return;
+        }
+
+        state.cues = cleaned.map((text, idx) => ({
+          id: `cue_${Date.now()}_${idx}`,
+          text,
+          start: null,
+          end: null,
+        }));
+        state.syncCursor = 0;
+        state.activeStampingIndex = -1;
+        state.activePlayingCueId = null;
+
+        renderCueTable();
+        updateTapTeleprompter();
+        updateSrtPreview();
+        drawWaveform();
+        showToast(`Loaded ${state.cues.length} cleaned lyric lines into studio!`, 'success');
+      }
+
+      // ---------------------------------------------------------
+      // 7. GEMINI MULTIMODAL AI AUTO-SYNC
+      // ---------------------------------------------------------
+
+      function setAiProgressStep(stepNum, title, subtext) {
+        els.aiProgressCard.classList.remove('hidden');
+        els.aiStatusTitle.textContent = title;
+        els.aiStatusSubtext.textContent = subtext;
+        els.aiStepCounter.textContent = `Step ${stepNum}/3`;
         els.aiStepBar1.className = `h-1.5 rounded-full transition-all ${stepNum >= 1 ? 'bg-violet-500' : 'bg-zinc-800'}`;
         els.aiStepBar2.className = `h-1.5 rounded-full transition-all ${stepNum >= 2 ? 'bg-violet-500' : 'bg-zinc-800'}`;
         els.aiStepBar3.className = `h-1.5 rounded-full transition-all ${stepNum >= 3 ? 'bg-emerald-500' : 'bg-zinc-800'}`;
@@ -681,14 +1216,14 @@
         let detail = '';
         try {
           const parsed = JSON.parse(rawBody);
-          detail = parsed?.error?.message || '';
+          detail = parsed && parsed.error && parsed.error.message ? parsed.error.message : '';
         } catch (_) {
           detail = (rawBody || '').slice(0, 140);
         }
         return `Gemini API Error (${status})${detail ? ': ' + detail : ''}`;
       }
 
-      /** Fetch wrapper with exponential backoff (1s, 2s, 4s, 8s) */
+      /** Fetch wrapper with exponential backoff (1s, 2s, 4s) */
       async function fetchWithBackoff(url, options, maxRetries = 3) {
         let delay = 1000;
         for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -712,7 +1247,45 @@
           }
         }
       }
-// ... existing code ... -->
+
+      /** Sanitize returned timestamps to be strictly monotonic and within [0, duration] */
+      function applyAndSanitizeAiTimestamps(items) {
+        const dur = state.duration || 1;
+        const map = new Map();
+        for (const item of items) {
+          if (typeof item.index === 'number' && Number.isFinite(item.start) && Number.isFinite(item.end)) {
+            map.set(item.index, {
+              start: clamp(item.start, 0, Math.max(0, dur - 0.15)),
+              end: clamp(item.end, 0.1, dur),
+            });
+          }
+        }
+
+        let prevEnd = 0;
+        for (let i = 0; i < state.cues.length; i++) {
+          const found = map.get(i);
+          let s;
+          let e;
+          if (found) {
+            s = Math.max(prevEnd, found.start);
+            e = Math.max(s + 0.25, found.end);
+            if (e > dur) {
+              e = dur;
+              s = Math.min(s, Math.max(prevEnd, dur - 0.2));
+            }
+          } else {
+            // Interpolate gracefully if model omitted an index
+            const remaining = Math.max(0.5, dur - prevEnd);
+            const slice = Math.min(2.5, remaining / Math.max(1, state.cues.length - i));
+            s = prevEnd;
+            e = Math.min(dur, s + Math.max(0.3, slice - 0.05));
+          }
+          state.cues[i].start = Number(s.toFixed(3));
+          state.cues[i].end = Number(e.toFixed(3));
+          prevEnd = state.cues[i].end;
+        }
+      }
+
       async function runGeminiAiAutoSync() {
         if (state.isAiRunning) return;
         if (!state.audioFile || !state.audioBuffer) {
@@ -771,7 +1344,7 @@
             '1. Accurately ignore instrumental intros, musical interludes, beats without vocals, guitar/piano solos, bridges without lyrics, and instrumental outros.',
             '2. Listen closely to Vietnamese diacritics, rap cadence, fast flows, and sung phrasing so each line starts right as the vocalist begins that line and ends right when they finish it.',
             '3. Return a JSON array containing EVERY lyric index from 0 to N-1 in strict chronological order with no overlapping timestamps.',
-            '4. Every timestamp must be within 0 and the total audio duration.'
+            '4. Every timestamp must be within 0 and the total audio duration.',
           ].join('\n');
 
           const userPrompt = `Total audio duration: ${state.duration.toFixed(2)} seconds.\nTotal lyric lines: ${state.cues.length} (indices 0 to ${state.cues.length - 1}).\n\nAlign every lyric line below to the exact vocal timestamps in the audio:\n\n${numberedLyrics}`;
@@ -779,7 +1352,86 @@
           const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(selectedModel)}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
           const payload = {
-// ... existing code ... -->
+            systemInstruction: {
+              parts: [{ text: systemInstructionText }],
+            },
+            contents: [
+              {
+                role: 'user',
+                parts: [
+                  {
+                    inlineData: {
+                      mimeType,
+                      data: base64Audio,
+                    },
+                  },
+                  { text: userPrompt },
+                ],
+              },
+            ],
+            generationConfig: {
+              temperature: 0.1,
+              responseMimeType: 'application/json',
+              responseSchema: {
+                type: 'ARRAY',
+                items: {
+                  type: 'OBJECT',
+                  properties: {
+                    index: { type: 'INTEGER' },
+                    start: { type: 'NUMBER' },
+                    end: { type: 'NUMBER' },
+                  },
+                  required: ['index', 'start', 'end'],
+                },
+              },
+            },
+          };
+
+          const response = await fetchWithBackoff(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+
+          const data = await response.json();
+
+          // STEP 3: Parse & apply timestamps
+          setAiProgressStep(3, 'Applying precision timestamps...', 'Sanitizing timeline & rendering waveform blocks...');
+
+          const rawText =
+            data &&
+            data.candidates &&
+            data.candidates[0] &&
+            data.candidates[0].content &&
+            data.candidates[0].content.parts &&
+            data.candidates[0].content.parts[0] &&
+            data.candidates[0].content.parts[0].text;
+
+          if (!rawText) {
+            throw new Error('Gemini returned an empty response. Please try again or switch models.');
+          }
+
+          let parsedItems;
+          try {
+            parsedItems = JSON.parse(rawText);
+          } catch (_) {
+            const match = rawText.match(/\[[\s\S]*\]/);
+            if (!match) throw new Error('Could not parse JSON timestamps from AI response.');
+            parsedItems = JSON.parse(match[0]);
+          }
+
+          if (!Array.isArray(parsedItems) || parsedItems.length === 0) {
+            throw new Error('AI returned an empty alignment array.');
+          }
+
+          applyAndSanitizeAiTimestamps(parsedItems);
+          state.syncCursor = state.cues.length;
+          state.activeStampingIndex = -1;
+
+          renderCueTable();
+          updateTapTeleprompter();
+          updateSrtPreview();
+          updatePlaybackUI();
           showToast(`AI Auto-Sync complete! Aligned ${state.cues.length} lyric lines.`, 'success');
         } catch (err) {
           console.error('AI Auto-Sync error:', err);
@@ -792,7 +1444,598 @@
           }, 900);
         }
       }
-// ... existing code ... -->
+
+      // ---------------------------------------------------------
+      // 8. OFFLINE FALLBACK: 300Hz–3000Hz VOCAL-BAND ESTIMATE
+      // ---------------------------------------------------------
+
+      async function runVocalBandEstimate() {
+        if (!state.audioBuffer) {
+          showToast('Please upload an audio file in Step 1 first.', 'warn');
+          return;
+        }
+        if (state.cues.length === 0) {
+          showToast('Please paste and load your lyrics in Step 2 first.', 'warn');
+          return;
+        }
+
+        try {
+          els.runVocalBandBtn.disabled = true;
+          els.vocalRegionsSummary.textContent = 'Analyzing 300Hz–3000Hz vocal band...';
+
+          const origBuf = state.audioBuffer;
+          const sr = origBuf.sampleRate;
+          const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+          const offlineCtx = new OfflineCtx(1, origBuf.length, sr);
+
+          const src = offlineCtx.createBufferSource();
+          src.buffer = origBuf;
+
+          // Vocal passband filter chain: 300Hz highpass -> 3000Hz lowpass
+          const highpass = offlineCtx.createBiquadFilter();
+          highpass.type = 'highpass';
+          highpass.frequency.value = 300;
+          highpass.Q.value = 0.7;
+
+          const lowpass = offlineCtx.createBiquadFilter();
+          lowpass.type = 'lowpass';
+          lowpass.frequency.value = 3000;
+          lowpass.Q.value = 0.7;
+
+          src.connect(highpass);
+          highpass.connect(lowpass);
+          lowpass.connect(offlineCtx.destination);
+          src.start(0);
+
+          const filtered = await offlineCtx.startRendering();
+          const data = filtered.getChannelData(0);
+
+          // Compute RMS energy in 100ms frames
+          const frameSec = 0.1;
+          const frameSamples = Math.max(1, Math.floor(sr * frameSec));
+          const frameCount = Math.floor(data.length / frameSamples);
+          const rmsArr = new Float32Array(frameCount);
+          let maxRms = 0.0001;
+
+          for (let f = 0; f < frameCount; f++) {
+            const startIdx = f * frameSamples;
+            let sumSq = 0;
+            for (let i = 0; i < frameSamples; i++) {
+              const v = data[startIdx + i];
+              sumSq += v * v;
+            }
+            const rms = Math.sqrt(sumSq / frameSamples);
+            rmsArr[f] = rms;
+            if (rms > maxRms) maxRms = rms;
+          }
+
+          // Normalize & apply vocal gate threshold
+          const gate = parseFloat(els.vocalThresholdSlider.value) || 0.24;
+          const active = new Uint8Array(frameCount);
+          for (let f = 0; f < frameCount; f++) {
+            active[f] = rmsArr[f] / maxRms >= gate ? 1 : 0;
+          }
+
+          // Extract contiguous active vocal segments
+          let rawRegions = [];
+          let inRegion = false;
+          let regStart = 0;
+          for (let f = 0; f < frameCount; f++) {
+            if (active[f] && !inRegion) {
+              inRegion = true;
+              regStart = f * frameSec;
+            } else if (!active[f] && inRegion) {
+              inRegion = false;
+              rawRegions.push({ start: regStart, end: f * frameSec });
+            }
+          }
+          if (inRegion) {
+            rawRegions.push({ start: regStart, end: state.duration });
+          }
+
+          // Merge short pauses (< 1.4s) & discard tiny noise blips (< 0.4s)
+          const merged = [];
+          for (const reg of rawRegions) {
+            if (merged.length > 0 && reg.start - merged[merged.length - 1].end < 1.4) {
+              merged[merged.length - 1].end = reg.end;
+            } else {
+              merged.push({ start: reg.start, end: reg.end });
+            }
+          }
+          let regions = merged.filter((r) => r.end - r.start >= 0.45);
+          if (regions.length === 0) {
+            regions = [{ start: Math.min(1.0, state.duration * 0.05), end: Math.max(state.duration * 0.95, state.duration - 1.0) }];
+          }
+
+          const totalActiveSec = regions.reduce((acc, r) => acc + (r.end - r.start), 0);
+          els.vocalRegionsSummary.textContent = `Detected ${regions.length} vocal region(s) (${totalActiveSec.toFixed(1)}s active)`;
+
+          // Weight each lyric line by word/syllable count
+          const weights = state.cues.map((cue) => {
+            const words = cue.text.trim().split(/\s+/).filter(Boolean).length;
+            return Math.max(2, words);
+          });
+          const totalWeight = weights.reduce((a, b) => a + b, 0);
+
+          // Map cumulative active time onto real timestamps across regions
+          function mapActiveTimeToTrackTime(activeSec) {
+            let remaining = clamp(activeSec, 0, totalActiveSec);
+            for (const reg of regions) {
+              const len = reg.end - reg.start;
+              if (remaining <= len) return reg.start + remaining;
+              remaining -= len;
+            }
+            return regions[regions.length - 1].end;
+          }
+
+          let cursorActive = 0;
+          for (let i = 0; i < state.cues.length; i++) {
+            const durShare = (weights[i] / totalWeight) * totalActiveSec;
+            const s = mapActiveTimeToTrackTime(cursorActive);
+            const e = mapActiveTimeToTrackTime(cursorActive + Math.max(0.25, durShare - 0.06));
+            state.cues[i].start = Number(s.toFixed(3));
+            state.cues[i].end = Number(Math.max(s + 0.2, e).toFixed(3));
+            cursorActive += durShare;
+          }
+
+          state.syncCursor = state.cues.length;
+          state.activeStampingIndex = -1;
+          renderCueTable();
+          updateTapTeleprompter();
+          updateSrtPreview();
+          updatePlaybackUI();
+          showToast(`Vocal-Band Estimate mapped ${state.cues.length} lines across ${regions.length} vocal region(s).`, 'success');
+        } catch (err) {
+          console.error('Vocal-band DSP error:', err);
+          showToast('Vocal-Band Estimate failed. Please try Tap-to-Sync.', 'error');
+        } finally {
+          els.runVocalBandBtn.disabled = false;
+        }
+      }
+
+      // ---------------------------------------------------------
+      // 9. TAP-TO-SYNC ENGINE
+      // ---------------------------------------------------------
+
+      function switchSyncMode(mode) {
+        state.syncMode = mode;
+        const isAi = mode === 'ai';
+        els.aiSyncPanel.classList.toggle('hidden', !isAi);
+        els.tapSyncPanel.classList.toggle('hidden', isAi);
+
+        els.tabAiMode.className = isAi
+          ? 'px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow transition flex items-center gap-1.5'
+          : 'px-3.5 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-white transition flex items-center gap-1.5';
+
+        els.tabTapMode.className = !isAi
+          ? 'px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white shadow transition'
+          : 'px-3.5 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-white transition';
+      }
+
+      function updateTapTeleprompter() {
+        const total = state.cues.length;
+        if (total === 0) {
+          els.syncProgressLabel.textContent = 'Load lyrics to begin tapping';
+          els.syncProgressBar.style.width = '0%';
+          els.activeStateBadge.classList.add('hidden');
+          els.prevCueText.textContent = '—';
+          els.prevCueTime.textContent = '';
+          els.currentCueLabel.textContent = 'Next Line to Stamp';
+          els.currentCueTime.textContent = '';
+          els.currentCueText.textContent = 'Paste lyrics & click "Load Cleaned Lyrics into Studio"';
+          els.nextCueText.textContent = '—';
+          return;
+        }
+
+        const stampedCount = state.cues.filter((c) => c.start !== null).length;
+        const pct = Math.round((stampedCount / total) * 100);
+        els.syncProgressLabel.textContent = `Stamped ${stampedCount} of ${total} lines (${pct}%)`;
+        els.syncProgressBar.style.width = `${pct}%`;
+
+        const isRecording = state.activeStampingIndex >= 0 && state.activeStampingIndex < total;
+        els.activeStateBadge.classList.toggle('hidden', !isRecording);
+
+        const prevIdx = state.syncCursor - 1;
+        if (prevIdx >= 0 && prevIdx < total) {
+          els.prevCueText.textContent = state.cues[prevIdx].text;
+          els.prevCueTime.textContent = state.cues[prevIdx].start !== null ? formatDisplayTime(state.cues[prevIdx].start) : '';
+        } else {
+          els.prevCueText.textContent = '—';
+          els.prevCueTime.textContent = '';
+        }
+
+        if (state.syncCursor < total) {
+          const cur = state.cues[state.syncCursor];
+          els.currentCueLabel.textContent = isRecording ? `Line ${state.syncCursor + 1} (Next to Stamp)` : `Next Line to Stamp (#${state.syncCursor + 1})`;
+          els.currentCueTime.textContent = cur.start !== null ? formatDisplayTime(cur.start) : '';
+          els.currentCueText.textContent = cur.text;
+        } else {
+          els.currentCueLabel.textContent = 'All Lines Stamped!';
+          els.currentCueTime.textContent = '';
+          els.currentCueText.textContent = isRecording
+            ? 'Press E (End Line) when the final vocal finishes!'
+            : 'Sync complete — fine-tune in Step 4 or export .SRT in Step 5.';
+        }
+
+        const nextIdx = state.syncCursor + 1;
+        els.nextCueText.textContent = nextIdx < total ? state.cues[nextIdx].text : '—';
+      }
+
+      function stampNextLine() {
+        if (!state.audioUrl) {
+          showToast('Upload an audio file first.', 'warn');
+          return;
+        }
+        if (state.cues.length === 0) {
+          showToast('Load cleaned lyrics in Step 2 first.', 'warn');
+          return;
+        }
+        if (els.audioPlayer.paused) {
+          els.audioPlayer.play().catch(() => {});
+        }
+
+        const now = Number((els.audioPlayer.currentTime || 0).toFixed(3));
+
+        // Close previous active line cleanly
+        if (state.activeStampingIndex >= 0 && state.activeStampingIndex < state.cues.length) {
+          const prev = state.cues[state.activeStampingIndex];
+          prev.end = Number(Math.max((prev.start || 0) + 0.15, now - 0.04).toFixed(3));
+        }
+
+        if (state.syncCursor < state.cues.length) {
+          const cue = state.cues[state.syncCursor];
+          cue.start = now;
+          cue.end = null;
+          state.activeStampingIndex = state.syncCursor;
+          state.syncCursor += 1;
+        } else {
+          state.activeStampingIndex = -1;
+          showToast('All lines stamped! Final line closed.', 'success');
+        }
+
+        renderCueTable();
+        updateTapTeleprompter();
+        updateSrtPreview();
+        updatePlaybackUI();
+      }
+
+      function endCurrentLineForInstrumental() {
+        if (state.activeStampingIndex < 0 || state.activeStampingIndex >= state.cues.length) {
+          return;
+        }
+        const now = Number((els.audioPlayer.currentTime || 0).toFixed(3));
+        const cue = state.cues[state.activeStampingIndex];
+        cue.end = Number(Math.max((cue.start || 0) + 0.15, now).toFixed(3));
+        state.activeStampingIndex = -1;
+
+        renderCueTable();
+        updateTapTeleprompter();
+        updateSrtPreview();
+        updatePlaybackUI();
+      }
+
+      function undoLastStamp() {
+        if (state.cues.length === 0 || state.syncCursor <= 0) return;
+        state.syncCursor -= 1;
+        const cue = state.cues[state.syncCursor];
+        cue.start = null;
+        cue.end = null;
+        state.activeStampingIndex = -1;
+
+        // Rewind 3 seconds for easy re-tapping
+        els.audioPlayer.currentTime = Math.max(0, (els.audioPlayer.currentTime || 0) - 3);
+        renderCueTable();
+        updateTapTeleprompter();
+        updateSrtPreview();
+        updatePlaybackUI();
+      }
+
+      function resetAllStamps() {
+        state.cues.forEach((c) => {
+          c.start = null;
+          c.end = null;
+        });
+        state.syncCursor = 0;
+        state.activeStampingIndex = -1;
+        renderCueTable();
+        updateTapTeleprompter();
+        updateSrtPreview();
+        updatePlaybackUI();
+        showToast('All timestamps cleared.', 'info');
+      }
+
+      // ---------------------------------------------------------
+      // 10. TIMELINE FINE-TUNING TABLE EDITOR
+      // ---------------------------------------------------------
+
+      function renderCueTable() {
+        if (state.cues.length === 0) {
+          els.cueTableBody.innerHTML = `
+            <tr>
+              <td colspan="6" class="py-10 text-center text-zinc-500 text-sm">
+                No lyric cues loaded yet. Paste your Suno lyrics in Step 2 and click <strong class="text-zinc-300">Load Cleaned Lyrics into Studio</strong>.
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        const rowsHtml = state.cues
+          .map((cue, idx) => {
+            const isActive = cue.id === state.activePlayingCueId;
+            return `
+              <tr data-id="${cue.id}" data-index="${idx}" class="hover:bg-zinc-900/70 transition ${isActive ? 'bg-violet-500/15' : ''}">
+                <td class="py-2.5 px-3 text-center font-mono text-xs text-zinc-500">${idx + 1}</td>
+                <td class="py-2.5 px-2 text-center">
+                  <button type="button" data-action="play-cue" data-index="${idx}" title="Jump &amp; Play from this line" class="p-1.5 rounded-lg bg-zinc-800 hover:bg-indigo-600 text-zinc-300 hover:text-white transition">
+                    <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                  </button>
+                </td>
+                <td class="py-2.5 px-3">
+                  <div class="flex items-center gap-1">
+                    <button type="button" data-action="nudge" data-field="start" data-delta="-0.1" data-index="${idx}" title="-100ms" class="px-1.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-[10px] font-mono text-zinc-300">-</button>
+                    <input type="text" data-field="start" data-index="${idx}" value="${formatDisplayTime(cue.start)}" placeholder="00:00.000" class="w-24 px-2 py-1 rounded-lg bg-zinc-900 border border-zinc-800 focus:border-violet-500 font-mono text-xs text-violet-200 text-center outline-none" />
+                    <button type="button" data-action="nudge" data-field="start" data-delta="0.1" data-index="${idx}" title="+100ms" class="px-1.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-[10px] font-mono text-zinc-300">+</button>
+                    <button type="button" data-action="snap" data-field="start" data-index="${idx}" title="Snap Start to Playhead" class="px-1.5 py-1 rounded bg-indigo-500/20 hover:bg-indigo-500/40 border border-indigo-500/30 text-[10px] font-semibold text-indigo-300">Set</button>
+                  </div>
+                </td>
+                <td class="py-2.5 px-3">
+                  <div class="flex items-center gap-1">
+                    <button type="button" data-action="nudge" data-field="end" data-delta="-0.1" data-index="${idx}" title="-100ms" class="px-1.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-[10px] font-mono text-zinc-300">-</button>
+                    <input type="text" data-field="end" data-index="${idx}" value="${formatDisplayTime(cue.end)}" placeholder="00:00.000" class="w-24 px-2 py-1 rounded-lg bg-zinc-900 border border-zinc-800 focus:border-violet-500 font-mono text-xs text-emerald-200 text-center outline-none" />
+                    <button type="button" data-action="nudge" data-field="end" data-delta="0.1" data-index="${idx}" title="+100ms" class="px-1.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-[10px] font-mono text-zinc-300">+</button>
+                    <button type="button" data-action="snap" data-field="end" data-index="${idx}" title="Snap End to Playhead" class="px-1.5 py-1 rounded bg-emerald-500/20 hover:bg-emerald-500/40 border border-emerald-500/30 text-[10px] font-semibold text-emerald-300">Set</button>
+                  </div>
+                </td>
+                <td class="py-2.5 px-3">
+                  <input type="text" data-field="text" data-index="${idx}" value="${escapeHtml(cue.text)}" class="w-full px-2.5 py-1.5 rounded-lg bg-zinc-900/80 border border-zinc-800 focus:border-violet-500 text-sm text-zinc-100 outline-none" />
+                </td>
+                <td class="py-2.5 px-3 text-center">
+                  <button type="button" data-action="delete" data-index="${idx}" title="Delete line" class="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </td>
+              </tr>
+            `;
+          })
+          .join('');
+
+        els.cueTableBody.innerHTML = rowsHtml;
+      }
+
+      function applyGlobalOffsetMs(offsetMs) {
+        if (!offsetMs || Number.isNaN(offsetMs)) return;
+        const deltaSec = offsetMs / 1000;
+        let shifted = 0;
+        const maxDur = state.duration || Infinity;
+
+        state.cues.forEach((cue) => {
+          if (cue.start !== null) {
+            cue.start = Number(clamp(cue.start + deltaSec, 0, maxDur).toFixed(3));
+            shifted++;
+          }
+          if (cue.end !== null) {
+            cue.end = Number(clamp(cue.end + deltaSec, 0, maxDur).toFixed(3));
+            if (cue.start !== null && cue.end <= cue.start) {
+              cue.end = Number(Math.min(maxDur, cue.start + 0.2).toFixed(3));
+            }
+          }
+        });
+
+        if (shifted === 0) {
+          showToast('No synced timestamps to shift yet.', 'warn');
+          return;
+        }
+        renderCueTable();
+        updateSrtPreview();
+        updatePlaybackUI();
+        showToast(`Shifted ${shifted} cues by ${offsetMs > 0 ? '+' : ''}${offsetMs}ms.`, 'success');
+      }
+
+      // ---------------------------------------------------------
+      // 11. SRT GENERATION & EXPORT
+      // ---------------------------------------------------------
+
+      function buildSrtString() {
+        const synced = state.cues.filter((c) => c.start !== null && c.text.trim().length > 0);
+        if (synced.length === 0) return { text: '', count: 0 };
+
+        const dur = state.duration || 0;
+        const blocks = synced.map((cue, idx) => {
+          const start = cue.start;
+          let end = cue.end;
+          if (end === null || end <= start) {
+            const nextCue = synced[idx + 1];
+            if (nextCue && nextCue.start > start) {
+              end = Math.max(start + 0.2, nextCue.start - 0.05);
+            } else {
+              end = dur > start ? Math.min(dur, start + 3.0) : start + 3.0;
+            }
+          }
+          return `${idx + 1}\n${formatSrtTime(start)} --> ${formatSrtTime(end)}\n${cue.text.trim()}`;
+        });
+
+        return {
+          text: blocks.join('\n\n') + '\n',
+          count: synced.length,
+        };
+      }
+
+      function updateSrtPreview() {
+        const { text, count } = buildSrtString();
+        els.exportStatsPreview.textContent = `${count} synced cue${count === 1 ? '' : 's'}`;
+        if (count === 0) {
+          els.srtPreviewBox.textContent = 'Your generated .srt subtitles will appear here once you run AI Auto-Sync, Vocal-Band Estimate, or Tap-to-Sync...';
+        } else {
+          els.srtPreviewBox.textContent = text;
+        }
+      }
+
+      function copySrtToClipboard() {
+        const { text, count } = buildSrtString();
+        if (count === 0) {
+          showToast('No synced cues to copy yet.', 'warn');
+          return;
+        }
+        try {
+          const temp = document.createElement('textarea');
+          temp.value = text;
+          temp.setAttribute('readonly', '');
+          temp.style.position = 'fixed';
+          temp.style.opacity = '0';
+          document.body.appendChild(temp);
+          temp.select();
+          document.execCommand('copy');
+          document.body.removeChild(temp);
+          showToast(`Copied ${count} SRT cues to clipboard!`, 'success');
+        } catch (err) {
+          console.error('Copy error:', err);
+          showToast('Could not copy automatically. Select text in the preview box and press Ctrl/Cmd+C.', 'warn');
+        }
+      }
+
+      function downloadSrtFile() {
+        const { text, count } = buildSrtString();
+        if (count === 0) {
+          showToast('No synced cues to download yet.', 'warn');
+          return;
+        }
+        // Include UTF-8 BOM so Vietnamese diacritics render cleanly in all video editors
+        const blob = new Blob(['\uFEFF' + text], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${state.audioFileName}.srt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast(`Downloaded ${state.audioFileName}.srt (${count} cues)`, 'success');
+      }
+
+      // ---------------------------------------------------------
+      // 12. EVENT LISTENERS
+      // ---------------------------------------------------------
+
+      // Audio file upload & drag-drop
+      els.dropZone.addEventListener('click', () => els.audioFileInput.click());
+      els.changeAudioBtn.addEventListener('click', () => els.audioFileInput.click());
+      els.audioFileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+          handleAudioFile(e.target.files[0]);
+          e.target.value = '';
+        }
+      });
+
+      els.dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        els.dropZone.classList.add('border-violet-500', 'bg-violet-950/20');
+      });
+      els.dropZone.addEventListener('dragleave', () => {
+        els.dropZone.classList.remove('border-violet-500', 'bg-violet-950/20');
+      });
+      els.dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        els.dropZone.classList.remove('border-violet-500', 'bg-violet-950/20');
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+          handleAudioFile(e.dataTransfer.files[0]);
+        }
+      });
+
+      // Audio element state events
+      els.audioPlayer.addEventListener('play', updatePlayButtonVisuals);
+      els.audioPlayer.addEventListener('pause', updatePlayButtonVisuals);
+      els.audioPlayer.addEventListener('ended', () => {
+        updatePlayButtonVisuals();
+        if (state.activeStampingIndex >= 0) {
+          endCurrentLineForInstrumental();
+        }
+      });
+
+      // Transport controls
+      els.playPauseBtn.addEventListener('click', togglePlayPause);
+      els.rewindBtn.addEventListener('click', () => {
+        els.audioPlayer.currentTime = Math.max(0, (els.audioPlayer.currentTime || 0) - 5);
+        updatePlaybackUI();
+      });
+      els.forwardBtn.addEventListener('click', () => {
+        const dur = state.duration || els.audioPlayer.duration || 0;
+        els.audioPlayer.currentTime = Math.min(dur, (els.audioPlayer.currentTime || 0) + 5);
+        updatePlaybackUI();
+      });
+
+      els.speedBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const speed = parseFloat(btn.dataset.speed) || 1.0;
+          state.playbackRate = speed;
+          els.audioPlayer.playbackRate = speed;
+          els.speedBtns.forEach((b) => {
+            const active = b === btn;
+            b.className = active
+              ? 'speed-btn px-2.5 py-1.5 rounded-lg text-xs font-mono font-semibold bg-indigo-600 text-white shadow transition'
+              : 'speed-btn px-2.5 py-1.5 rounded-lg text-xs font-mono font-medium text-zinc-400 hover:text-white transition';
+          });
+        });
+      });
+
+      // Waveform mouse & touch scrubbing
+      els.waveformWrapper.addEventListener('mousedown', (e) => {
+        state.isDraggingWaveform = true;
+        seekFromClientX(e.clientX);
+      });
+      window.addEventListener('mousemove', (e) => {
+        if (state.isDraggingWaveform) {
+          seekFromClientX(e.clientX);
+        }
+      });
+      window.addEventListener('mouseup', () => {
+        state.isDraggingWaveform = false;
+      });
+
+      els.waveformWrapper.addEventListener('mousemove', (e) => {
+        const dur = state.duration || 0;
+        if (!dur) return;
+        const rect = els.waveformWrapper.getBoundingClientRect();
+        const x = clamp(e.clientX - rect.left, 0, rect.width);
+        const hoverSec = (x / rect.width) * dur;
+        els.waveformHoverTime.textContent = formatDisplayTime(hoverSec);
+        els.waveformHoverTime.style.left = `${clamp(x - 36, 4, rect.width - 80)}px`;
+        els.waveformHoverTime.classList.remove('hidden');
+      });
+      els.waveformWrapper.addEventListener('mouseleave', () => {
+        els.waveformHoverTime.classList.add('hidden');
+      });
+
+      els.waveformWrapper.addEventListener('touchstart', (e) => {
+        if (e.touches && e.touches[0]) {
+          state.isDraggingWaveform = true;
+          seekFromClientX(e.touches[0].clientX);
+        }
+      }, { passive: true });
+      els.waveformWrapper.addEventListener('touchmove', (e) => {
+        if (state.isDraggingWaveform && e.touches && e.touches[0]) {
+          seekFromClientX(e.touches[0].clientX);
+        }
+      }, { passive: true });
+      els.waveformWrapper.addEventListener('touchend', () => {
+        state.isDraggingWaveform = false;
+      });
+
+      window.addEventListener('resize', resizeWaveformCanvas);
+
+      // Lyrics Cleaner buttons
+      els.loadLyricsBtn.addEventListener('click', loadCleanedLyrics);
+      els.clearLyricsBtn.addEventListener('click', () => {
+        els.lyricsInput.value = '';
+        els.lyricsInput.focus();
+      });
+
+      // Mode switcher tabs
+      els.tabAiMode.addEventListener('click', () => switchSyncMode('ai'));
+      els.tabTapMode.addEventListener('click', () => switchSyncMode('tap'));
+
       // AI & Offline Fallback buttons
       els.runAiSyncBtn.addEventListener('click', runGeminiAiAutoSync);
       els.runVocalBandBtn.addEventListener('click', runVocalBandEstimate);
@@ -844,4 +2087,122 @@
 
       // Tap-to-Sync buttons
       els.stampBtn.addEventListener('click', stampNextLine);
-// ... existing code ... -->
+      els.endLineBtn.addEventListener('click', endCurrentLineForInstrumental);
+      els.undoBtn.addEventListener('click', undoLastStamp);
+      els.resetSyncBtn.addEventListener('click', resetAllStamps);
+
+      // Global keyboard shortcuts (when not typing in inputs)
+      window.addEventListener('keydown', (e) => {
+        const tag = (e.target && e.target.tagName) ? e.target.tagName.toUpperCase() : '';
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+        if (e.code === 'Space') {
+          e.preventDefault();
+          if (state.syncMode === 'tap' && state.cues.length > 0) {
+            stampNextLine();
+          } else {
+            togglePlayPause();
+          }
+        } else if (e.key === 'e' || e.key === 'E') {
+          if (state.syncMode === 'tap') {
+            e.preventDefault();
+            endCurrentLineForInstrumental();
+          }
+        } else if (e.code === 'Backspace') {
+          if (state.syncMode === 'tap') {
+            e.preventDefault();
+            undoLastStamp();
+          }
+        } else if (e.code === 'ArrowLeft') {
+          e.preventDefault();
+          els.audioPlayer.currentTime = Math.max(0, (els.audioPlayer.currentTime || 0) - 5);
+          updatePlaybackUI();
+        } else if (e.code === 'ArrowRight') {
+          e.preventDefault();
+          const dur = state.duration || els.audioPlayer.duration || 0;
+          els.audioPlayer.currentTime = Math.min(dur, (els.audioPlayer.currentTime || 0) + 5);
+          updatePlaybackUI();
+        }
+      });
+
+      // Global offset controls
+      els.globalMinus100Btn.addEventListener('click', () => applyGlobalOffsetMs(-100));
+      els.globalPlus100Btn.addEventListener('click', () => applyGlobalOffsetMs(100));
+      els.applyCustomOffsetBtn.addEventListener('click', () => {
+        const ms = parseInt(els.customOffsetInput.value, 10);
+        if (!Number.isNaN(ms) && ms !== 0) {
+          applyGlobalOffsetMs(ms);
+        }
+      });
+
+      // Delegated events for Cue Table (play, nudge, snap, delete, inline edits)
+      els.cueTableBody.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-action]');
+        if (!btn) return;
+        const action = btn.dataset.action;
+        const idx = parseInt(btn.dataset.index, 10);
+        if (Number.isNaN(idx) || !state.cues[idx]) return;
+        const cue = state.cues[idx];
+        const maxDur = state.duration || Infinity;
+
+        if (action === 'play-cue') {
+          if (!state.audioUrl) return;
+          els.audioPlayer.currentTime = cue.start !== null ? cue.start : 0;
+          els.audioPlayer.play().catch(() => {});
+          updatePlaybackUI();
+        } else if (action === 'nudge') {
+          const field = btn.dataset.field;
+          const delta = parseFloat(btn.dataset.delta) || 0;
+          const base = cue[field] !== null ? cue[field] : (els.audioPlayer.currentTime || 0);
+          cue[field] = Number(clamp(base + delta, 0, maxDur).toFixed(3));
+          renderCueTable();
+          updateSrtPreview();
+          updatePlaybackUI();
+        } else if (action === 'snap') {
+          const field = btn.dataset.field;
+          cue[field] = Number((els.audioPlayer.currentTime || 0).toFixed(3));
+          renderCueTable();
+          updateSrtPreview();
+          updatePlaybackUI();
+        } else if (action === 'delete') {
+          state.cues.splice(idx, 1);
+          if (state.syncCursor > state.cues.length) state.syncCursor = state.cues.length;
+          state.activeStampingIndex = -1;
+          renderCueTable();
+          updateTapTeleprompter();
+          updateSrtPreview();
+          updatePlaybackUI();
+        }
+      });
+
+      els.cueTableBody.addEventListener('change', (e) => {
+        const input = e.target.closest('input[data-field]');
+        if (!input) return;
+        const idx = parseInt(input.dataset.index, 10);
+        const field = input.dataset.field;
+        if (Number.isNaN(idx) || !state.cues[idx]) return;
+
+        if (field === 'text') {
+          state.cues[idx].text = input.value;
+          updateTapTeleprompter();
+          updateSrtPreview();
+          updatePlaybackUI();
+        } else if (field === 'start' || field === 'end') {
+          const parsed = parseFlexibleTime(input.value);
+          state.cues[idx][field] = parsed !== null ? Number(clamp(parsed, 0, state.duration || Infinity).toFixed(3)) : null;
+          input.value = formatDisplayTime(state.cues[idx][field]);
+          updateSrtPreview();
+          updatePlaybackUI();
+        }
+      });
+
+      // Export buttons
+      els.copySrtBtn.addEventListener('click', copySrtToClipboard);
+      els.downloadSrtBtn.addEventListener('click', downloadSrtFile);
+
+      // Start smooth playback UI loop
+      requestAnimationFrame(playbackAnimationLoop);
+    })();
+  </script>
+</body>
+</html>
