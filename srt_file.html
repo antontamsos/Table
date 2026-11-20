@@ -3,10 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Suno Lyric-to-SRT Studio (AI Sync Edition)</title>
-  <!-- Tailwind CSS via CDN -->
+  <title>Suno Lyric-to-SRT Studio — Free AI Sync</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -24,1350 +22,1176 @@
     };
   </script>
   <style>
-    /* Sleek dark studio scrollbars */
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background-color: #09090b;
+      color: #f4f4f5;
+    }
+    /* Custom subtle scrollbars */
     ::-webkit-scrollbar {
       width: 8px;
       height: 8px;
     }
     ::-webkit-scrollbar-track {
-      background: #09090b;
+      background: #18181b;
       border-radius: 9999px;
     }
     ::-webkit-scrollbar-thumb {
-      background: #27272a;
+      background: #3f3f46;
       border-radius: 9999px;
     }
     ::-webkit-scrollbar-thumb:hover {
-      background: #3f3f46;
-    }
-    /* Prevent touch scrolling while scrubbing waveform */
-    #waveformCanvas {
-      touch-action: none;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-    @keyframes shimmerPulse {
-      0%, 100% { opacity: 0.65; }
-      50% { opacity: 1; }
-    }
-    .ai-shimmer {
-      animation: shimmerPulse 1.8s ease-in-out infinite;
+      background: #52525b;
     }
   </style>
 </head>
-<body class="bg-zinc-950 text-zinc-100 font-sans antialiased min-h-screen selection:bg-violet-500/30 selection:text-violet-200">
+<body class="min-h-screen bg-zinc-950 text-zinc-100 antialiased selection:bg-violet-500/30 selection:text-violet-100">
 
-  <!-- ========================================================= -->
-  <!-- TOP STUDIO HEADER                                         -->
-  <!-- ========================================================= -->
-  <header class="sticky top-0 z-30 bg-zinc-950/85 backdrop-blur-xl border-b border-zinc-800/80">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3">
-      <!-- Brand Identity -->
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-[calc(100vw-2rem)] pointer-events-none"></div>
+
+  <!-- Top Header -->
+  <header class="sticky top-0 z-30 bg-zinc-950/85 backdrop-blur-md border-b border-zinc-800/80">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-violet-500/25 shrink-0">
-          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-violet-600 to-fuchsia-600 flex items-center justify-center shadow-lg shadow-violet-600/25 shrink-0">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
           </svg>
         </div>
         <div>
-          <h1 class="text-base sm:text-lg font-bold tracking-tight text-white flex flex-wrap items-center gap-2">
+          <h1 class="text-base sm:text-lg font-bold tracking-tight text-white flex items-center gap-2">
             Suno Lyric-to-SRT Studio
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-violet-500/15 text-violet-300 border border-violet-500/35">
-              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z"/></svg>
-              AI Sync Edition
-            </span>
+            <span class="hidden sm:inline-block text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Free AI • UTF-8</span>
           </h1>
-          <p class="text-xs text-zinc-400">Multimodal AI Vocal Alignment &amp; Precision Subtitle Editor (UTF-8)</p>
+          <p class="text-xs text-zinc-400">Upload Suno audio, paste lyrics, sync with free Whisper AI, export .SRT</p>
         </div>
       </div>
 
-      <!-- Quick Workflow Navigation -->
-      <nav aria-label="Workflow Steps" class="hidden xl:flex items-center gap-1.5 text-xs font-medium">
-        <a href="#step1" class="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 hover:border-indigo-500/50 transition">1. Audio</a>
-        <span class="text-zinc-600">→</span>
-        <a href="#step2" class="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 hover:border-indigo-500/50 transition">2. Lyrics</a>
-        <span class="text-zinc-600">→</span>
-        <a href="#step3" class="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-violet-300 hover:border-violet-500/50 transition">3. AI / Tap Sync</a>
-        <span class="text-zinc-600">→</span>
-        <a href="#step4" class="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 hover:border-indigo-500/50 transition">4. Fine-Tune</a>
-        <span class="text-zinc-600">→</span>
-        <a href="#step5" class="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-emerald-300 hover:border-emerald-500/50 transition">5. Export .SRT</a>
-      </nav>
-
-      <!-- Audio Status Pill -->
-      <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-xs text-zinc-300">
-        <span id="statusDot" class="w-2 h-2 rounded-full bg-zinc-500"></span>
-        <span id="statusText">No audio loaded</span>
+      <!-- Quick Status Pills -->
+      <div class="flex items-center gap-2 text-xs">
+        <span id="statusAudioBadge" class="px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400">1. No Audio</span>
+        <span id="statusLyricsBadge" class="px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400">2. 0 Lines</span>
       </div>
     </div>
   </header>
 
-  <!-- ========================================================= -->
-  <!-- MAIN WORKSPACE                                            -->
-  <!-- ========================================================= -->
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+  <!-- Main Single-Column Guided Workflow -->
+  <main class="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
 
-    <!-- ========================================================= -->
-    <!-- STEP 1: AUDIO UPLOAD & INTERACTIVE WAVEFORM PLAYER        -->
-    <!-- ========================================================= -->
-    <section id="step1" class="bg-zinc-900/75 border border-zinc-800/90 rounded-2xl p-4 sm:p-6 shadow-2xl shadow-black/40">
-      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+    <!-- ===================================================================== -->
+    <!-- STEP 1: AUDIO UPLOAD & WAVEFORM PLAYER                                -->
+    <!-- ===================================================================== -->
+    <section class="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-5 sm:p-6 space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-2">
         <div class="flex items-center gap-2.5">
-          <span class="w-7 h-7 rounded-lg bg-indigo-500/20 border border-indigo-500/40 text-indigo-300 font-bold text-xs flex items-center justify-center">1</span>
-          <div>
-            <h2 class="text-base sm:text-lg font-semibold text-white">Audio Track &amp; Interactive Waveform</h2>
-            <p class="text-xs text-zinc-400">Synced subtitle regions appear as colored blocks directly on the waveform</p>
-          </div>
+          <span class="w-7 h-7 rounded-lg bg-violet-600/20 border border-violet-500/40 text-violet-300 font-bold text-xs flex items-center justify-center">1</span>
+          <h2 class="text-sm sm:text-base font-bold text-white">Upload Suno Audio</h2>
         </div>
-        <div class="flex items-center gap-2">
-          <span id="audioFileMeta" class="text-xs font-mono text-zinc-400 truncate max-w-[200px] sm:max-w-sm"></span>
-          <button id="changeAudioBtn" type="button" class="hidden px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs font-medium text-zinc-200 border border-zinc-700 transition">
-            Replace Audio
-          </button>
-        </div>
+        <span id="audioFileMeta" class="text-xs font-mono text-zinc-400 hidden"></span>
       </div>
 
-      <!-- Hidden File Input & Audio Element -->
-      <input type="file" id="audioFileInput" accept="audio/*,.mp3,.wav,.m4a,.ogg" class="hidden" />
-      <audio id="audioPlayer" preload="auto" class="hidden"></audio>
-
-      <!-- Drag & Drop Zone -->
-      <div id="dropZone" class="relative border-2 border-dashed border-zinc-700 hover:border-violet-500 bg-zinc-950/70 hover:bg-violet-950/15 rounded-2xl p-8 sm:p-10 text-center cursor-pointer transition-all group">
-        <div class="w-14 h-14 mx-auto mb-3 rounded-2xl bg-zinc-900 border border-zinc-800 group-hover:border-violet-500/50 flex items-center justify-center transition">
-          <svg class="w-7 h-7 text-violet-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-          </svg>
+      <!-- Dropzone -->
+      <label id="audioDropzone" for="audioFileInput" class="block cursor-pointer rounded-xl border-2 border-dashed border-zinc-700 hover:border-violet-500/70 bg-zinc-950/60 hover:bg-zinc-950 transition p-5 sm:p-6 text-center">
+        <input id="audioFileInput" type="file" accept="audio/*,.mp3,.wav,.m4a,.ogg,.flac" class="hidden" />
+        <div class="flex flex-col items-center gap-2">
+          <div class="w-11 h-11 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-violet-400">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+            </svg>
+          </div>
+          <p class="text-sm font-semibold text-zinc-200">Click to choose or drag &amp; drop your Suno audio file</p>
+          <p class="text-xs text-zinc-500">Supports MP3, WAV, M4A, OGG — decoded locally in your browser</p>
         </div>
-        <p class="text-sm sm:text-base font-semibold text-white mb-1">Drop your Suno audio file here, or click to browse</p>
-        <p class="text-xs text-zinc-400">Supports MP3, WAV, M4A, OGG — ready for Gemini AI vocal alignment</p>
-      </div>
+      </label>
 
-      <!-- Waveform Player Container -->
-      <div id="playerContainer" class="hidden space-y-4">
-        <!-- Waveform Canvas Box -->
-        <div id="waveformWrapper" class="relative w-full h-40 sm:h-44 bg-zinc-950 rounded-xl border border-zinc-800 overflow-hidden cursor-pointer">
-          <canvas id="waveformCanvas" class="block w-full h-full"></canvas>
+      <!-- Hidden Native Audio Element -->
+      <audio id="audioPlayer" preload="metadata" class="hidden"></audio>
 
-          <!-- Decoding Overlay -->
-          <div id="decodingOverlay" class="hidden absolute inset-0 bg-zinc-950/85 backdrop-blur-sm flex flex-col items-center justify-center gap-2 z-10">
-            <div class="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
-            <span class="text-xs font-medium text-violet-300">Decoding audio waveform...</span>
-          </div>
-
-          <!-- Hover Time Tooltip -->
-          <div id="waveformHoverTime" class="hidden pointer-events-none absolute top-2 px-2 py-0.5 rounded bg-zinc-900/95 border border-zinc-700 text-[11px] font-mono text-violet-300 shadow">
-            00:00.000
-          </div>
-        </div>
-
-        <!-- Prominent Live Subtitle Preview Overlay -->
-        <div class="relative bg-gradient-to-b from-zinc-950 to-zinc-900/90 border border-zinc-800 rounded-xl px-5 py-4 text-center shadow-inner overflow-hidden">
-          <div class="flex items-center justify-center gap-2 mb-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-violet-400"></span>
-            <span class="text-[10px] uppercase tracking-widest font-semibold text-zinc-400">Live Subtitle Preview</span>
-          </div>
-          <p id="liveSubtitleText" class="text-lg sm:text-xl font-bold text-white min-h-[2rem] leading-snug tracking-tight">
-            <span class="text-zinc-500 font-normal text-sm">Load lyrics and run AI Auto-Sync or Tap-to-Sync to preview subtitles...</span>
+      <!-- Interactive Waveform & Player Controls (Revealed after upload) -->
+      <div id="playerSection" class="hidden space-y-3 pt-1">
+        <!-- Live Subtitle Preview Bar -->
+        <div class="rounded-xl bg-zinc-950 border border-zinc-800 px-4 py-3 text-center min-h-[54px] flex items-center justify-center">
+          <p id="liveSubtitlePreview" class="text-sm sm:text-base font-semibold text-violet-200 tracking-wide">
+            <span class="text-zinc-500 font-normal text-xs">Live subtitle preview will appear here during playback</span>
           </p>
         </div>
 
-        <!-- Transport Controls Row -->
-        <div class="flex flex-col md:flex-row items-center justify-between gap-4 pt-1">
-          <!-- Left: Play/Pause & Skip ±5s -->
-          <div class="flex items-center gap-2">
-            <button id="rewindBtn" type="button" title="Skip back 5s (Left Arrow)" class="px-3.5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold flex items-center gap-1.5 border border-zinc-700 transition active:scale-95">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0019 16V8a1 1 0 00-1.6-.8l-5.333 4zM4.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0011 16V8a1 1 0 00-1.6-.8l-5.334 4z" />
-              </svg>
-              -5s
-            </button>
+        <!-- Responsive Waveform Canvas -->
+        <div id="waveformContainer" class="relative w-full h-24 sm:h-28 bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden cursor-pointer select-none touch-none">
+          <canvas id="waveformCanvas" class="w-full h-full block"></canvas>
+        </div>
 
-            <button id="playPauseBtn" type="button" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold flex items-center gap-2 shadow-lg shadow-indigo-600/25 transition active:scale-95 min-w-[120px] justify-center">
-              <svg id="playIcon" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-              <svg id="pauseIcon" class="w-4 h-4 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
+        <!-- Transport Bar -->
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-2">
+            <button id="rewind5Btn" type="button" class="px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-semibold text-zinc-200 transition">-5s</button>
+            <button id="playPauseBtn" type="button" class="px-5 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-xs sm:text-sm font-bold text-white shadow-md shadow-violet-600/20 transition flex items-center gap-2">
+              <span id="playPauseIcon">▶</span>
               <span id="playPauseLabel">Play</span>
             </button>
-
-            <button id="forwardBtn" type="button" title="Skip forward 5s (Right Arrow)" class="px-3.5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold flex items-center gap-1.5 border border-zinc-700 transition active:scale-95">
-              +5s
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M11.933 12.8a1 1 0 000-1.6L6.6 7.2A1 1 0 005 8v8a1 1 0 001.6.8l5.333-4zM19.933 12.8a1 1 0 000-1.6l-5.333-4A1 1 0 0013 8v8a1 1 0 001.6.8l5.333-4z" />
-              </svg>
-            </button>
+            <button id="forward5Btn" type="button" class="px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-semibold text-zinc-200 transition">+5s</button>
           </div>
 
-          <!-- Center: Playhead Clock -->
-          <div class="font-mono text-sm sm:text-base bg-zinc-950 px-4 py-2 rounded-xl border border-zinc-800 flex items-center gap-2">
-            <span id="currentTimeDisplay" class="text-violet-300 font-semibold">00:00.000</span>
-            <span class="text-zinc-600">/</span>
-            <span id="totalDurationDisplay" class="text-zinc-400">00:00.000</span>
-          </div>
-
-          <!-- Right: Speed Selector -->
-          <div class="flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-zinc-800" role="group" aria-label="Playback Speed">
-            <span class="text-[11px] font-medium text-zinc-400 px-2">Speed</span>
-            <button type="button" data-speed="0.5" class="speed-btn px-2.5 py-1.5 rounded-lg text-xs font-mono font-medium text-zinc-400 hover:text-white transition">0.5x</button>
-            <button type="button" data-speed="0.75" class="speed-btn px-2.5 py-1.5 rounded-lg text-xs font-mono font-medium text-zinc-400 hover:text-white transition">0.75x</button>
-            <button type="button" data-speed="1" class="speed-btn px-2.5 py-1.5 rounded-lg text-xs font-mono font-semibold bg-indigo-600 text-white shadow transition">1.0x</button>
-            <button type="button" data-speed="1.25" class="speed-btn px-2.5 py-1.5 rounded-lg text-xs font-mono font-medium text-zinc-400 hover:text-white transition">1.25x</button>
+          <div class="flex items-center gap-3">
+            <span id="timeDisplay" class="text-xs sm:text-sm font-mono text-zinc-300 bg-zinc-950 border border-zinc-800 px-3 py-1.5 rounded-lg">00:00.000 / 00:00.000</span>
+            <select id="playbackSpeedSelect" aria-label="Playback Speed" class="bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-zinc-200 outline-none cursor-pointer">
+              <option value="0.5">0.5x</option>
+              <option value="0.75">0.75x</option>
+              <option value="1" selected>1.0x</option>
+              <option value="1.25">1.25x</option>
+            </select>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ========================================================= -->
-    <!-- MIDDLE WORKSPACE: STEP 2 (LYRICS) & STEP 3 (AI/TAP SYNC)  -->
-    <!-- ========================================================= -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-      <!-- STEP 2: SMART SUNO LYRICS CLEANER -->
-      <section id="step2" class="lg:col-span-5 bg-zinc-900/75 border border-zinc-800/90 rounded-2xl p-4 sm:p-6 shadow-xl flex flex-col">
-        <div class="flex items-center justify-between gap-2 mb-4">
-          <div class="flex items-center gap-2.5">
-            <span class="w-7 h-7 rounded-lg bg-indigo-500/20 border border-indigo-500/40 text-indigo-300 font-bold text-xs flex items-center justify-center">2</span>
-            <h2 class="text-base sm:text-lg font-semibold text-white">Smart Suno Lyrics Cleaner</h2>
-          </div>
-          <button id="clearLyricsBtn" type="button" class="text-xs text-zinc-400 hover:text-rose-400 transition">Clear</button>
+    <!-- ===================================================================== -->
+    <!-- STEP 2: PASTE & CLEAN SUNO LYRICS                                     -->
+    <!-- ===================================================================== -->
+    <section class="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-5 sm:p-6 space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-2.5">
+          <span class="w-7 h-7 rounded-lg bg-violet-600/20 border border-violet-500/40 text-violet-300 font-bold text-xs flex items-center justify-center">2</span>
+          <h2 class="text-sm sm:text-base font-bold text-white">Paste Your Suno Lyrics</h2>
         </div>
 
-        <textarea
-          id="lyricsInput"
-          rows="10"
-          placeholder="Paste your Suno lyrics here (Vietnamese UTF-8 &amp; English supported)...&#10;&#10;[Verse 1]&#10;Sáu giờ sáng phố Huế, rào chắn bủa vây con đường&#10;Cắt điện toàn khu vực, phong tỏa kín hết bốn phương..."
-          class="w-full flex-1 bg-zinc-950 border border-zinc-800 focus:border-violet-500 focus:ring-1 focus:ring-violet-500 rounded-xl p-3.5 text-sm text-zinc-100 placeholder-zinc-500 outline-none resize-y leading-relaxed"
-        ></textarea>
-
-        <!-- Toggleable Cleaner Options -->
-        <div class="mt-3.5 space-y-2">
-          <label class="flex items-start gap-2.5 cursor-pointer select-none p-2.5 rounded-xl bg-zinc-950/70 border border-zinc-800/80 hover:border-zinc-700 transition">
-            <input id="stripBracketTagsCheckbox" type="checkbox" checked class="mt-0.5 w-4 h-4 rounded border-zinc-600 bg-zinc-900 text-violet-500 focus:ring-violet-500 focus:ring-offset-zinc-950" />
-            <span class="text-xs text-zinc-300 leading-snug">
-              <strong class="text-white font-medium">Strip Suno bracket tags</strong> (<code class="text-violet-300">[Verse]</code>, <code class="text-violet-300">[Chorus]</code>, <code class="text-violet-300">[Intro]</code>, etc.) &amp; empty lines
-            </span>
+        <div class="flex flex-wrap items-center gap-3">
+          <label class="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer select-none">
+            <input id="stripBracketsCheck" type="checkbox" checked class="rounded border-zinc-700 bg-zinc-950 text-violet-500 focus:ring-violet-500" />
+            <span>Remove <code class="text-violet-300">[Verse]</code> tags</span>
           </label>
-
-          <label class="flex items-start gap-2.5 cursor-pointer select-none p-2.5 rounded-xl bg-zinc-950/70 border border-zinc-800/80 hover:border-zinc-700 transition">
-            <input id="stripParenCuesCheckbox" type="checkbox" class="mt-0.5 w-4 h-4 rounded border-zinc-600 bg-zinc-900 text-violet-500 focus:ring-violet-500 focus:ring-offset-zinc-950" />
-            <span class="text-xs text-zinc-300 leading-snug">
-              <strong class="text-white font-medium">Strip parenthetical cues</strong> (<code class="text-zinc-400">(sound effects)</code>, <code class="text-zinc-400">(ad-libs)</code>)
-            </span>
+          <label class="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer select-none">
+            <input id="stripParensCheck" type="checkbox" class="rounded border-zinc-700 bg-zinc-950 text-violet-500 focus:ring-violet-500" />
+            <span>Remove <code class="text-zinc-400">(ad-libs)</code></span>
           </label>
         </div>
+      </div>
 
-        <button id="loadLyricsBtn" type="button" class="mt-4 w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold shadow-lg shadow-indigo-600/20 transition active:scale-[0.99] flex items-center justify-center gap-2">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-          </svg>
-          Load Cleaned Lyrics into Studio
-        </button>
-      </section>
+      <textarea
+        id="lyricsInput"
+        rows="6"
+        placeholder="Paste your Suno lyrics here (Vietnamese, English, etc.)...&#10;&#10;[Verse 1]&#10;Sáu giờ sáng phố Huế, rào chắn bủa vây con đường&#10;Cắt điện toàn khu vực, phong tỏa kín hết bốn phương..."
+        class="w-full rounded-xl bg-zinc-950 border border-zinc-800 focus:border-violet-500 focus:ring-1 focus:ring-violet-500 p-3.5 text-sm text-zinc-100 placeholder-zinc-500 outline-none resize-y leading-relaxed"
+      ></textarea>
 
-      <!-- STEP 3: AI AUTO-SYNC & TAP-TO-SYNC STUDIO -->
-      <section id="step3" class="lg:col-span-7 bg-zinc-900/75 border border-zinc-800/90 rounded-2xl p-4 sm:p-6 shadow-xl flex flex-col">
-        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <div class="flex items-center gap-2.5">
-            <span class="w-7 h-7 rounded-lg bg-violet-500/20 border border-violet-500/40 text-violet-300 font-bold text-xs flex items-center justify-center">3</span>
-            <h2 class="text-base sm:text-lg font-semibold text-white">Sync Studio</h2>
-          </div>
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <p id="lyricsCountHint" class="text-xs text-zinc-400">Paste your lyrics above and click Load Lyrics.</p>
+        <div class="flex items-center gap-2">
+          <button id="clearLyricsBtn" type="button" class="px-3.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-semibold text-zinc-300 transition">Clear</button>
+          <button id="loadLyricsBtn" type="button" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs sm:text-sm font-bold text-white shadow-md shadow-indigo-600/20 transition">
+            Load Lyrics into Timeline
+          </button>
+        </div>
+      </div>
+    </section>
 
-          <!-- Mode Switcher Tabs (Default: AI Auto-Sync) -->
-          <div class="inline-flex bg-zinc-950 p-1 rounded-xl border border-zinc-800">
-            <button id="tabAiMode" type="button" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow transition flex items-center gap-1.5">
-              <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z"/></svg>
-              AI Auto-Sync
-            </button>
-            <button id="tabTapMode" type="button" class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-white transition">
-              Tap-to-Sync
-            </button>
-          </div>
+    <!-- ===================================================================== -->
+    <!-- STEP 3: SYNC TIMING (CLEAN 3-TAB INTERFACE)                           -->
+    <!-- ===================================================================== -->
+    <section class="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-5 sm:p-6 space-y-5">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5">
+          <span class="w-7 h-7 rounded-lg bg-violet-600/20 border border-violet-500/40 text-violet-300 font-bold text-xs flex items-center justify-center">3</span>
+          <h2 class="text-sm sm:text-base font-bold text-white">Sync Lyrics to Audio</h2>
         </div>
 
-        <!-- PANEL A: AI AUTO-SYNC (GEMINI MULTIMODAL) + OFFLINE VOCAL-BAND FALLBACK -->
-        <div id="aiSyncPanel" class="flex-1 flex flex-col justify-between space-y-4">
-          <!-- Primary Gemini AI Alignment Card -->
-          <div class="relative bg-zinc-950 border border-violet-500/30 rounded-2xl p-5 space-y-4 overflow-hidden">
-            <div class="absolute -top-24 -right-24 w-48 h-48 bg-violet-600/15 blur-3xl rounded-full pointer-events-none"></div>
-
-            <div class="flex items-start gap-3.5 relative">
-              <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500/25 to-violet-500/25 border border-violet-500/40 flex items-center justify-center shrink-0">
-                <svg class="w-6 h-6 text-violet-300" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
-                </svg>
-              </div>
-              <div>
-                <h3 class="text-sm sm:text-base font-bold text-white flex flex-wrap items-center gap-2">
-                  Gemini Multimodal Vocal Alignment
-                  <span class="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-violet-500/15 text-violet-300 border border-violet-500/30">Structured JSON</span>
-                </h3>
-                <p class="text-xs text-zinc-400 mt-1 leading-relaxed">
-                  Sends your audio and exact lyric lines to Gemini so the AI listens directly to singing/rapping (including Vietnamese vocals), skips instrumental intros, bridges &amp; outros, and aligns every line to exact timestamps.
-                </p>
-              </div>
-            </div>
-
-            <!-- Compact Gemini API Key & Model Selector Bar -->
-            <div class="relative rounded-xl bg-zinc-900/90 border border-zinc-800 p-3 space-y-2.5">
-              <div class="flex flex-wrap items-center justify-between gap-2">
-                <div class="flex items-center gap-2">
-                  <label for="geminiApiKeyInput" class="text-[11px] font-semibold uppercase tracking-wider text-zinc-300">Gemini API Key <span class="text-zinc-500 normal-case font-normal">(Optional)</span></label>
-                  <span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Built-in Ready</span>
-                  <span id="apiKeySavedBadge" class="hidden px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-500/15 text-violet-300 border border-violet-500/30">Custom Key Saved</span>
-                </div>
-                <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" class="text-[11px] font-semibold text-violet-400 hover:text-violet-300 underline underline-offset-2 flex items-center gap-1 transition">
-                  Get Free Key
-                  <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                  </svg>
-                </a>
-              </div>
-
-              <div class="flex flex-col sm:flex-row gap-2">
-                <div class="relative flex-1">
-                  <input
-                    id="geminiApiKeyInput"
-                    type="password"
-                    autocomplete="off"
-                    spellcheck="false"
-                    placeholder="Leave blank to use built-in AI (only needed if running offline)"
-                    class="w-full bg-zinc-950 border border-zinc-800 focus:border-violet-500 focus:ring-1 focus:ring-violet-500 rounded-lg pl-3 pr-9 py-2 text-xs font-mono text-zinc-100 placeholder-zinc-500 outline-none transition"
-                  />
-                  <button
-                    id="toggleApiKeyVisBtn"
-                    type="button"
-                    title="Show / Hide API Key"
-                    class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-zinc-400 hover:text-zinc-200 transition"
-                  >
-                    <svg id="eyeOpenIcon" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    <svg id="eyeClosedIcon" class="w-4 h-4 hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
-                    </svg>
-                  </button>
-                </div>
-
-                <select
-                  id="geminiModelSelect"
-                  aria-label="Gemini Model"
-                  class="bg-zinc-950 border border-zinc-800 focus:border-violet-500 rounded-lg px-2.5 py-2 text-xs font-mono text-violet-200 outline-none cursor-pointer sm:w-52 shrink-0"
-                >
-                  <option value="gemini-3-flash-preview" selected>gemini-3-flash-preview</option>
-                  <option value="gemini-2.5-flash">gemini-2.5-flash (custom key)</option>
-                  <option value="gemini-2.5-pro">gemini-2.5-pro (custom key)</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- Live AI Loading Progress Stepper (Hidden until running) -->
-            <div id="aiProgressCard" class="hidden rounded-xl bg-zinc-900/90 border border-violet-500/40 p-4 space-y-3">
-              <div class="flex items-center justify-between gap-2">
-                <div class="flex items-center gap-2.5">
-                  <div class="w-4 h-4 border-2 border-violet-400 border-t-transparent rounded-full animate-spin shrink-0"></div>
-                  <span id="aiStatusTitle" class="text-xs sm:text-sm font-semibold text-violet-200 ai-shimmer">Encoding audio...</span>
-                </div>
-                <span id="aiStepCounter" class="text-[11px] font-mono text-zinc-400">Step 1/3</span>
-              </div>
-              <!-- 3-Step Visual Indicator -->
-              <div class="grid grid-cols-3 gap-2">
-                <div id="aiStepBar1" class="h-1.5 rounded-full bg-violet-500 transition-all"></div>
-                <div id="aiStepBar2" class="h-1.5 rounded-full bg-zinc-800 transition-all"></div>
-                <div id="aiStepBar3" class="h-1.5 rounded-full bg-zinc-800 transition-all"></div>
-              </div>
-              <p id="aiStatusSubtext" class="text-[11px] text-zinc-400">Preparing audio payload for multimodal analysis...</p>
-            </div>
-
-            <!-- Primary AI Auto-Sync Button -->
-            <button id="runAiSyncBtn" type="button" class="w-full py-4 px-5 rounded-xl bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 hover:from-indigo-500 hover:via-violet-500 hover:to-fuchsia-500 active:scale-[0.99] text-white font-bold text-sm sm:text-base shadow-lg shadow-violet-600/25 transition flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed">
-              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z"/></svg>
-              <span>AI Auto-Sync (Listen &amp; Align Vocals)</span>
-            </button>
-          </div>
-
-          <!-- Secondary Offline Fallback Card: Vocal-Band Estimate -->
-          <div class="bg-zinc-950/80 border border-zinc-800 rounded-2xl p-4 space-y-3">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <h4 class="text-xs sm:text-sm font-semibold text-zinc-200 flex items-center gap-2">
-                  Offline Fallback: Vocal-Band Estimate
-                  <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">300Hz–3000Hz DSP</span>
-                </h4>
-                <p class="text-[11px] text-zinc-400 mt-0.5">
-                  Filters audio through a vocal bandpass to detect active vocal regions (skipping instrumental breaks) and weights timing by word/syllable count.
-                </p>
-              </div>
-              <button id="runVocalBandBtn" type="button" class="shrink-0 px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-100 text-xs font-semibold transition active:scale-95 flex items-center justify-center gap-1.5">
-                <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 12h3l3-7 4 14 3-7h5" />
-                </svg>
-                Vocal-Band Estimate
-              </button>
-            </div>
-
-            <!-- Sensitivity & Region Info -->
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-zinc-800/80">
-              <div class="flex items-center gap-3 flex-1">
-                <label for="vocalThresholdSlider" class="text-[11px] text-zinc-400 whitespace-nowrap">Vocal Gate:</label>
-                <input id="vocalThresholdSlider" type="range" min="0.12" max="0.55" step="0.02" value="0.24" class="w-full max-w-[180px] accent-indigo-500 cursor-pointer" />
-                <span id="vocalThresholdVal" class="font-mono text-[11px] text-indigo-300 w-10">0.24</span>
-              </div>
-              <span id="vocalRegionsSummary" class="font-mono text-[11px] text-zinc-400">Regions: ready after audio load</span>
-            </div>
-          </div>
+        <!-- Simple 3-Tab Switcher -->
+        <div class="grid grid-cols-3 gap-1.5 bg-zinc-950 p-1 rounded-xl border border-zinc-800 w-full sm:w-auto">
+          <button id="tabWhisperBtn" type="button" class="px-3 py-2 rounded-lg text-xs font-semibold bg-violet-600 text-white transition">
+            Free Whisper AI
+          </button>
+          <button id="tabTapBtn" type="button" class="px-3 py-2 rounded-lg text-xs font-medium text-zinc-400 hover:text-white transition">
+            Tap-to-Sync
+          </button>
+          <button id="tabOtherBtn" type="button" class="px-3 py-2 rounded-lg text-xs font-medium text-zinc-400 hover:text-white transition">
+            Cloud / Fast
+          </button>
         </div>
+      </div>
 
-        <!-- PANEL B: TAP-TO-SYNC MODE -->
-        <div id="tapSyncPanel" class="hidden flex-1 flex flex-col justify-between space-y-4">
-          <!-- Progress Bar & Counter -->
-          <div class="space-y-1.5">
-            <div class="flex items-center justify-between text-xs">
-              <span id="syncProgressLabel" class="font-medium text-zinc-300">Load lyrics to begin tapping</span>
-              <div class="flex items-center gap-2">
-                <span id="activeStateBadge" class="hidden px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Recording Line</span>
-                <button id="resetSyncBtn" type="button" class="text-xs text-zinc-400 hover:text-amber-400 transition">Reset Stamps</button>
-              </div>
-            </div>
-            <div class="w-full h-1.5 bg-zinc-950 rounded-full overflow-hidden border border-zinc-800">
-              <div id="syncProgressBar" class="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 w-0 transition-all duration-200"></div>
-            </div>
-          </div>
-
-          <!-- 3-Tier Teleprompter Cue Box -->
-          <div class="bg-zinc-950 border border-zinc-800 rounded-2xl p-4 sm:p-5 space-y-3 min-h-[188px] flex flex-col justify-center">
-            <div class="flex items-center justify-between gap-2 text-xs text-zinc-500 min-h-[1.25rem]">
-              <span class="uppercase tracking-wider text-[10px] font-semibold shrink-0 w-12">Prev</span>
-              <p id="prevCueText" class="flex-1 truncate text-zinc-400">—</p>
-              <span id="prevCueTime" class="font-mono text-[11px] text-zinc-500 shrink-0"></span>
-            </div>
-
-            <div class="p-3.5 sm:p-4 rounded-xl bg-gradient-to-r from-indigo-500/15 via-emerald-500/10 to-indigo-500/15 border border-emerald-500/40 shadow-inner">
-              <div class="flex items-center justify-between mb-1">
-                <span id="currentCueLabel" class="text-[10px] uppercase tracking-widest font-bold text-emerald-300">Next Line to Stamp</span>
-                <span id="currentCueTime" class="font-mono text-xs text-emerald-300"></span>
-              </div>
-              <p id="currentCueText" class="text-base sm:text-xl font-bold text-white leading-snug">
-                Paste lyrics &amp; click "Load Cleaned Lyrics into Studio"
+      <!-- TAB 1: FREE BROWSER WHISPER AI (DEFAULT) -->
+      <div id="panelWhisper" class="space-y-4">
+        <div class="rounded-xl bg-zinc-950 border border-violet-500/30 p-4 sm:p-5 space-y-4">
+          <div class="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                Free Browser Whisper AI
+                <span class="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">No API Key Needed</span>
+              </h3>
+              <p class="text-xs text-zinc-400 mt-1">
+                Runs OpenAI Whisper directly in your browser to detect spoken/sung Vietnamese &amp; English vocals and align your exact lyrics automatically.
               </p>
             </div>
+          </div>
 
-            <div class="flex items-center justify-between gap-2 text-xs text-zinc-500 min-h-[1.25rem]">
-              <span class="uppercase tracking-wider text-[10px] font-semibold shrink-0 w-12">Next</span>
-              <p id="nextCueText" class="flex-1 truncate text-zinc-400">—</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label for="whisperLangSelect" class="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1.5">Song Language</label>
+              <select id="whisperLangSelect" class="w-full bg-zinc-900 border border-zinc-800 focus:border-violet-500 rounded-xl px-3 py-2.5 text-xs text-zinc-100 outline-none cursor-pointer">
+                <option value="vietnamese" selected>Vietnamese (Tiếng Việt)</option>
+                <option value="english">English</option>
+                <option value="auto">Auto-Detect</option>
+              </select>
+            </div>
+            <div>
+              <label for="whisperModelSelect" class="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1.5">AI Model Accuracy</label>
+              <select id="whisperModelSelect" class="w-full bg-zinc-900 border border-zinc-800 focus:border-violet-500 rounded-xl px-3 py-2.5 text-xs text-violet-200 outline-none cursor-pointer">
+                <option value="Xenova/whisper-base" selected>Whisper Base (~75MB • Faster)</option>
+                <option value="Xenova/whisper-small">Whisper Small (~240MB • Best for Vietnamese)</option>
+              </select>
             </div>
           </div>
 
-          <!-- Tap Controls -->
-          <div class="space-y-2.5">
-            <button id="stampBtn" type="button" class="w-full py-4 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white font-bold text-base shadow-lg shadow-emerald-600/25 transition flex items-center justify-center gap-3">
-              <span>Tap / Stamp Next Line</span>
-              <kbd class="px-2 py-0.5 text-xs font-mono bg-emerald-800/80 border border-emerald-400/40 rounded-md text-emerald-100">Space</kbd>
+          <!-- Progress Box (Visible while AI runs) -->
+          <div id="aiProgressBox" class="hidden rounded-xl bg-zinc-900 border border-violet-500/40 p-4 space-y-2.5">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2.5">
+                <div class="w-4 h-4 border-2 border-violet-400 border-t-transparent rounded-full animate-spin shrink-0"></div>
+                <span id="aiProgressTitle" class="text-xs sm:text-sm font-semibold text-violet-200">Initializing AI...</span>
+              </div>
+              <span id="aiProgressStep" class="text-[11px] font-mono text-zinc-400">Step 1/3</span>
+            </div>
+            <div id="aiBarWrap" class="hidden w-full h-1.5 bg-zinc-950 rounded-full overflow-hidden border border-zinc-800">
+              <div id="aiBarFill" class="h-full bg-gradient-to-r from-indigo-500 to-emerald-400 w-0 transition-all duration-150"></div>
+            </div>
+            <p id="aiProgressSub" class="text-[11px] text-zinc-400">First run downloads the model once and caches it locally.</p>
+          </div>
+
+          <button id="runWhisperBtn" type="button" class="w-full py-3.5 px-5 rounded-xl bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 hover:from-indigo-500 hover:via-violet-500 hover:to-fuchsia-500 active:scale-[0.99] text-white font-bold text-sm shadow-lg shadow-violet-600/25 transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z"/></svg>
+            <span>Run Free Whisper AI Auto-Sync</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB 2: TAP-TO-SYNC (MANUAL TELEPROMPTER) -->
+      <div id="panelTap" class="hidden space-y-4">
+        <div class="rounded-xl bg-zinc-950 border border-zinc-800 p-4 sm:p-5 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <p class="text-xs text-zinc-400">
+              Press <kbd class="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-200 font-mono text-[11px]">Space</kbd> when each line starts, <kbd class="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-200 font-mono text-[11px]">E</kbd> for instrumental pauses, <kbd class="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-200 font-mono text-[11px]">Backspace</kbd> to undo &amp; rewind 3s.
+            </p>
+            <span id="tapProgressBadge" class="text-xs font-mono text-violet-300 bg-violet-500/10 border border-violet-500/30 px-2.5 py-1 rounded-lg">0 / 0 synced</span>
+          </div>
+
+          <!-- Teleprompter Display -->
+          <div class="rounded-xl bg-zinc-900/90 border border-zinc-800 p-5 text-center space-y-2">
+            <p class="text-[11px] uppercase tracking-wider text-zinc-500 font-semibold">Next Line to Stamp</p>
+            <p id="tapCurrentLine" class="text-base sm:text-lg font-bold text-white min-h-[28px]">Load lyrics in Step 2 to begin</p>
+            <p id="tapNextLine" class="text-xs sm:text-sm text-zinc-400 min-h-[20px]"></p>
+          </div>
+
+          <!-- Big Touch-Friendly Buttons -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <button id="tapStampBtn" type="button" class="sm:col-span-2 py-4 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white font-bold text-sm sm:text-base shadow-lg shadow-emerald-600/20 transition">
+              Tap / Press Space — Stamp Next Line
             </button>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <button id="endLineBtn" type="button" class="py-3 px-4 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-200 text-xs sm:text-sm font-semibold transition active:scale-[0.99] flex items-center justify-center gap-2">
-                <span>End Line (Instrumental)</span>
-                <kbd class="px-1.5 py-0.5 text-[11px] font-mono bg-amber-950/80 border border-amber-500/40 rounded text-amber-200">E</kbd>
+            <div class="grid grid-cols-2 gap-2">
+              <button id="tapEndGapBtn" type="button" class="py-3 px-3 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/40 text-amber-200 font-semibold text-xs transition">
+                End Line (E)
               </button>
-
-              <button id="undoBtn" type="button" class="py-3 px-4 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 text-xs sm:text-sm font-semibold transition active:scale-[0.99] flex items-center justify-center gap-2">
-                <span>Undo &amp; Rewind 3s</span>
-                <kbd class="px-1.5 py-0.5 text-[11px] font-mono bg-zinc-900 border border-zinc-600 rounded text-zinc-300">Backspace</kbd>
+              <button id="tapUndoBtn" type="button" class="py-3 px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-semibold text-xs transition">
+                Undo (-3s)
               </button>
             </div>
           </div>
-        </div>
-      </section>
-    </div>
 
-    <!-- ========================================================= -->
-    <!-- STEP 4: TIMELINE FINE-TUNING EDITOR                       -->
-    <!-- ========================================================= -->
-    <section id="step4" class="bg-zinc-900/75 border border-zinc-800/90 rounded-2xl p-4 sm:p-6 shadow-xl">
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-        <div class="flex items-center gap-2.5">
-          <span class="w-7 h-7 rounded-lg bg-indigo-500/20 border border-indigo-500/40 text-indigo-300 font-bold text-xs flex items-center justify-center">4</span>
-          <div>
-            <h2 class="text-base sm:text-lg font-semibold text-white">Timeline Fine-Tuning Editor</h2>
-            <p class="text-xs text-zinc-400">Edit timestamps (<code class="text-zinc-300">MM:SS.mmm</code>), nudge ±100ms, or snap Start/End directly to the playhead</p>
-          </div>
-        </div>
-
-        <!-- Global Millisecond Offset Shifter -->
-        <div class="flex flex-wrap items-center gap-2 bg-zinc-950 p-2 rounded-xl border border-zinc-800">
-          <span class="text-xs font-medium text-zinc-400 pl-1.5">Global Shift:</span>
-          <button id="globalMinus100Btn" type="button" class="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs font-mono text-zinc-200 border border-zinc-700 transition">-100ms</button>
-          <button id="globalPlus100Btn" type="button" class="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs font-mono text-zinc-200 border border-zinc-700 transition">+100ms</button>
-          <div class="flex items-center gap-1.5 pl-1 border-l border-zinc-800">
-            <input id="customOffsetInput" type="number" step="50" value="0" placeholder="ms" class="w-20 px-2 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 text-xs font-mono text-white text-center outline-none focus:border-violet-500" />
-            <button id="applyCustomOffsetBtn" type="button" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white transition">Apply ms</button>
+          <div class="flex justify-end">
+            <button id="tapResetBtn" type="button" class="text-xs text-zinc-400 hover:text-rose-400 underline underline-offset-2 transition">Reset Tap Cursor to Line 1</button>
           </div>
         </div>
       </div>
 
-      <!-- Cue Table -->
-      <div class="overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-950/70 max-h-[460px] overflow-y-auto">
-        <table class="w-full text-left border-collapse min-w-[860px]">
-          <thead class="sticky top-0 z-10 bg-zinc-900/95 backdrop-blur border-b border-zinc-800 text-[11px] uppercase tracking-wider text-zinc-400">
-            <tr>
-              <th class="py-3 px-3 w-10 text-center">#</th>
-              <th class="py-3 px-2 w-12 text-center">Play</th>
-              <th class="py-3 px-3 w-56">Start (MM:SS.mmm)</th>
-              <th class="py-3 px-3 w-56">End (MM:SS.mmm)</th>
-              <th class="py-3 px-3">Lyric Line</th>
-              <th class="py-3 px-3 w-12 text-center">Del</th>
-            </tr>
-          </thead>
-          <tbody id="cueTableBody" class="divide-y divide-zinc-800/70 text-sm">
-            <tr>
-              <td colspan="6" class="py-10 text-center text-zinc-500 text-sm">
-                No lyric cues loaded yet. Paste your Suno lyrics in Step 2 and click <strong class="text-zinc-300">Load Cleaned Lyrics into Studio</strong>.
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <!-- TAB 3: CLOUD GEMINI (OPTIONAL KEY) & FAST VOCAL-BAND ESTIMATE -->
+      <div id="panelOther" class="hidden space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Optional Cloud Gemini Card -->
+          <div class="rounded-xl bg-zinc-950 border border-zinc-800 p-4 space-y-3">
+            <div class="flex items-center justify-between gap-2">
+              <h3 class="text-xs sm:text-sm font-bold text-white">Cloud Gemini AI (Optional Key)</h3>
+              <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" class="text-[11px] font-semibold text-violet-400 hover:text-violet-300 underline">Get Free Key ↗</a>
+            </div>
+            <p class="text-xs text-zinc-400">If you have a free Google AI Studio key, Gemini can listen directly to your audio and align lyrics in seconds.</p>
+            <input id="geminiKeyInput" type="password" autocomplete="off" placeholder="Paste Gemini API key (AIza...)" class="w-full bg-zinc-900 border border-zinc-800 focus:border-violet-500 rounded-lg px-3 py-2 text-xs font-mono text-zinc-100 placeholder-zinc-500 outline-none" />
+            <div class="flex gap-2">
+              <select id="geminiModelSelect" class="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-2 text-xs font-mono text-zinc-200 outline-none">
+                <option value="gemini-2.5-flash" selected>gemini-2.5-flash</option>
+                <option value="gemini-2.5-pro">gemini-2.5-pro</option>
+              </select>
+              <button id="runGeminiBtn" type="button" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white transition disabled:opacity-50">
+                Run Gemini
+              </button>
+            </div>
+          </div>
+
+          <!-- Instant Offline Vocal-Band Estimate -->
+          <div class="rounded-xl bg-zinc-950 border border-zinc-800 p-4 flex flex-col justify-between space-y-3">
+            <div class="space-y-1.5">
+              <h3 class="text-xs sm:text-sm font-bold text-white">Instant Vocal-Band Estimate (Offline)</h3>
+              <p class="text-xs text-zinc-400">
+                Zero-download DSP filter (300Hz–3000Hz) that detects vocal energy regions and distributes lines by word count. Great as a quick rough draft before fine-tuning.
+              </p>
+            </div>
+            <button id="runVocalBandBtn" type="button" class="w-full py-2.5 px-4 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs font-semibold text-zinc-100 transition">
+              Run Instant Vocal-Band Estimate
+            </button>
+          </div>
+        </div>
       </div>
     </section>
 
-    <!-- ========================================================= -->
-    <!-- STEP 5: SRT EXPORT                                        -->
-    <!-- ========================================================= -->
-    <section id="step5" class="bg-zinc-900/75 border border-zinc-800/90 rounded-2xl p-4 sm:p-6 shadow-xl">
-      <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+    <!-- ===================================================================== -->
+    <!-- STEP 4: TIMELINE EDITOR & .SRT EXPORT                                 -->
+    <!-- ===================================================================== -->
+    <section class="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-5 sm:p-6 space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-2.5">
-          <span class="w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold text-xs flex items-center justify-center">5</span>
-          <div>
-            <h2 class="text-base sm:text-lg font-semibold text-white">Export .SRT Subtitle File</h2>
-            <p class="text-xs text-zinc-400">Strict UTF-8 SubRip format ready for CapCut, Premiere Pro, DaVinci Resolve &amp; YouTube</p>
-          </div>
+          <span class="w-7 h-7 rounded-lg bg-violet-600/20 border border-violet-500/40 text-violet-300 font-bold text-xs flex items-center justify-center">4</span>
+          <h2 class="text-sm sm:text-base font-bold text-white">Fine-Tune &amp; Export .SRT</h2>
         </div>
 
-        <div class="flex flex-wrap items-center gap-2.5">
-          <button id="copySrtBtn" type="button" class="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-100 text-sm font-semibold transition active:scale-95 flex items-center gap-2">
-            <svg class="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-            </svg>
-            Copy SRT
+        <!-- Global Shift & Export Buttons -->
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="flex items-center bg-zinc-950 border border-zinc-800 rounded-xl p-1 gap-1">
+            <input id="globalShiftInput" type="number" step="50" value="0" placeholder="ms" class="w-20 bg-transparent text-xs font-mono text-zinc-200 px-2 py-1 outline-none text-right" />
+            <button id="applyShiftBtn" type="button" class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-[11px] font-semibold text-zinc-200 transition">Shift ms</button>
+          </div>
+          <button id="copySrtBtn" type="button" class="px-3.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-semibold text-zinc-100 transition">
+            Copy .SRT
           </button>
-
-          <button id="downloadSrtBtn" type="button" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold shadow-lg shadow-emerald-600/25 transition active:scale-95 flex items-center gap-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
+          <button id="downloadSrtBtn" type="button" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs sm:text-sm font-bold text-white shadow-md shadow-emerald-600/20 transition">
             Download .SRT
           </button>
         </div>
       </div>
 
-      <!-- Live SRT Preview -->
-      <div class="relative">
-        <div class="flex items-center justify-between px-3.5 py-2 bg-zinc-950 border border-b-0 border-zinc-800 rounded-t-xl text-xs text-zinc-400 font-mono">
-          <span id="exportFileNamePreview">suno_lyrics.srt</span>
-          <span id="exportStatsPreview">0 synced cues</span>
+      <!-- Cue Timeline List -->
+      <div id="cueTableWrap" class="max-h-[420px] overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-950 divide-y divide-zinc-800/80">
+        <div id="emptyTimelineMsg" class="p-8 text-center text-xs text-zinc-500">
+          Your synced lyric lines will appear here. Upload audio in Step 1 and load lyrics in Step 2.
         </div>
-        <pre id="srtPreviewBox" class="w-full h-56 overflow-y-auto bg-zinc-950 border border-zinc-800 rounded-b-xl p-4 font-mono text-xs sm:text-sm text-emerald-300/90 leading-relaxed whitespace-pre-wrap select-all">Your generated .srt subtitles will appear here once you run AI Auto-Sync, Vocal-Band Estimate, or Tap-to-Sync...</pre>
+        <div id="cueList"></div>
       </div>
+
+      <!-- Collapsible Raw SRT Preview -->
+      <details class="rounded-xl bg-zinc-950 border border-zinc-800 p-3.5">
+        <summary class="text-xs font-semibold text-zinc-400 hover:text-zinc-200 cursor-pointer select-none">
+          Preview Raw .SRT Output
+        </summary>
+        <textarea id="srtRawPreview" readonly rows="8" class="mt-3 w-full bg-zinc-900/70 border border-zinc-800 rounded-lg p-3 text-xs font-mono text-zinc-300 outline-none resize-y"></textarea>
+      </details>
     </section>
 
   </main>
 
-  <!-- Non-blocking Toast Container -->
-  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none max-w-sm"></div>
-
-  <!-- ========================================================= -->
-  <!-- APPLICATION JAVASCRIPT                                    -->
-  <!-- ========================================================= -->
   <script>
-    (function () {
-      'use strict';
-
-      // ---------------------------------------------------------
-      // 1. APPLICATION STATE
-      // ---------------------------------------------------------
+    (() => {
+      // =========================================================
+      // 1. STATE & DOM REFERENCES
+      // =========================================================
       const state = {
-        audioFile: null,         // Original uploaded File object
-        audioUrl: null,          // Object URL for <audio>
-        audioFileName: 'suno_lyrics',
-        audioBuffer: null,       // Decoded Web Audio AudioBuffer
-        waveformPeaks: [],       // Normalized peaks for fast canvas rendering
+        audioFile: null,
+        audioUrl: null,
+        audioBuffer: null,
+        waveformPeaks: null,
         duration: 0,
-        isPlaying: false,
-        playbackRate: 1.0,
-
-        // Lyric cues: [{ id, text, start: number|null, end: number|null }]
-        cues: [],
-        syncCursor: 0,
-        activeStampingIndex: -1,
-        activePlayingCueId: null,
-        syncMode: 'ai',          // 'ai' | 'tap'
+        cues: [], // { id, start, end, text }
+        activeTab: 'whisper', // 'whisper' | 'tap' | 'other'
+        tapCursor: 0,
+        activeStampingIdx: -1,
         isAiRunning: false,
-        isDraggingWaveform: false,
+        whisperPipeline: null,
+        whisperLoadedModel: null,
+        isDraggingWave: false,
       };
 
-      // Subtle distinct palette for subtitle blocks overlaid on waveform
-      const CUE_BLOCK_COLORS = [
-        { fill: 'rgba(99, 102, 241, 0.24)', border: 'rgba(129, 140, 248, 0.7)' },  // Indigo
-        { fill: 'rgba(139, 92, 246, 0.24)', border: 'rgba(167, 139, 250, 0.7)' },  // Violet
-        { fill: 'rgba(16, 185, 129, 0.22)', border: 'rgba(52, 211, 153, 0.7)' },   // Emerald
-        { fill: 'rgba(56, 189, 248, 0.22)', border: 'rgba(125, 211, 252, 0.7)' },  // Sky
-      ];
+      const STORAGE_GEMINI_KEY = 'suno_srt_gemini_key_v2';
 
-      // ---------------------------------------------------------
-      // 2. DOM REFERENCES
-      // ---------------------------------------------------------
+      const $ = (id) => document.getElementById(id);
       const els = {
-        audioFileInput: document.getElementById('audioFileInput'),
-        audioPlayer: document.getElementById('audioPlayer'),
-        dropZone: document.getElementById('dropZone'),
-        playerContainer: document.getElementById('playerContainer'),
-        changeAudioBtn: document.getElementById('changeAudioBtn'),
-        audioFileMeta: document.getElementById('audioFileMeta'),
-        statusDot: document.getElementById('statusDot'),
-        statusText: document.getElementById('statusText'),
+        toastContainer: $('toastContainer'),
+        statusAudioBadge: $('statusAudioBadge'),
+        statusLyricsBadge: $('statusLyricsBadge'),
+        audioFileMeta: $('audioFileMeta'),
+        audioDropzone: $('audioDropzone'),
+        audioFileInput: $('audioFileInput'),
+        audioPlayer: $('audioPlayer'),
+        playerSection: $('playerSection'),
+        liveSubtitlePreview: $('liveSubtitlePreview'),
+        waveformContainer: $('waveformContainer'),
+        waveformCanvas: $('waveformCanvas'),
+        rewind5Btn: $('rewind5Btn'),
+        playPauseBtn: $('playPauseBtn'),
+        playPauseIcon: $('playPauseIcon'),
+        playPauseLabel: $('playPauseLabel'),
+        forward5Btn: $('forward5Btn'),
+        timeDisplay: $('timeDisplay'),
+        playbackSpeedSelect: $('playbackSpeedSelect'),
 
-        waveformWrapper: document.getElementById('waveformWrapper'),
-        waveformCanvas: document.getElementById('waveformCanvas'),
-        decodingOverlay: document.getElementById('decodingOverlay'),
-        waveformHoverTime: document.getElementById('waveformHoverTime'),
-        liveSubtitleText: document.getElementById('liveSubtitleText'),
+        stripBracketsCheck: $('stripBracketsCheck'),
+        stripParensCheck: $('stripParensCheck'),
+        lyricsInput: $('lyricsInput'),
+        lyricsCountHint: $('lyricsCountHint'),
+        clearLyricsBtn: $('clearLyricsBtn'),
+        loadLyricsBtn: $('loadLyricsBtn'),
 
-        playPauseBtn: document.getElementById('playPauseBtn'),
-        playIcon: document.getElementById('playIcon'),
-        pauseIcon: document.getElementById('pauseIcon'),
-        playPauseLabel: document.getElementById('playPauseLabel'),
-        rewindBtn: document.getElementById('rewindBtn'),
-        forwardBtn: document.getElementById('forwardBtn'),
-        currentTimeDisplay: document.getElementById('currentTimeDisplay'),
-        totalDurationDisplay: document.getElementById('totalDurationDisplay'),
-        speedBtns: document.querySelectorAll('.speed-btn'),
+        tabWhisperBtn: $('tabWhisperBtn'),
+        tabTapBtn: $('tabTapBtn'),
+        tabOtherBtn: $('tabOtherBtn'),
+        panelWhisper: $('panelWhisper'),
+        panelTap: $('panelTap'),
+        panelOther: $('panelOther'),
 
-        lyricsInput: document.getElementById('lyricsInput'),
-        stripBracketTagsCheckbox: document.getElementById('stripBracketTagsCheckbox'),
-        stripParenCuesCheckbox: document.getElementById('stripParenCuesCheckbox'),
-        loadLyricsBtn: document.getElementById('loadLyricsBtn'),
-        clearLyricsBtn: document.getElementById('clearLyricsBtn'),
+        whisperLangSelect: $('whisperLangSelect'),
+        whisperModelSelect: $('whisperModelSelect'),
+        aiProgressBox: $('aiProgressBox'),
+        aiProgressTitle: $('aiProgressTitle'),
+        aiProgressStep: $('aiProgressStep'),
+        aiBarWrap: $('aiBarWrap'),
+        aiBarFill: $('aiBarFill'),
+        aiProgressSub: $('aiProgressSub'),
+        runWhisperBtn: $('runWhisperBtn'),
 
-        tabAiMode: document.getElementById('tabAiMode'),
-        tabTapMode: document.getElementById('tabTapMode'),
-        aiSyncPanel: document.getElementById('aiSyncPanel'),
-        tapSyncPanel: document.getElementById('tapSyncPanel'),
+        tapProgressBadge: $('tapProgressBadge'),
+        tapCurrentLine: $('tapCurrentLine'),
+        tapNextLine: $('tapNextLine'),
+        tapStampBtn: $('tapStampBtn'),
+        tapEndGapBtn: $('tapEndGapBtn'),
+        tapUndoBtn: $('tapUndoBtn'),
+        tapResetBtn: $('tapResetBtn'),
 
-        geminiApiKeyInput: document.getElementById('geminiApiKeyInput'),
-        toggleApiKeyVisBtn: document.getElementById('toggleApiKeyVisBtn'),
-        eyeOpenIcon: document.getElementById('eyeOpenIcon'),
-        eyeClosedIcon: document.getElementById('eyeClosedIcon'),
-        apiKeySavedBadge: document.getElementById('apiKeySavedBadge'),
-        geminiModelSelect: document.getElementById('geminiModelSelect'),
+        geminiKeyInput: $('geminiKeyInput'),
+        geminiModelSelect: $('geminiModelSelect'),
+        runGeminiBtn: $('runGeminiBtn'),
+        runVocalBandBtn: $('runVocalBandBtn'),
 
-        aiProgressCard: document.getElementById('aiProgressCard'),
-        aiStatusTitle: document.getElementById('aiStatusTitle'),
-        aiStepCounter: document.getElementById('aiStepCounter'),
-        aiStepBar1: document.getElementById('aiStepBar1'),
-        aiStepBar2: document.getElementById('aiStepBar2'),
-        aiStepBar3: document.getElementById('aiStepBar3'),
-        aiStatusSubtext: document.getElementById('aiStatusSubtext'),
-        runAiSyncBtn: document.getElementById('runAiSyncBtn'),
-
-        runVocalBandBtn: document.getElementById('runVocalBandBtn'),
-        vocalThresholdSlider: document.getElementById('vocalThresholdSlider'),
-        vocalThresholdVal: document.getElementById('vocalThresholdVal'),
-        vocalRegionsSummary: document.getElementById('vocalRegionsSummary'),
-
-        syncProgressLabel: document.getElementById('syncProgressLabel'),
-        syncProgressBar: document.getElementById('syncProgressBar'),
-        activeStateBadge: document.getElementById('activeStateBadge'),
-        resetSyncBtn: document.getElementById('resetSyncBtn'),
-        prevCueText: document.getElementById('prevCueText'),
-        prevCueTime: document.getElementById('prevCueTime'),
-        currentCueLabel: document.getElementById('currentCueLabel'),
-        currentCueTime: document.getElementById('currentCueTime'),
-        currentCueText: document.getElementById('currentCueText'),
-        nextCueText: document.getElementById('nextCueText'),
-        stampBtn: document.getElementById('stampBtn'),
-        endLineBtn: document.getElementById('endLineBtn'),
-        undoBtn: document.getElementById('undoBtn'),
-
-        globalMinus100Btn: document.getElementById('globalMinus100Btn'),
-        globalPlus100Btn: document.getElementById('globalPlus100Btn'),
-        customOffsetInput: document.getElementById('customOffsetInput'),
-        applyCustomOffsetBtn: document.getElementById('applyCustomOffsetBtn'),
-        cueTableBody: document.getElementById('cueTableBody'),
-
-        copySrtBtn: document.getElementById('copySrtBtn'),
-        downloadSrtBtn: document.getElementById('downloadSrtBtn'),
-        exportFileNamePreview: document.getElementById('exportFileNamePreview'),
-        exportStatsPreview: document.getElementById('exportStatsPreview'),
-        srtPreviewBox: document.getElementById('srtPreviewBox'),
-        toastContainer: document.getElementById('toastContainer'),
+        globalShiftInput: $('globalShiftInput'),
+        applyShiftBtn: $('applyShiftBtn'),
+        copySrtBtn: $('copySrtBtn'),
+        downloadSrtBtn: $('downloadSrtBtn'),
+        emptyTimelineMsg: $('emptyTimelineMsg'),
+        cueList: $('cueList'),
+        srtRawPreview: $('srtRawPreview'),
       };
 
-      // ---------------------------------------------------------
-      // 3. UTILITY & FORMATTING HELPERS
-      // ---------------------------------------------------------
-
-      /** Non-blocking toast notification (replaces alert/confirm) */
-      function showToast(message, type = 'info') {
-        const styles = {
-          info: 'bg-zinc-900/95 border-zinc-700 text-zinc-100',
-          success: 'bg-emerald-950/95 border-emerald-500/50 text-emerald-200',
-          warn: 'bg-amber-950/95 border-amber-500/50 text-amber-200',
-          error: 'bg-rose-950/95 border-rose-500/50 text-rose-200',
-        };
-        const toast = document.createElement('div');
-        toast.className = `pointer-events-auto px-4 py-3 rounded-xl border text-xs sm:text-sm font-medium shadow-2xl backdrop-blur-md transition-all duration-300 opacity-0 translate-y-2 ${styles[type] || styles.info}`;
-        toast.textContent = message;
-        els.toastContainer.appendChild(toast);
-
-        requestAnimationFrame(() => {
-          toast.classList.remove('opacity-0', 'translate-y-2');
-        });
-
-        setTimeout(() => {
-          toast.classList.add('opacity-0', 'translate-y-2');
-          setTimeout(() => toast.remove(), 300);
-        }, type === 'error' ? 6500 : 3500);
-      }
-
-      /** Clamp number to [min, max] */
+      // =========================================================
+      // 2. UTILITIES & FORMATTING
+      // =========================================================
       function clamp(val, min, max) {
         return Math.max(min, Math.min(max, val));
       }
 
-      /** Format seconds to MM:SS.mmm for UI display & inline inputs */
-      function formatDisplayTime(sec) {
-        if (sec === null || sec === undefined || Number.isNaN(sec) || !Number.isFinite(sec)) {
-          return '';
-        }
-        const safe = Math.max(0, sec);
-        const mins = Math.floor(safe / 60);
-        const secs = Math.floor(safe % 60);
-        const ms = Math.round((safe - Math.floor(safe)) * 1000);
-        if (ms === 1000) {
-          return formatDisplayTime(Math.floor(safe) + 1);
-        }
-        return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}.${String(ms).padStart(3, '0')}`;
+      function showToast(message, type = 'info') {
+        const colors = {
+          info: 'bg-zinc-900 border-zinc-700 text-zinc-100',
+          success: 'bg-emerald-950/95 border-emerald-500/50 text-emerald-100',
+          warn: 'bg-amber-950/95 border-amber-500/50 text-amber-100',
+          error: 'bg-rose-950/95 border-rose-500/50 text-rose-100',
+        };
+        const el = document.createElement('div');
+        el.className = `pointer-events-auto px-4 py-3 rounded-xl border text-xs sm:text-sm font-medium shadow-xl transition-all duration-300 ${colors[type] || colors.info}`;
+        el.textContent = message;
+        els.toastContainer.appendChild(el);
+        setTimeout(() => {
+          el.style.opacity = '0';
+          el.style.transform = 'translateY(6px)';
+          setTimeout(() => el.remove(), 300);
+        }, 4200);
       }
 
-      /** Format seconds to strict SRT timestamp HH:MM:SS,mmm */
+      /** Format seconds to MM:SS.mmm for inline inputs & display */
+      function formatShortTime(sec) {
+        if (!Number.isFinite(sec) || sec < 0) sec = 0;
+        const mins = Math.floor(sec / 60);
+        const rem = sec - mins * 60;
+        const wholeSec = Math.floor(rem);
+        const ms = Math.round((rem - wholeSec) * 1000);
+        if (ms === 1000) return formatShortTime(Math.floor(sec) + 1);
+        return `${String(mins).padStart(2, '0')}:${String(wholeSec).padStart(2, '0')}.${String(ms).padStart(3, '0')}`;
+      }
+
+      /** Format seconds to SRT standard HH:MM:SS,mmm */
       function formatSrtTime(sec) {
-        const safe = Math.max(0, sec || 0);
-        const hours = Math.floor(safe / 3600);
-        const mins = Math.floor((safe % 3600) / 60);
-        const secs = Math.floor(safe % 60);
-        const ms = Math.round((safe - Math.floor(safe)) * 1000);
-        if (ms === 1000) {
-          return formatSrtTime(Math.floor(safe) + 1);
-        }
-        return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')},${String(ms).padStart(3, '0')}`;
+        if (!Number.isFinite(sec) || sec < 0) sec = 0;
+        const totalMs = Math.round(sec * 1000);
+        const hrs = Math.floor(totalMs / 3600000);
+        const mins = Math.floor((totalMs % 3600000) / 60000);
+        const secs = Math.floor((totalMs % 60000) / 1000);
+        const ms = totalMs % 1000;
+        return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')},${String(ms).padStart(3, '0')}`;
       }
 
-      /** Parse MM:SS.mmm, HH:MM:SS,mmm, or raw seconds string into number|null */
-      function parseFlexibleTime(str) {
-        if (!str || !str.trim()) return null;
-        const clean = str.trim().replace(',', '.');
-        if (/^\d+(\.\d+)?$/.test(clean)) {
-          return parseFloat(clean);
-        }
-        const parts = clean.split(':');
-        if (parts.length === 2) {
-          const m = parseInt(parts[0], 10);
-          const s = parseFloat(parts[1]);
-          if (!Number.isNaN(m) && !Number.isNaN(s)) return Math.max(0, m * 60 + s);
-        } else if (parts.length === 3) {
-          const h = parseInt(parts[0], 10);
-          const m = parseInt(parts[1], 10);
-          const s = parseFloat(parts[2]);
-          if (!Number.isNaN(h) && !Number.isNaN(m) && !Number.isNaN(s)) {
-            return Math.max(0, h * 3600 + m * 60 + s);
-          }
-        }
+      /** Parse MM:SS.mmm or HH:MM:SS,mmm or plain seconds */
+      function parseTimeInput(str) {
+        const clean = String(str || '').trim().replace(',', '.');
+        if (!clean) return null;
+        const parts = clean.split(':').map(Number);
+        if (parts.some((n) => !Number.isFinite(n) || n < 0)) return null;
+        if (parts.length === 1) return parts[0];
+        if (parts.length === 2) return parts[0] * 60 + parts[1];
+        if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
         return null;
       }
 
-      /** Escape HTML special chars for safe rendering */
-      function escapeHtml(str) {
-        return String(str)
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;');
-      }
-
-      /** Convert ArrayBuffer to Base64 in safe chunks (avoids call stack overflow) */
-      function arrayBufferToBase64(buffer) {
-        const bytes = new Uint8Array(buffer);
-        const chunkSize = 0x8000;
-        let binary = '';
-        for (let i = 0; i < bytes.length; i += chunkSize) {
-          binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
-        }
-        return btoa(binary);
-      }
-
-      /** Resolve MIME type for Gemini inlineData */
-      function resolveAudioMimeType(file) {
-        if (file.type && file.type.startsWith('audio/')) return file.type;
-        const lower = (file.name || '').toLowerCase();
-        if (lower.endsWith('.mp3')) return 'audio/mp3';
-        if (lower.endsWith('.wav')) return 'audio/wav';
-        if (lower.endsWith('.m4a')) return 'audio/mp4';
-        if (lower.endsWith('.ogg')) return 'audio/ogg';
-        return 'audio/mpeg';
-      }
-
-      /** Downsample AudioBuffer to 16kHz mono 16-bit PCM WAV Base64 for large files (>15MB) */
-      async function downsampleAudioBufferTo16kWavBase64(audioBuffer) {
-        const targetRate = 16000;
-        const length = Math.ceil(audioBuffer.duration * targetRate);
-        const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
-        const offlineCtx = new OfflineCtx(1, length, targetRate);
-        const src = offlineCtx.createBufferSource();
-        src.buffer = audioBuffer;
-        src.connect(offlineCtx.destination);
-        src.start(0);
-        const rendered = await offlineCtx.startRendering();
-        const samples = rendered.getChannelData(0);
-
-        const wavBuf = new ArrayBuffer(44 + samples.length * 2);
-        const view = new DataView(wavBuf);
-
-        function writeStr(offset, s) {
-          for (let i = 0; i < s.length; i++) view.setUint8(offset + i, s.charCodeAt(i));
-        }
-
-        writeStr(0, 'RIFF');
-        view.setUint32(4, 36 + samples.length * 2, true);
-        writeStr(8, 'WAVE');
-        writeStr(12, 'fmt ');
-        view.setUint32(16, 16, true);
-        view.setUint16(20, 1, true); // PCM
-        view.setUint16(22, 1, true); // Mono
-        view.setUint32(24, targetRate, true);
-        view.setUint32(28, targetRate * 2, true);
-        view.setUint16(32, 2, true);
-        view.setUint16(34, 16, true);
-        writeStr(36, 'data');
-        view.setUint32(40, samples.length * 2, true);
-
-        let offset = 44;
-        for (let i = 0; i < samples.length; i++) {
-          const s = clamp(samples[i], -1, 1);
-          view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
-          offset += 2;
-        }
-
-        return {
-          base64: arrayBufferToBase64(wavBuf),
-          mimeType: 'audio/wav',
-        };
-      }
-
-      // ---------------------------------------------------------
-      // 4. AUDIO LOADING & WAVEFORM RENDERING
-      // ---------------------------------------------------------
-
-      /** Handle uploaded audio File */
+      // =========================================================
+      // 3. AUDIO LOADING & INTERACTIVE WAVEFORM
+      // =========================================================
       async function handleAudioFile(file) {
         if (!file) return;
         try {
-          if (state.audioUrl) {
-            URL.revokeObjectURL(state.audioUrl);
-          }
-
+          if (state.audioUrl) URL.revokeObjectURL(state.audioUrl);
           state.audioFile = file;
-          state.audioFileName = file.name.replace(/\.[^/.]+$/, '') || 'suno_lyrics';
           state.audioUrl = URL.createObjectURL(file);
           els.audioPlayer.src = state.audioUrl;
-          els.audioPlayer.playbackRate = state.playbackRate;
-
-          els.dropZone.classList.add('hidden');
-          els.playerContainer.classList.remove('hidden');
-          els.changeAudioBtn.classList.remove('hidden');
-          els.decodingOverlay.classList.remove('hidden');
-
-          const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
-          els.audioFileMeta.textContent = `${file.name} (${sizeMB} MB)`;
-          els.exportFileNamePreview.textContent = `${state.audioFileName}.srt`;
-          els.statusDot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-pulse';
-          els.statusText.textContent = 'Decoding audio...';
+          els.playerSection.classList.remove('hidden');
 
           const arrayBuf = await file.arrayBuffer();
           const AudioCtx = window.AudioContext || window.webkitAudioContext;
           const ctx = new AudioCtx();
-          const decoded = await ctx.decodeAudioData(arrayBuf.slice(0));
-          await ctx.close();
+          const decoded = await ctx.decodeAudioData(arrayBuf);
+          ctx.close();
 
           state.audioBuffer = decoded;
           state.duration = decoded.duration;
-          state.waveformPeaks = extractWaveformPeaks(decoded, 420);
+          state.waveformPeaks = computeWaveformPeaks(decoded, 900);
 
-          els.totalDurationDisplay.textContent = formatDisplayTime(state.duration);
-          els.currentTimeDisplay.textContent = formatDisplayTime(0);
-          els.decodingOverlay.classList.add('hidden');
-          els.statusDot.className = 'w-2 h-2 rounded-full bg-emerald-400';
-          els.statusText.textContent = `Ready • ${formatDisplayTime(state.duration)}`;
-          els.vocalRegionsSummary.textContent = `Ready (${state.duration.toFixed(1)}s track)`;
+          els.audioFileMeta.textContent = `${file.name} • ${formatShortTime(state.duration)}`;
+          els.audioFileMeta.classList.remove('hidden');
+          els.statusAudioBadge.textContent = `1. Audio Ready (${formatShortTime(state.duration).slice(0, 5)})`;
+          els.statusAudioBadge.className = 'px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300';
 
-          resizeWaveformCanvas();
-          drawWaveform();
-          showToast(`Loaded "${file.name}"`, 'success');
+          resizeAndDrawWaveform();
+          updatePlaybackUI();
+          showToast(`Loaded "${file.name}" (${state.duration.toFixed(1)}s)`, 'success');
         } catch (err) {
-          console.error('Audio decode error:', err);
-          els.decodingOverlay.classList.add('hidden');
-          els.statusDot.className = 'w-2 h-2 rounded-full bg-rose-500';
-          els.statusText.textContent = 'Decode failed';
-          showToast('Could not decode audio file. Please try a standard MP3, WAV, M4A, or OGG file.', 'error');
+          console.error('Audio load error:', err);
+          showToast('Could not decode this audio file. Please try MP3 or WAV.', 'error');
         }
       }
 
-      /** Downsample decoded AudioBuffer into normalized peak bars */
-      function extractWaveformPeaks(audioBuffer, barCount) {
-        const channelData = audioBuffer.getChannelData(0);
-        const blockSize = Math.max(1, Math.floor(channelData.length / barCount));
-        const peaks = new Float32Array(barCount);
-        let maxPeak = 0.001;
-
-        for (let i = 0; i < barCount; i++) {
+      function computeWaveformPeaks(audioBuffer, numBars) {
+        const ch0 = audioBuffer.getChannelData(0);
+        const ch1 = audioBuffer.numberOfChannels > 1 ? audioBuffer.getChannelData(1) : null;
+        const blockSize = Math.max(1, Math.floor(ch0.length / numBars));
+        const peaks = new Float32Array(numBars);
+        let maxPeak = 0.01;
+        for (let i = 0; i < numBars; i++) {
           const start = i * blockSize;
-          const end = Math.min(channelData.length, start + blockSize);
+          const end = Math.min(ch0.length, start + blockSize);
           let peak = 0;
-          // Sample stride for fast decoding on long tracks
-          const step = Math.max(1, Math.floor((end - start) / 256));
+          const step = Math.max(1, Math.floor((end - start) / 40));
           for (let j = start; j < end; j += step) {
-            const abs = Math.abs(channelData[j]);
-            if (abs > peak) peak = abs;
+            const v = ch1 ? Math.max(Math.abs(ch0[j]), Math.abs(ch1[j])) : Math.abs(ch0[j]);
+            if (v > peak) peak = v;
           }
           peaks[i] = peak;
           if (peak > maxPeak) maxPeak = peak;
         }
-
-        for (let i = 0; i < barCount; i++) {
-          peaks[i] = peaks[i] / maxPeak;
-        }
+        for (let i = 0; i < numBars; i++) peaks[i] /= maxPeak;
         return peaks;
       }
 
-      /** Size canvas crisply for container & devicePixelRatio */
-      function resizeWaveformCanvas() {
-        const rect = els.waveformWrapper.getBoundingClientRect();
+      function resizeAndDrawWaveform() {
+        const canvas = els.waveformCanvas;
+        const rect = els.waveformContainer.getBoundingClientRect();
         if (!rect.width || !rect.height) return;
         const dpr = window.devicePixelRatio || 1;
-        els.waveformCanvas.width = Math.floor(rect.width * dpr);
-        els.waveformCanvas.height = Math.floor(rect.height * dpr);
-        const ctx = els.waveformCanvas.getContext('2d');
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        canvas.width = Math.floor(rect.width * dpr);
+        canvas.height = Math.floor(rect.height * dpr);
         drawWaveform();
       }
 
-      /** Draw waveform bars, synced subtitle region blocks, and playhead */
       function drawWaveform() {
         const canvas = els.waveformCanvas;
         const ctx = canvas.getContext('2d');
-        const rect = els.waveformWrapper.getBoundingClientRect();
-        const width = rect.width;
-        const height = rect.height;
-        if (!width || !height) return;
+        const w = canvas.width;
+        const h = canvas.height;
+        if (!w || !h) return;
 
-        ctx.clearRect(0, 0, width, height);
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = '#09090b';
+        ctx.fillRect(0, 0, w, h);
 
-        // Background subtle center axis
-        ctx.strokeStyle = 'rgba(63, 63, 70, 0.45)';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(0, height / 2);
-        ctx.lineTo(width, height / 2);
-        ctx.stroke();
+        const curTime = els.audioPlayer.currentTime || 0;
+        const dur = state.duration || 1;
+        const playX = clamp((curTime / dur) * w, 0, w);
 
-        const duration = state.duration || els.audioPlayer.duration || 0;
-        const currentTime = els.audioPlayer.currentTime || 0;
-        const progressRatio = duration > 0 ? clamp(currentTime / duration, 0, 1) : 0;
+        // Draw synced cue blocks as subtle overlays
+        state.cues.forEach((cue, idx) => {
+          if (cue.start === null || cue.end === null || cue.end <= cue.start) return;
+          const x1 = (cue.start / dur) * w;
+          const x2 = (cue.end / dur) * w;
+          const isActive = curTime >= cue.start && curTime <= cue.end;
+          ctx.fillStyle = isActive ? 'rgba(139, 92, 246, 0.35)' : 'rgba(99, 102, 241, 0.14)';
+          ctx.fillRect(x1, 0, Math.max(2, x2 - x1), h);
+          ctx.fillStyle = isActive ? 'rgba(167, 139, 250, 0.9)' : 'rgba(99, 102, 241, 0.45)';
+          ctx.fillRect(x1, 0, Math.max(2, x2 - x1), 4);
+        });
 
-        // 1. Draw synced subtitle cue blocks behind/over waveform
-        if (duration > 0 && state.cues.length > 0) {
-          state.cues.forEach((cue, idx) => {
-            if (cue.start === null) return;
-            const cueEnd = cue.end !== null ? cue.end : Math.min(duration, cue.start + 1.5);
-            if (cueEnd <= cue.start) return;
-
-            const x1 = (cue.start / duration) * width;
-            const x2 = (cueEnd / duration) * width;
-            const blockW = Math.max(2, x2 - x1);
-            const palette = CUE_BLOCK_COLORS[idx % CUE_BLOCK_COLORS.length];
-            const isActive = cue.id === state.activePlayingCueId;
-
-            ctx.fillStyle = isActive ? 'rgba(139, 92, 246, 0.42)' : palette.fill;
-            ctx.fillRect(x1, 4, blockW, height - 8);
-
-            // Top colored cap bar
-            ctx.fillStyle = isActive ? '#e879f9' : palette.border;
-            ctx.fillRect(x1, 4, blockW, 3);
-
-            // Left edge hairline
-            ctx.fillStyle = palette.border;
-            ctx.fillRect(x1, 4, 1, height - 8);
-
-            // Small index number if block is wide enough
-            if (blockW >= 18) {
-              ctx.fillStyle = isActive ? '#ffffff' : 'rgba(228, 228, 231, 0.85)';
-              ctx.font = '600 10px "JetBrains Mono", monospace';
-              ctx.fillText(String(idx + 1), x1 + 4, 19);
-            }
-          });
-        }
-
-        // 2. Draw waveform amplitude bars
-        const peaks = state.waveformPeaks;
-        if (peaks.length > 0) {
-          const barStep = width / peaks.length;
-          const barW = Math.max(1.2, barStep * 0.68);
-          const maxBarH = height * 0.72;
-          const midY = height / 2;
-
+        // Draw waveform bars
+        if (state.waveformPeaks) {
+          const peaks = state.waveformPeaks;
+          const barW = w / peaks.length;
+          const midY = h / 2;
           for (let i = 0; i < peaks.length; i++) {
-            const x = i * barStep;
-            const barH = Math.max(2, peaks[i] * maxBarH);
-            const isPlayed = (i / peaks.length) <= progressRatio;
-            ctx.fillStyle = isPlayed ? '#a78bfa' : 'rgba(113, 113, 122, 0.65)';
-            ctx.fillRect(x, midY - barH / 2, barW, barH);
+            const x = i * barW;
+            const barH = Math.max(2, peaks[i] * (h * 0.78));
+            ctx.fillStyle = x <= playX ? '#a78bfa' : '#3f3f46';
+            ctx.fillRect(x, midY - barH / 2, Math.max(1, barW - 1), barH);
           }
         }
 
-        // 3. Draw playhead line
-        if (duration > 0) {
-          const playX = progressRatio * width;
-          ctx.strokeStyle = '#f43f5e';
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.moveTo(playX, 0);
-          ctx.lineTo(playX, height);
-          ctx.stroke();
-
-          // Playhead triangle cap
-          ctx.fillStyle = '#f43f5e';
-          ctx.beginPath();
-          ctx.moveTo(playX - 5, 0);
-          ctx.lineTo(playX + 5, 0);
-          ctx.lineTo(playX, 7);
-          ctx.closePath();
-          ctx.fill();
-        }
+        // Playhead line
+        ctx.fillStyle = '#f43f5e';
+        ctx.fillRect(playX - 1, 0, 2, h);
       }
 
-      /** Seek audio to X coordinate inside waveformWrapper */
-      function seekFromClientX(clientX) {
-        const duration = state.duration || els.audioPlayer.duration || 0;
-        if (!duration) return;
-        const rect = els.waveformWrapper.getBoundingClientRect();
+      function seekFromPointer(clientX) {
+        if (!state.duration) return;
+        const rect = els.waveformContainer.getBoundingClientRect();
         const ratio = clamp((clientX - rect.left) / rect.width, 0, 1);
-        els.audioPlayer.currentTime = ratio * duration;
+        els.audioPlayer.currentTime = ratio * state.duration;
         updatePlaybackUI();
       }
 
-      // ---------------------------------------------------------
-      // 5. PLAYBACK LOOP & LIVE SUBTITLE PREVIEW
-      // ---------------------------------------------------------
-
-      function togglePlayPause() {
-        if (!state.audioUrl) {
-          showToast('Please upload an audio track in Step 1 first.', 'warn');
-          return;
-        }
-        if (els.audioPlayer.paused) {
-          els.audioPlayer.play().catch((err) => {
-            console.error('Playback error:', err);
-            showToast('Could not start audio playback.', 'error');
-          });
-        } else {
-          els.audioPlayer.pause();
-        }
-      }
-
-      function updatePlayButtonVisuals() {
-        const paused = els.audioPlayer.paused;
-        state.isPlaying = !paused;
-        els.playIcon.classList.toggle('hidden', !paused);
-        els.pauseIcon.classList.toggle('hidden', paused);
-        els.playPauseLabel.textContent = paused ? 'Play' : 'Pause';
-      }
-
       function updatePlaybackUI() {
-        const t = els.audioPlayer.currentTime || 0;
-        els.currentTimeDisplay.textContent = formatDisplayTime(t);
+        const cur = els.audioPlayer.currentTime || 0;
+        const dur = state.duration || 0;
+        els.timeDisplay.textContent = `${formatShortTime(cur)} / ${formatShortTime(dur)}`;
 
-        // Determine currently active subtitle cue
-        let activeCue = null;
-        for (let i = 0; i < state.cues.length; i++) {
-          const c = state.cues[i];
-          if (c.start !== null) {
-            const endVal = c.end !== null ? c.end : (state.duration || t + 1);
-            if (t >= c.start && t <= endVal) {
-              activeCue = c;
-              break;
-            }
-          }
-        }
+        const isPaused = els.audioPlayer.paused;
+        els.playPauseIcon.textContent = isPaused ? '▶' : '❚❚';
+        els.playPauseLabel.textContent = isPaused ? 'Play' : 'Pause';
 
-        const nextActiveId = activeCue ? activeCue.id : null;
-        if (nextActiveId !== state.activePlayingCueId) {
-          // Update highlighted row in cue table
-          if (state.activePlayingCueId !== null) {
-            const prevRow = els.cueTableBody.querySelector(`tr[data-id="${state.activePlayingCueId}"]`);
-            if (prevRow) prevRow.classList.remove('bg-violet-500/15');
-          }
-          if (nextActiveId !== null) {
-            const newRow = els.cueTableBody.querySelector(`tr[data-id="${nextActiveId}"]`);
-            if (newRow) newRow.classList.add('bg-violet-500/15');
-          }
-          state.activePlayingCueId = nextActiveId;
-        }
-
+        // Live subtitle preview
+        const activeCue = state.cues.find((c) => c.start !== null && c.end !== null && cur >= c.start && cur <= c.end);
         if (activeCue) {
-          els.liveSubtitleText.textContent = activeCue.text;
-        } else if (state.cues.some((c) => c.start !== null)) {
-          els.liveSubtitleText.innerHTML = '<span class="text-zinc-500 font-normal text-sm italic">♪ Instrumental / Pause ♪</span>';
-        } else {
-          els.liveSubtitleText.innerHTML = '<span class="text-zinc-500 font-normal text-sm">Load lyrics and run AI Auto-Sync or Tap-to-Sync to preview subtitles...</span>';
+          els.liveSubtitlePreview.textContent = activeCue.text;
+          els.liveSubtitlePreview.className = 'text-sm sm:text-base font-bold text-white tracking-wide';
+        } else if (state.cues.length > 0) {
+          els.liveSubtitlePreview.textContent = '♪ ...';
+          els.liveSubtitlePreview.className = 'text-xs font-mono text-zinc-500';
         }
 
         drawWaveform();
       }
 
-      function playbackAnimationLoop() {
+      function animationTick() {
         if (!els.audioPlayer.paused) {
           updatePlaybackUI();
         }
-        requestAnimationFrame(playbackAnimationLoop);
+        requestAnimationFrame(animationTick);
       }
 
-      // ---------------------------------------------------------
-      // 6. SMART SUNO LYRICS CLEANER
-      // ---------------------------------------------------------
-
-      function loadCleanedLyrics() {
-        const raw = els.lyricsInput.value || '';
-        const stripBrackets = els.stripBracketTagsCheckbox.checked;
-        const stripParens = els.stripParenCuesCheckbox.checked;
-
-        const lines = raw.split(/\r?\n/);
+      // =========================================================
+      // 4. LYRICS PARSING & CLEANING
+      // =========================================================
+      function cleanAndParseLyrics(rawText) {
+        const stripBrackets = els.stripBracketsCheck.checked;
+        const stripParens = els.stripParensCheck.checked;
+        const lines = String(rawText || '').split(/\r?\n/);
         const cleaned = [];
 
         for (let line of lines) {
           if (stripBrackets) {
-            // Remove [Verse 1], [Chorus], [Intro: ...], etc.
             line = line.replace(/\[[^\]]*\]/g, '');
           }
           if (stripParens) {
-            // Remove (ad-libs), (sound effects), etc.
             line = line.replace(/\([^)]*\)/g, '');
           }
-          line = line.trim();
+          line = line.replace(/\s+/g, ' ').trim();
           if (line.length > 0) {
             cleaned.push(line);
           }
         }
+        return cleaned;
+      }
 
-        if (cleaned.length === 0) {
-          showToast('No lyric lines found after cleaning. Paste your lyrics first.', 'warn');
+      function loadLyricsIntoCues() {
+        const lines = cleanAndParseLyrics(els.lyricsInput.value);
+        if (lines.length === 0) {
+          showToast('No lyric lines found. Paste your lyrics first.', 'warn');
           return;
         }
-
-        state.cues = cleaned.map((text, idx) => ({
-          id: `cue_${Date.now()}_${idx}`,
-          text,
+        state.cues = lines.map((text, idx) => ({
+          id: idx + 1,
           start: null,
           end: null,
+          text,
         }));
-        state.syncCursor = 0;
-        state.activeStampingIndex = -1;
-        state.activePlayingCueId = null;
+        state.tapCursor = 0;
+        state.activeStampingIdx = -1;
 
-        renderCueTable();
-        updateTapTeleprompter();
-        updateSrtPreview();
+        els.statusLyricsBadge.textContent = `2. ${state.cues.length} Lines`;
+        els.statusLyricsBadge.className = 'px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300';
+        els.lyricsCountHint.textContent = `Loaded ${state.cues.length} clean lyric lines ready for syncing.`;
+
+        renderCueList();
+        updateTapUI();
+        updateSrtOutput();
         drawWaveform();
-        showToast(`Loaded ${state.cues.length} cleaned lyric lines into studio!`, 'success');
+        showToast(`Loaded ${state.cues.length} lyric lines! Now choose a sync method in Step 3.`, 'success');
       }
 
-      // ---------------------------------------------------------
-      // 7. GEMINI MULTIMODAL AI AUTO-SYNC
-      // ---------------------------------------------------------
-
-      function setAiProgressStep(stepNum, title, subtext) {
-        els.aiProgressCard.classList.remove('hidden');
-        els.aiStatusTitle.textContent = title;
-        els.aiStatusSubtext.textContent = subtext;
-        els.aiStepCounter.textContent = `Step ${stepNum}/3`;
-        els.aiStepBar1.className = `h-1.5 rounded-full transition-all ${stepNum >= 1 ? 'bg-violet-500' : 'bg-zinc-800'}`;
-        els.aiStepBar2.className = `h-1.5 rounded-full transition-all ${stepNum >= 2 ? 'bg-violet-500' : 'bg-zinc-800'}`;
-        els.aiStepBar3.className = `h-1.5 rounded-full transition-all ${stepNum >= 3 ? 'bg-emerald-500' : 'bg-zinc-800'}`;
-      }
-
-      /** Convert HTTP status codes into clear, actionable user messages */
-      function formatApiHttpError(status, rawBody) {
-        if (status === 400) {
-          return 'Invalid request (400): Audio format or payload was rejected. Try a shorter/smaller audio file or switch to Vocal-Band Estimate.';
-        }
-        if (status === 401) {
-          return 'Invalid API Key (401): Please double-check your Gemini API key from aistudio.google.com/apikey.';
-        }
-        if (status === 403) {
-          return 'Access Denied (403): Your API key lacks permission for this model or region. Verify your key at aistudio.google.com/apikey.';
-        }
-        if (status === 429) {
-          return 'Rate Limit Reached (429): Too many requests on your Gemini API key. Wait a minute and retry, or use Vocal-Band Estimate.';
-        }
-        let detail = '';
-        try {
-          const parsed = JSON.parse(rawBody);
-          detail = parsed && parsed.error && parsed.error.message ? parsed.error.message : '';
-        } catch (_) {
-          detail = (rawBody || '').slice(0, 140);
-        }
-        return `Gemini API Error (${status})${detail ? ': ' + detail : ''}`;
-      }
-
-      /** Fetch wrapper with exponential backoff (1s, 2s, 4s) */
-      async function fetchWithBackoff(url, options, maxRetries = 3) {
-        let delay = 1000;
-        for (let attempt = 0; attempt <= maxRetries; attempt++) {
-          try {
-            const response = await fetch(url, options);
-            if (response.ok) return response;
-            if ((response.status === 429 || response.status >= 500) && attempt < maxRetries) {
-              await new Promise((r) => setTimeout(r, delay));
-              delay *= 2;
-              continue;
-            }
-            const errText = await response.text();
-            throw new Error(formatApiHttpError(response.status, errText));
-          } catch (err) {
-            if (attempt < maxRetries && err.name === 'TypeError') {
-              await new Promise((r) => setTimeout(r, delay));
-              delay *= 2;
-              continue;
-            }
-            throw err;
-          }
-        }
-      }
-
-      /** Sanitize returned timestamps to be strictly monotonic and within [0, duration] */
-      function applyAndSanitizeAiTimestamps(items) {
-        const dur = state.duration || 1;
-        const map = new Map();
-        for (const item of items) {
-          if (typeof item.index === 'number' && Number.isFinite(item.start) && Number.isFinite(item.end)) {
-            map.set(item.index, {
-              start: clamp(item.start, 0, Math.max(0, dur - 0.15)),
-              end: clamp(item.end, 0.1, dur),
-            });
-          }
-        }
-
+      // =========================================================
+      // 5. TIMING SANITIZER (ENSURES CLEAN NON-OVERLAPPING SRT)
+      // =========================================================
+      function applyAndSanitizeTimestamps(items) {
+        const dur = state.duration || 600;
+        const sorted = items.slice().sort((a, b) => a.index - b.index);
         let prevEnd = 0;
+
         for (let i = 0; i < state.cues.length; i++) {
-          const found = map.get(i);
-          let s;
-          let e;
-          if (found) {
-            s = Math.max(prevEnd, found.start);
-            e = Math.max(s + 0.25, found.end);
-            if (e > dur) {
-              e = dur;
-              s = Math.min(s, Math.max(prevEnd, dur - 0.2));
-            }
-          } else {
-            // Interpolate gracefully if model omitted an index
-            const remaining = Math.max(0.5, dur - prevEnd);
-            const slice = Math.min(2.5, remaining / Math.max(1, state.cues.length - i));
-            s = prevEnd;
-            e = Math.min(dur, s + Math.max(0.3, slice - 0.05));
-          }
-          state.cues[i].start = Number(s.toFixed(3));
-          state.cues[i].end = Number(e.toFixed(3));
+          const match = sorted.find((it) => it.index === i);
+          let start = match && Number.isFinite(match.start) ? clamp(match.start, 0, dur) : prevEnd;
+          let end = match && Number.isFinite(match.end) ? clamp(match.end, 0, dur) : Math.min(dur, start + 2.0);
+
+          if (start < prevEnd) start = prevEnd;
+          if (end <= start + 0.15) end = Math.min(dur, start + 0.6);
+
+          state.cues[i].start = Number(start.toFixed(3));
+          state.cues[i].end = Number(end.toFixed(3));
           prevEnd = state.cues[i].end;
         }
       }
 
-      async function runGeminiAiAutoSync() {
-        if (state.isAiRunning) return;
-        if (!state.audioFile || !state.audioBuffer) {
-          showToast('Please upload an audio file in Step 1 first.', 'warn');
-          return;
+      // =========================================================
+      // 6. ENGINE 1: 100% FREE BROWSER WHISPER AI + FORCED ALIGNMENT
+      // =========================================================
+      function setAiProgress(step, title, subtext, pct = null) {
+        els.aiProgressBox.classList.remove('hidden');
+        els.aiProgressStep.textContent = `Step ${step}/3`;
+        els.aiProgressTitle.textContent = title;
+        els.aiProgressSub.textContent = subtext;
+        if (pct !== null && Number.isFinite(pct)) {
+          els.aiBarWrap.classList.remove('hidden');
+          els.aiBarFill.style.width = `${clamp(pct, 0, 100)}%`;
+        } else {
+          els.aiBarWrap.classList.add('hidden');
         }
-        if (state.cues.length === 0) {
-          showToast('Please paste and load your lyrics in Step 2 first.', 'warn');
-          return;
+      }
+
+      async function resampleTo16kMono(audioBuffer) {
+        const targetRate = 16000;
+        const length = Math.ceil(audioBuffer.duration * targetRate);
+        const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+        const offline = new OfflineCtx(1, length, targetRate);
+        const src = offline.createBufferSource();
+        src.buffer = audioBuffer;
+        src.connect(offline.destination);
+        src.start(0);
+        const rendered = await offline.startRendering();
+        return rendered.getChannelData(0);
+      }
+
+      function normalizeWord(w) {
+        return String(w || '')
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/đ/g, 'd')
+          .replace(/[^a-z0-9]/g, '');
+      }
+
+      function wordSimilarity(a, b) {
+        if (!a || !b) return 0;
+        if (a === b) return 1;
+        const m = a.length;
+        const n = b.length;
+        const prev = new Uint16Array(n + 1);
+        const curr = new Uint16Array(n + 1);
+        for (let j = 0; j <= n; j++) prev[j] = j;
+        for (let i = 1; i <= m; i++) {
+          curr[0] = i;
+          for (let j = 1; j <= n; j++) {
+            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+            curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
+          }
+          prev.set(curr);
         }
+        return 1 - prev[n] / Math.max(m, n);
+      }
 
-        // Leave apiKey empty ("") when using built-in gemini-3-flash-preview so runtime injects it automatically
-        const apiKey = (els.geminiApiKeyInput.value || '').trim();
-        const selectedModel = els.geminiModelSelect.value || 'gemini-3-flash-preview';
-        state.isAiRunning = true;
-        els.runAiSyncBtn.disabled = true;
-
-        try {
-          // STEP 1: Encode Audio (downsample to 16kHz mono WAV if > 15MB)
-          const MAX_DIRECT_BYTES = 15 * 1024 * 1024; // 15MB
-          let base64Audio = '';
-          let mimeType = '';
-
-          if (state.audioFile.size <= MAX_DIRECT_BYTES) {
-            setAiProgressStep(1, 'Encoding audio...', `Reading original ${(state.audioFile.size / (1024 * 1024)).toFixed(2)} MB audio file...`);
-            const rawBuf = await state.audioFile.arrayBuffer();
-            base64Audio = arrayBufferToBase64(rawBuf);
-            mimeType = resolveAudioMimeType(state.audioFile);
-          } else {
-            setAiProgressStep(1, 'Encoding audio...', 'File exceeds 15MB — downsampling to 16kHz mono WAV...');
-            const downsampled = await downsampleAudioBufferTo16kWavBase64(state.audioBuffer);
-            base64Audio = downsampled.base64;
-            mimeType = downsampled.mimeType;
+      function extractTimedWords(chunks, duration) {
+        const timed = [];
+        for (let i = 0; i < chunks.length; i++) {
+          const ch = chunks[i];
+          if (!ch || !ch.text || !Array.isArray(ch.timestamp)) continue;
+          const start = typeof ch.timestamp[0] === 'number' ? clamp(ch.timestamp[0], 0, duration) : null;
+          let end = typeof ch.timestamp[1] === 'number' ? clamp(ch.timestamp[1], 0, duration) : null;
+          if (start === null) continue;
+          if (end === null || end <= start) {
+            const nextStart =
+              chunks[i + 1] && Array.isArray(chunks[i + 1].timestamp) && typeof chunks[i + 1].timestamp[0] === 'number'
+                ? chunks[i + 1].timestamp[0]
+                : Math.min(duration, start + 0.45);
+            end = Math.max(start + 0.15, Math.min(duration, nextStart));
           }
 
-          // STEP 2: Send to Gemini Multimodal Audio Understanding
-          setAiProgressStep(
-            2,
-            `AI (${selectedModel}) listening & aligning vocals...`,
-            `Analyzing ${state.cues.length} lyric lines across ${state.duration.toFixed(1)}s of audio...`
-          );
+          const rawWords = ch.text.trim().split(/\s+/).filter(Boolean);
+          if (rawWords.length === 1) {
+            const norm = normalizeWord(rawWords[0]);
+            if (norm) timed.push({ norm, start, end });
+          } else if (rawWords.length > 1) {
+            const totalChars = rawWords.reduce((s, w) => s + Math.max(1, w.length), 0);
+            let cursor = start;
+            const span = Math.max(0.1, end - start);
+            for (const rw of rawWords) {
+              const share = (Math.max(1, rw.length) / totalChars) * span;
+              const norm = normalizeWord(rw);
+              if (norm) timed.push({ norm, start: cursor, end: Math.min(duration, cursor + share) });
+              cursor += share;
+            }
+          }
+        }
+        return timed;
+      }
 
-          const numberedLyrics = state.cues
-            .map((cue, idx) => `${idx}: ${cue.text}`)
-            .join('\n');
+      function alignLyricsToWords(cues, whisperWords, duration) {
+        const lyricWords = [];
+        cues.forEach((cue, cueIdx) => {
+          cue.text.trim().split(/\s+/).filter(Boolean).forEach((tok) => {
+            lyricWords.push({ cueIdx, norm: normalizeWord(tok) || tok.toLowerCase(), len: Math.max(1, tok.length) });
+          });
+        });
 
-          const systemInstructionText = [
-            'You are an expert audio-to-lyric forced alignment engineer specializing in music, rap, singing, and Vietnamese/English vocals.',
-            'Listen carefully to the actual audio track and locate the exact start and end timestamp (in seconds, with 2 decimal places) when each numbered lyric line is vocally performed.',
-            'CRITICAL RULES:',
-            '1. Accurately ignore instrumental intros, musical interludes, beats without vocals, guitar/piano solos, bridges without lyrics, and instrumental outros.',
-            '2. Listen closely to Vietnamese diacritics, rap cadence, fast flows, and sung phrasing so each line starts right as the vocalist begins that line and ends right when they finish it.',
-            '3. Return a JSON array containing EVERY lyric index from 0 to N-1 in strict chronological order with no overlapping timestamps.',
-            '4. Every timestamp must be within 0 and the total audio duration.',
-          ].join('\n');
+        const M = lyricWords.length;
+        const N = whisperWords.length;
+        if (!M || !N) return false;
 
-          const userPrompt = `Total audio duration: ${state.duration.toFixed(2)} seconds.\nTotal lyric lines: ${state.cues.length} (indices 0 to ${state.cues.length - 1}).\n\nAlign every lyric line below to the exact vocal timestamps in the audio:\n\n${numberedLyrics}`;
+        const stride = N + 1;
+        const dp = new Float32Array((M + 1) * stride);
+        const dir = new Uint8Array((M + 1) * stride);
+        const GAP = -1.0;
 
-          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(selectedModel)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+        for (let i = 1; i <= M; i++) { dp[i * stride] = i * GAP; dir[i * stride] = 1; }
+        for (let j = 1; j <= N; j++) { dp[j] = j * GAP; dir[j] = 2; }
+
+        for (let i = 1; i <= M; i++) {
+          const lw = lyricWords[i - 1].norm;
+          const row = i * stride;
+          const prevRow = (i - 1) * stride;
+          for (let j = 1; j <= N; j++) {
+            const ww = whisperWords[j - 1].norm;
+            const score = lw === ww ? 4.0 : (wordSimilarity(lw, ww) >= 0.55 ? wordSimilarity(lw, ww) * 3.0 : -1.4);
+            const diag = dp[prevRow + j - 1] + score;
+            const up = dp[prevRow + j] + GAP;
+            const left = dp[row + j - 1] + GAP;
+            if (diag >= up && diag >= left) { dp[row + j] = diag; dir[row + j] = 0; }
+            else if (up >= left) { dp[row + j] = up; dir[row + j] = 1; }
+            else { dp[row + j] = left; dir[row + j] = 2; }
+          }
+        }
+
+        const matched = new Array(M).fill(null);
+        let i = M, j = N;
+        while (i > 0 && j > 0) {
+          const d = dir[i * stride + j];
+          if (d === 0) {
+            if (wordSimilarity(lyricWords[i - 1].norm, whisperWords[j - 1].norm) >= 0.45) {
+              matched[i - 1] = { start: whisperWords[j - 1].start, end: whisperWords[j - 1].end };
+            }
+            i--; j--;
+          } else if (d === 1) i--;
+          else j--;
+        }
+
+        const anchors = [];
+        for (let k = 0; k < M; k++) if (matched[k]) anchors.push(k);
+
+        const firstSpeech = whisperWords[0].start;
+        const lastSpeech = whisperWords[N - 1].end;
+
+        if (anchors.length < 2) {
+          const totalLen = lyricWords.reduce((s, w) => s + w.len, 0);
+          let cur = firstSpeech;
+          const span = Math.max(0.5, lastSpeech - firstSpeech);
+          for (let k = 0; k < M; k++) {
+            const d = (lyricWords[k].len / totalLen) * span;
+            matched[k] = { start: cur, end: cur + d };
+            cur += d;
+          }
+        } else {
+          // Before first anchor
+          const firstA = anchors[0];
+          if (firstA > 0) {
+            const endT = matched[firstA].start;
+            const startT = Math.max(0, endT - Math.min(endT - firstSpeech, firstA * 0.35));
+            const span = Math.max(0.1, endT - startT);
+            for (let k = 0; k < firstA; k++) {
+              matched[k] = { start: startT + (k / firstA) * span, end: startT + ((k + 1) / firstA) * span };
+            }
+          }
+          // Between anchors
+          for (let a = 0; a < anchors.length - 1; a++) {
+            const i1 = anchors[a], i2 = anchors[a + 1];
+            const gapCount = i2 - i1 - 1;
+            if (gapCount <= 0) continue;
+            const t1 = matched[i1].end, t2 = matched[i2].start;
+            const span = Math.max(0.05, t2 - t1);
+            if (span > gapCount * 0.65 + 2.5) {
+              const cue1 = lyricWords[i1].cueIdx;
+              const nearStart = [], nearEnd = [];
+              for (let k = i1 + 1; k < i2; k++) (lyricWords[k].cueIdx === cue1 ? nearStart : nearEnd).push(k);
+              let c1 = t1;
+              nearStart.forEach((idx) => { matched[idx] = { start: c1, end: Math.min(t2, c1 + 0.32) }; c1 += 0.32; });
+              let c2 = Math.max(c1, t2 - nearEnd.length * 0.32);
+              nearEnd.forEach((idx) => { matched[idx] = { start: c2, end: Math.min(t2, c2 + 0.32) }; c2 += 0.32; });
+            } else {
+              for (let step = 1; step <= gapCount; step++) {
+                const k = i1 + step;
+                matched[k] = { start: t1 + ((step - 1) / gapCount) * span, end: t1 + (step / gapCount) * span };
+              }
+            }
+          }
+          // After last anchor
+          const lastA = anchors[anchors.length - 1];
+          if (lastA < M - 1) {
+            const rem = M - 1 - lastA;
+            const startT = matched[lastA].end;
+            const endT = Math.min(duration, Math.max(lastSpeech, startT + rem * 0.35));
+            const span = Math.max(0.2, endT - startT);
+            for (let step = 1; step <= rem; step++) {
+              const k = lastA + step;
+              matched[k] = { start: startT + ((step - 1) / rem) * span, end: startT + (step / rem) * span };
+            }
+          }
+        }
+
+        const bounds = cues.map(() => ({ start: Infinity, end: -Infinity }));
+        for (let k = 0; k < M; k++) {
+          if (!matched[k]) continue;
+          const ci = lyricWords[k].cueIdx;
+          if (matched[k].start < bounds[ci].start) bounds[ci].start = matched[k].start;
+          if (matched[k].end > bounds[ci].end) bounds[ci].end = matched[k].end;
+        }
+
+        applyAndSanitizeTimestamps(bounds.map((b, idx) => ({
+          index: idx,
+          start: Number.isFinite(b.start) ? b.start : 0,
+          end: Number.isFinite(b.end) ? b.end : 0.5,
+        })));
+        return true;
+      }
+
+      async function runFreeWhisperSync() {
+        if (state.isAiRunning) return;
+        if (!state.audioBuffer) return showToast('Please upload your Suno audio in Step 1 first.', 'warn');
+        if (state.cues.length === 0) return showToast('Please paste and load your lyrics in Step 2 first.', 'warn');
+
+        const modelId = els.whisperModelSelect.value || 'Xenova/whisper-base';
+        const lang = els.whisperLangSelect.value || 'vietnamese';
+
+        state.isAiRunning = true;
+        els.runWhisperBtn.disabled = true;
+
+        try {
+          setAiProgress(1, 'Loading Free Whisper AI...', 'Importing WebAssembly speech engine...', 5);
+          const transformers = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2');
+          transformers.env.allowLocalModels = false;
+          transformers.env.useBrowserCache = true;
+          if (transformers.env.backends?.onnx?.wasm) {
+            transformers.env.backends.onnx.wasm.numThreads = 1;
+            transformers.env.backends.onnx.wasm.proxy = false;
+          }
+
+          if (!state.whisperPipeline || state.whisperLoadedModel !== modelId) {
+            state.whisperPipeline = await transformers.pipeline('automatic-speech-recognition', modelId, {
+              quantized: true,
+              progress_callback: (p) => {
+                if (p?.status === 'progress' && typeof p.progress === 'number') {
+                  const pct = Math.round(p.progress);
+                  setAiProgress(1, `Downloading Whisper AI: ${pct}%`, 'Caching model in your browser (only happens once)...', pct);
+                }
+              },
+            });
+            state.whisperLoadedModel = modelId;
+          }
+
+          setAiProgress(2, 'Whisper AI listening to vocals...', `Transcribing ${state.duration.toFixed(1)}s track locally (15–45s)...`, null);
+          const audio16k = await resampleTo16kMono(state.audioBuffer);
+
+          const opts = { chunk_length_s: 30, stride_length_s: 5, task: 'transcribe' };
+          if (lang !== 'auto') opts.language = lang;
+
+          let output;
+          try {
+            output = await state.whisperPipeline(audio16k, { ...opts, return_timestamps: 'word' });
+          } catch {
+            output = await state.whisperPipeline(audio16k, { ...opts, return_timestamps: true });
+          }
+
+          setAiProgress(3, 'Aligning exact lyrics...', 'Snapping your lyrics to vocal timestamps...', null);
+          const words = extractTimedWords(output?.chunks || [], state.duration);
+          if (words.length === 0) {
+            throw new Error('No clear vocals detected. Try Whisper Small or use Tap-to-Sync.');
+          }
+
+          alignLyricsToWords(state.cues, words, state.duration);
+          state.tapCursor = state.cues.length;
+          renderCueList();
+          updateTapUI();
+          updateSrtOutput();
+          updatePlaybackUI();
+          showToast(`Synced ${state.cues.length} lines using ${words.length} detected vocal words!`, 'success');
+        } catch (err) {
+          console.error('Whisper AI error:', err);
+          showToast(err.message || 'Whisper AI failed. Try Tap-to-Sync or Cloud Gemini.', 'error');
+        } finally {
+          state.isAiRunning = false;
+          els.runWhisperBtn.disabled = false;
+          setTimeout(() => els.aiProgressBox.classList.add('hidden'), 800);
+        }
+      }
+
+      // =========================================================
+      // 7. ENGINE 2: TAP-TO-SYNC (MANUAL TELEPROMPTER)
+      // =========================================================
+      function updateTapUI() {
+        const total = state.cues.length;
+        const done = Math.min(state.tapCursor, total);
+        els.tapProgressBadge.textContent = `${done} / ${total} synced`;
+
+        if (total === 0) {
+          els.tapCurrentLine.textContent = 'Load lyrics in Step 2 to begin';
+          els.tapNextLine.textContent = '';
+        } else if (state.tapCursor >= total) {
+          els.tapCurrentLine.textContent = 'All lines stamped! Review in Step 4.';
+          els.tapNextLine.textContent = '';
+        } else {
+          els.tapCurrentLine.textContent = `#${state.tapCursor + 1}: ${state.cues[state.tapCursor].text}`;
+          els.tapNextLine.textContent = state.cues[state.tapCursor + 1]
+            ? `Up next: ${state.cues[state.tapCursor + 1].text}`
+            : 'Final line!';
+        }
+      }
+
+      function tapStampNextLine() {
+        if (!state.audioBuffer) return showToast('Upload audio in Step 1 first.', 'warn');
+        if (state.cues.length === 0) return showToast('Load lyrics in Step 2 first.', 'warn');
+        if (state.tapCursor >= state.cues.length) return showToast('All lines are already stamped!', 'info');
+
+        if (els.audioPlayer.paused) {
+          els.audioPlayer.play().catch(() => {});
+        }
+        const now = Number((els.audioPlayer.currentTime || 0).toFixed(3));
+
+        // Close previous active line if still open
+        if (state.activeStampingIdx >= 0 && state.cues[state.activeStampingIdx]) {
+          state.cues[state.activeStampingIdx].end = Math.max(state.cues[state.activeStampingIdx].start + 0.15, now);
+        }
+
+        // Open current line
+        const idx = state.tapCursor;
+        state.cues[idx].start = now;
+        state.cues[idx].end = Math.min(state.duration, Number((now + 2.5).toFixed(3)));
+        state.activeStampingIdx = idx;
+        state.tapCursor++;
+
+        renderCueList();
+        updateTapUI();
+        updateSrtOutput();
+        drawWaveform();
+      }
+
+      function tapEndCurrentLine() {
+        if (state.activeStampingIdx < 0 || !state.cues[state.activeStampingIdx]) return;
+        const now = Number((els.audioPlayer.currentTime || 0).toFixed(3));
+        const cue = state.cues[state.activeStampingIdx];
+        cue.end = Math.max(cue.start + 0.15, now);
+        state.activeStampingIdx = -1;
+        renderCueList();
+        updateSrtOutput();
+        drawWaveform();
+        showToast(`Marked pause at ${formatShortTime(now)}`, 'info');
+      }
+
+      function tapUndoLast() {
+        if (state.tapCursor <= 0) return;
+        state.tapCursor--;
+        state.cues[state.tapCursor].start = null;
+        state.cues[state.tapCursor].end = null;
+        state.activeStampingIdx = state.tapCursor - 1;
+        els.audioPlayer.currentTime = Math.max(0, (els.audioPlayer.currentTime || 0) - 3);
+        renderCueList();
+        updateTapUI();
+        updateSrtOutput();
+        updatePlaybackUI();
+      }
+
+      // =========================================================
+      // 8. ENGINE 3: OPTIONAL CLOUD GEMINI & OFFLINE VOCAL-BAND
+      // =========================================================
+      function encodeWav16k(float32Samples, sampleRate) {
+        const buffer = new ArrayBuffer(44 + float32Samples.length * 2);
+        const view = new DataView(buffer);
+        const writeStr = (off, s) => { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); };
+        writeStr(0, 'RIFF');
+        view.setUint32(4, 36 + float32Samples.length * 2, true);
+        writeStr(8, 'WAVE');
+        writeStr(12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, 1, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * 2, true);
+        view.setUint16(32, 2, true);
+        view.setUint16(34, 16, true);
+        writeStr(36, 'data');
+        view.setUint32(40, float32Samples.length * 2, true);
+        let offset = 44;
+        for (let i = 0; i < float32Samples.length; i++) {
+          const s = clamp(float32Samples[i], -1, 1);
+          view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+          offset += 2;
+        }
+        return new Uint8Array(buffer);
+      }
+
+      function uint8ToBase64(bytes) {
+        let bin = '';
+        const chunk = 0x8000;
+        for (let i = 0; i < bytes.length; i += chunk) {
+          bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+        }
+        return btoa(bin);
+      }
+
+      async function runCloudGeminiSync() {
+        if (state.isAiRunning) return;
+        if (!state.audioBuffer) return showToast('Upload audio in Step 1 first.', 'warn');
+        if (state.cues.length === 0) return showToast('Load lyrics in Step 2 first.', 'warn');
+
+        const apiKey = els.geminiKeyInput.value.trim();
+        if (!apiKey) {
+          return showToast('Paste a Gemini API key from aistudio.google.com/apikey, or use the Free Whisper AI tab.', 'warn');
+        }
+        localStorage.setItem(STORAGE_GEMINI_KEY, apiKey);
+
+        state.isAiRunning = true;
+        els.runGeminiBtn.disabled = true;
+        showToast('Sending audio to Cloud Gemini AI...', 'info');
+
+        try {
+          const audio16k = await resampleTo16kMono(state.audioBuffer);
+          const wavBytes = encodeWav16k(audio16k, 16000);
+          const b64 = uint8ToBase64(wavBytes);
+          const numberedLyrics = state.cues.map((c, i) => `${i}: ${c.text}`).join('\n');
+
+          const model = els.geminiModelSelect.value || 'gemini-2.5-flash';
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
           const payload = {
-            systemInstruction: {
-              parts: [{ text: systemInstructionText }],
-            },
-            contents: [
-              {
-                role: 'user',
-                parts: [
-                  {
-                    inlineData: {
-                      mimeType,
-                      data: base64Audio,
-                    },
-                  },
-                  { text: userPrompt },
-                ],
-              },
-            ],
+            contents: [{
+              parts: [
+                {
+                  text: `Listen carefully to the vocals in this audio (duration ${state.duration.toFixed(2)}s). Return exact start and end timestamps in seconds for every lyric line below. Skip instrumental intros, breaks, and outros.\n\nLyrics:\n${numberedLyrics}`
+                },
+                { inlineData: { mimeType: 'audio/wav', data: b64 } }
+              ]
+            }],
             generationConfig: {
-              temperature: 0.1,
               responseMimeType: 'application/json',
               responseSchema: {
                 type: 'ARRAY',
@@ -1376,834 +1200,417 @@
                   properties: {
                     index: { type: 'INTEGER' },
                     start: { type: 'NUMBER' },
-                    end: { type: 'NUMBER' },
+                    end: { type: 'NUMBER' }
                   },
-                  required: ['index', 'start', 'end'],
-                },
-              },
-            },
+                  required: ['index', 'start', 'end']
+                }
+              }
+            }
           };
 
-          const response = await fetchWithBackoff(apiUrl, {
+          const res = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
           });
-
-          const data = await response.json();
-
-          // STEP 3: Parse & apply timestamps
-          setAiProgressStep(3, 'Applying precision timestamps...', 'Sanitizing timeline & rendering waveform blocks...');
-
-          const rawText =
-            data &&
-            data.candidates &&
-            data.candidates[0] &&
-            data.candidates[0].content &&
-            data.candidates[0].content.parts &&
-            data.candidates[0].content.parts[0] &&
-            data.candidates[0].content.parts[0].text;
-
-          if (!rawText) {
-            throw new Error('Gemini returned an empty response. Please try again or switch models.');
+          if (!res.ok) {
+            const errBody = await res.text();
+            throw new Error(`Gemini API Error (${res.status}): ${errBody.slice(0, 140)}`);
           }
+          const json = await res.json();
+          const rawText = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+          const parsed = JSON.parse(rawText);
+          applyAndSanitizeTimestamps(parsed);
 
-          let parsedItems;
-          try {
-            parsedItems = JSON.parse(rawText);
-          } catch (_) {
-            const match = rawText.match(/\[[\s\S]*\]/);
-            if (!match) throw new Error('Could not parse JSON timestamps from AI response.');
-            parsedItems = JSON.parse(match[0]);
-          }
-
-          if (!Array.isArray(parsedItems) || parsedItems.length === 0) {
-            throw new Error('AI returned an empty alignment array.');
-          }
-
-          applyAndSanitizeAiTimestamps(parsedItems);
-          state.syncCursor = state.cues.length;
-          state.activeStampingIndex = -1;
-
-          renderCueTable();
-          updateTapTeleprompter();
-          updateSrtPreview();
+          renderCueList();
+          updateTapUI();
+          updateSrtOutput();
           updatePlaybackUI();
-          showToast(`AI Auto-Sync complete! Aligned ${state.cues.length} lyric lines.`, 'success');
+          showToast(`Cloud Gemini synced all ${state.cues.length} lines!`, 'success');
         } catch (err) {
-          console.error('AI Auto-Sync error:', err);
-          showToast(err.message || 'AI Auto-Sync failed. You can retry or use Vocal-Band Estimate.', 'error');
+          console.error('Gemini error:', err);
+          showToast(err.message || 'Cloud Gemini failed. Try the Free Whisper AI tab instead.', 'error');
         } finally {
           state.isAiRunning = false;
-          els.runAiSyncBtn.disabled = false;
-          setTimeout(() => {
-            els.aiProgressCard.classList.add('hidden');
-          }, 900);
+          els.runGeminiBtn.disabled = false;
         }
       }
-
-      // ---------------------------------------------------------
-      // 8. OFFLINE FALLBACK: 300Hz–3000Hz VOCAL-BAND ESTIMATE
-      // ---------------------------------------------------------
 
       async function runVocalBandEstimate() {
-        if (!state.audioBuffer) {
-          showToast('Please upload an audio file in Step 1 first.', 'warn');
-          return;
-        }
-        if (state.cues.length === 0) {
-          showToast('Please paste and load your lyrics in Step 2 first.', 'warn');
-          return;
-        }
+        if (!state.audioBuffer) return showToast('Upload audio in Step 1 first.', 'warn');
+        if (state.cues.length === 0) return showToast('Load lyrics in Step 2 first.', 'warn');
 
         try {
-          els.runVocalBandBtn.disabled = true;
-          els.vocalRegionsSummary.textContent = 'Analyzing 300Hz–3000Hz vocal band...';
-
-          const origBuf = state.audioBuffer;
-          const sr = origBuf.sampleRate;
+          const sr = state.audioBuffer.sampleRate;
           const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
-          const offlineCtx = new OfflineCtx(1, origBuf.length, sr);
-
-          const src = offlineCtx.createBufferSource();
-          src.buffer = origBuf;
-
-          // Vocal passband filter chain: 300Hz highpass -> 3000Hz lowpass
-          const highpass = offlineCtx.createBiquadFilter();
-          highpass.type = 'highpass';
-          highpass.frequency.value = 300;
-          highpass.Q.value = 0.7;
-
-          const lowpass = offlineCtx.createBiquadFilter();
-          lowpass.type = 'lowpass';
-          lowpass.frequency.value = 3000;
-          lowpass.Q.value = 0.7;
-
-          src.connect(highpass);
-          highpass.connect(lowpass);
-          lowpass.connect(offlineCtx.destination);
+          const offline = new OfflineCtx(1, state.audioBuffer.length, sr);
+          const src = offline.createBufferSource();
+          src.buffer = state.audioBuffer;
+          const hp = offline.createBiquadFilter();
+          hp.type = 'highpass'; hp.frequency.value = 300;
+          const lp = offline.createBiquadFilter();
+          lp.type = 'lowpass'; lp.frequency.value = 3000;
+          src.connect(hp); hp.connect(lp); lp.connect(offline.destination);
           src.start(0);
-
-          const filtered = await offlineCtx.startRendering();
+          const filtered = await offline.startRendering();
           const data = filtered.getChannelData(0);
 
-          // Compute RMS energy in 100ms frames
-          const frameSec = 0.1;
-          const frameSamples = Math.max(1, Math.floor(sr * frameSec));
-          const frameCount = Math.floor(data.length / frameSamples);
-          const rmsArr = new Float32Array(frameCount);
-          let maxRms = 0.0001;
-
-          for (let f = 0; f < frameCount; f++) {
-            const startIdx = f * frameSamples;
-            let sumSq = 0;
-            for (let i = 0; i < frameSamples; i++) {
-              const v = data[startIdx + i];
-              sumSq += v * v;
-            }
-            const rms = Math.sqrt(sumSq / frameSamples);
-            rmsArr[f] = rms;
-            if (rms > maxRms) maxRms = rms;
+          const winSamples = Math.floor(sr * 0.1);
+          const rms = [];
+          let maxRms = 0.001;
+          for (let i = 0; i < data.length; i += winSamples) {
+            let sum = 0;
+            const end = Math.min(data.length, i + winSamples);
+            for (let j = i; j < end; j++) sum += data[j] * data[j];
+            const val = Math.sqrt(sum / Math.max(1, end - i));
+            rms.push(val);
+            if (val > maxRms) maxRms = val;
           }
 
-          // Normalize & apply vocal gate threshold
-          const gate = parseFloat(els.vocalThresholdSlider.value) || 0.24;
-          const active = new Uint8Array(frameCount);
-          for (let f = 0; f < frameCount; f++) {
-            active[f] = rmsArr[f] / maxRms >= gate ? 1 : 0;
-          }
+          const thresh = maxRms * 0.18;
+          let firstIdx = rms.findIndex((v) => v >= thresh);
+          if (firstIdx < 0) firstIdx = 0;
+          let lastIdx = rms.length - 1;
+          while (lastIdx > firstIdx && rms[lastIdx] < thresh) lastIdx--;
 
-          // Extract contiguous active vocal segments
-          let rawRegions = [];
-          let inRegion = false;
-          let regStart = 0;
-          for (let f = 0; f < frameCount; f++) {
-            if (active[f] && !inRegion) {
-              inRegion = true;
-              regStart = f * frameSec;
-            } else if (!active[f] && inRegion) {
-              inRegion = false;
-              rawRegions.push({ start: regStart, end: f * frameSec });
-            }
-          }
-          if (inRegion) {
-            rawRegions.push({ start: regStart, end: state.duration });
-          }
+          const startT = firstIdx * 0.1;
+          const endT = Math.min(state.duration, (lastIdx + 1) * 0.1);
+          const span = Math.max(1, endT - startT);
 
-          // Merge short pauses (< 1.4s) & discard tiny noise blips (< 0.4s)
-          const merged = [];
-          for (const reg of rawRegions) {
-            if (merged.length > 0 && reg.start - merged[merged.length - 1].end < 1.4) {
-              merged[merged.length - 1].end = reg.end;
-            } else {
-              merged.push({ start: reg.start, end: reg.end });
-            }
-          }
-          let regions = merged.filter((r) => r.end - r.start >= 0.45);
-          if (regions.length === 0) {
-            regions = [{ start: Math.min(1.0, state.duration * 0.05), end: Math.max(state.duration * 0.95, state.duration - 1.0) }];
-          }
+          const weights = state.cues.map((c) => Math.max(2, c.text.trim().split(/\s+/).length));
+          const totalW = weights.reduce((a, b) => a + b, 0);
 
-          const totalActiveSec = regions.reduce((acc, r) => acc + (r.end - r.start), 0);
-          els.vocalRegionsSummary.textContent = `Detected ${regions.length} vocal region(s) (${totalActiveSec.toFixed(1)}s active)`;
-
-          // Weight each lyric line by word/syllable count
-          const weights = state.cues.map((cue) => {
-            const words = cue.text.trim().split(/\s+/).filter(Boolean).length;
-            return Math.max(2, words);
+          let cur = startT;
+          const items = weights.map((w, idx) => {
+            const d = (w / totalW) * span;
+            const item = { index: idx, start: cur, end: cur + d - 0.05 };
+            cur += d;
+            return item;
           });
-          const totalWeight = weights.reduce((a, b) => a + b, 0);
 
-          // Map cumulative active time onto real timestamps across regions
-          function mapActiveTimeToTrackTime(activeSec) {
-            let remaining = clamp(activeSec, 0, totalActiveSec);
-            for (const reg of regions) {
-              const len = reg.end - reg.start;
-              if (remaining <= len) return reg.start + remaining;
-              remaining -= len;
-            }
-            return regions[regions.length - 1].end;
-          }
-
-          let cursorActive = 0;
-          for (let i = 0; i < state.cues.length; i++) {
-            const durShare = (weights[i] / totalWeight) * totalActiveSec;
-            const s = mapActiveTimeToTrackTime(cursorActive);
-            const e = mapActiveTimeToTrackTime(cursorActive + Math.max(0.25, durShare - 0.06));
-            state.cues[i].start = Number(s.toFixed(3));
-            state.cues[i].end = Number(Math.max(s + 0.2, e).toFixed(3));
-            cursorActive += durShare;
-          }
-
-          state.syncCursor = state.cues.length;
-          state.activeStampingIndex = -1;
-          renderCueTable();
-          updateTapTeleprompter();
-          updateSrtPreview();
+          applyAndSanitizeTimestamps(items);
+          renderCueList();
+          updateTapUI();
+          updateSrtOutput();
           updatePlaybackUI();
-          showToast(`Vocal-Band Estimate mapped ${state.cues.length} lines across ${regions.length} vocal region(s).`, 'success');
+          showToast('Vocal-band rough estimate applied! Fine-tune or use Free Whisper AI.', 'info');
         } catch (err) {
-          console.error('Vocal-band DSP error:', err);
-          showToast('Vocal-Band Estimate failed. Please try Tap-to-Sync.', 'error');
-        } finally {
-          els.runVocalBandBtn.disabled = false;
+          console.error(err);
+          showToast('Vocal-band estimate failed.', 'error');
         }
       }
 
-      // ---------------------------------------------------------
-      // 9. TAP-TO-SYNC ENGINE
-      // ---------------------------------------------------------
-
-      function switchSyncMode(mode) {
-        state.syncMode = mode;
-        const isAi = mode === 'ai';
-        els.aiSyncPanel.classList.toggle('hidden', !isAi);
-        els.tapSyncPanel.classList.toggle('hidden', isAi);
-
-        els.tabAiMode.className = isAi
-          ? 'px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow transition flex items-center gap-1.5'
-          : 'px-3.5 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-white transition flex items-center gap-1.5';
-
-        els.tabTapMode.className = !isAi
-          ? 'px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white shadow transition'
-          : 'px-3.5 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-white transition';
-      }
-
-      function updateTapTeleprompter() {
-        const total = state.cues.length;
-        if (total === 0) {
-          els.syncProgressLabel.textContent = 'Load lyrics to begin tapping';
-          els.syncProgressBar.style.width = '0%';
-          els.activeStateBadge.classList.add('hidden');
-          els.prevCueText.textContent = '—';
-          els.prevCueTime.textContent = '';
-          els.currentCueLabel.textContent = 'Next Line to Stamp';
-          els.currentCueTime.textContent = '';
-          els.currentCueText.textContent = 'Paste lyrics & click "Load Cleaned Lyrics into Studio"';
-          els.nextCueText.textContent = '—';
-          return;
-        }
-
-        const stampedCount = state.cues.filter((c) => c.start !== null).length;
-        const pct = Math.round((stampedCount / total) * 100);
-        els.syncProgressLabel.textContent = `Stamped ${stampedCount} of ${total} lines (${pct}%)`;
-        els.syncProgressBar.style.width = `${pct}%`;
-
-        const isRecording = state.activeStampingIndex >= 0 && state.activeStampingIndex < total;
-        els.activeStateBadge.classList.toggle('hidden', !isRecording);
-
-        const prevIdx = state.syncCursor - 1;
-        if (prevIdx >= 0 && prevIdx < total) {
-          els.prevCueText.textContent = state.cues[prevIdx].text;
-          els.prevCueTime.textContent = state.cues[prevIdx].start !== null ? formatDisplayTime(state.cues[prevIdx].start) : '';
-        } else {
-          els.prevCueText.textContent = '—';
-          els.prevCueTime.textContent = '';
-        }
-
-        if (state.syncCursor < total) {
-          const cur = state.cues[state.syncCursor];
-          els.currentCueLabel.textContent = isRecording ? `Line ${state.syncCursor + 1} (Next to Stamp)` : `Next Line to Stamp (#${state.syncCursor + 1})`;
-          els.currentCueTime.textContent = cur.start !== null ? formatDisplayTime(cur.start) : '';
-          els.currentCueText.textContent = cur.text;
-        } else {
-          els.currentCueLabel.textContent = 'All Lines Stamped!';
-          els.currentCueTime.textContent = '';
-          els.currentCueText.textContent = isRecording
-            ? 'Press E (End Line) when the final vocal finishes!'
-            : 'Sync complete — fine-tune in Step 4 or export .SRT in Step 5.';
-        }
-
-        const nextIdx = state.syncCursor + 1;
-        els.nextCueText.textContent = nextIdx < total ? state.cues[nextIdx].text : '—';
-      }
-
-      function stampNextLine() {
-        if (!state.audioUrl) {
-          showToast('Upload an audio file first.', 'warn');
-          return;
-        }
+      // =========================================================
+      // 9. TIMELINE TABLE & .SRT GENERATION
+      // =========================================================
+      function renderCueList() {
+        els.cueList.innerHTML = '';
         if (state.cues.length === 0) {
-          showToast('Load cleaned lyrics in Step 2 first.', 'warn');
+          els.emptyTimelineMsg.classList.remove('hidden');
           return;
         }
-        if (els.audioPlayer.paused) {
-          els.audioPlayer.play().catch(() => {});
-        }
+        els.emptyTimelineMsg.classList.add('hidden');
 
-        const now = Number((els.audioPlayer.currentTime || 0).toFixed(3));
+        const frag = document.createDocumentFragment();
+        state.cues.forEach((cue, idx) => {
+          const row = document.createElement('div');
+          row.className = 'p-3 sm:px-4 flex flex-col sm:flex-row sm:items-center gap-2.5 hover:bg-zinc-900/60 transition';
 
-        // Close previous active line cleanly
-        if (state.activeStampingIndex >= 0 && state.activeStampingIndex < state.cues.length) {
-          const prev = state.cues[state.activeStampingIndex];
-          prev.end = Number(Math.max((prev.start || 0) + 0.15, now - 0.04).toFixed(3));
-        }
+          // Left: Index + Play Jump + Start/End Inputs
+          const controls = document.createElement('div');
+          controls.className = 'flex flex-wrap items-center gap-1.5 shrink-0';
 
-        if (state.syncCursor < state.cues.length) {
-          const cue = state.cues[state.syncCursor];
-          cue.start = now;
-          cue.end = null;
-          state.activeStampingIndex = state.syncCursor;
-          state.syncCursor += 1;
-        } else {
-          state.activeStampingIndex = -1;
-          showToast('All lines stamped! Final line closed.', 'success');
-        }
+          const num = document.createElement('span');
+          num.className = 'w-6 text-[11px] font-mono text-zinc-500 text-right';
+          num.textContent = `${idx + 1}.`;
 
-        renderCueTable();
-        updateTapTeleprompter();
-        updateSrtPreview();
-        updatePlaybackUI();
-      }
-
-      function endCurrentLineForInstrumental() {
-        if (state.activeStampingIndex < 0 || state.activeStampingIndex >= state.cues.length) {
-          return;
-        }
-        const now = Number((els.audioPlayer.currentTime || 0).toFixed(3));
-        const cue = state.cues[state.activeStampingIndex];
-        cue.end = Number(Math.max((cue.start || 0) + 0.15, now).toFixed(3));
-        state.activeStampingIndex = -1;
-
-        renderCueTable();
-        updateTapTeleprompter();
-        updateSrtPreview();
-        updatePlaybackUI();
-      }
-
-      function undoLastStamp() {
-        if (state.cues.length === 0 || state.syncCursor <= 0) return;
-        state.syncCursor -= 1;
-        const cue = state.cues[state.syncCursor];
-        cue.start = null;
-        cue.end = null;
-        state.activeStampingIndex = -1;
-
-        // Rewind 3 seconds for easy re-tapping
-        els.audioPlayer.currentTime = Math.max(0, (els.audioPlayer.currentTime || 0) - 3);
-        renderCueTable();
-        updateTapTeleprompter();
-        updateSrtPreview();
-        updatePlaybackUI();
-      }
-
-      function resetAllStamps() {
-        state.cues.forEach((c) => {
-          c.start = null;
-          c.end = null;
-        });
-        state.syncCursor = 0;
-        state.activeStampingIndex = -1;
-        renderCueTable();
-        updateTapTeleprompter();
-        updateSrtPreview();
-        updatePlaybackUI();
-        showToast('All timestamps cleared.', 'info');
-      }
-
-      // ---------------------------------------------------------
-      // 10. TIMELINE FINE-TUNING TABLE EDITOR
-      // ---------------------------------------------------------
-
-      function renderCueTable() {
-        if (state.cues.length === 0) {
-          els.cueTableBody.innerHTML = `
-            <tr>
-              <td colspan="6" class="py-10 text-center text-zinc-500 text-sm">
-                No lyric cues loaded yet. Paste your Suno lyrics in Step 2 and click <strong class="text-zinc-300">Load Cleaned Lyrics into Studio</strong>.
-              </td>
-            </tr>
-          `;
-          return;
-        }
-
-        const rowsHtml = state.cues
-          .map((cue, idx) => {
-            const isActive = cue.id === state.activePlayingCueId;
-            return `
-              <tr data-id="${cue.id}" data-index="${idx}" class="hover:bg-zinc-900/70 transition ${isActive ? 'bg-violet-500/15' : ''}">
-                <td class="py-2.5 px-3 text-center font-mono text-xs text-zinc-500">${idx + 1}</td>
-                <td class="py-2.5 px-2 text-center">
-                  <button type="button" data-action="play-cue" data-index="${idx}" title="Jump &amp; Play from this line" class="p-1.5 rounded-lg bg-zinc-800 hover:bg-indigo-600 text-zinc-300 hover:text-white transition">
-                    <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                  </button>
-                </td>
-                <td class="py-2.5 px-3">
-                  <div class="flex items-center gap-1">
-                    <button type="button" data-action="nudge" data-field="start" data-delta="-0.1" data-index="${idx}" title="-100ms" class="px-1.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-[10px] font-mono text-zinc-300">-</button>
-                    <input type="text" data-field="start" data-index="${idx}" value="${formatDisplayTime(cue.start)}" placeholder="00:00.000" class="w-24 px-2 py-1 rounded-lg bg-zinc-900 border border-zinc-800 focus:border-violet-500 font-mono text-xs text-violet-200 text-center outline-none" />
-                    <button type="button" data-action="nudge" data-field="start" data-delta="0.1" data-index="${idx}" title="+100ms" class="px-1.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-[10px] font-mono text-zinc-300">+</button>
-                    <button type="button" data-action="snap" data-field="start" data-index="${idx}" title="Snap Start to Playhead" class="px-1.5 py-1 rounded bg-indigo-500/20 hover:bg-indigo-500/40 border border-indigo-500/30 text-[10px] font-semibold text-indigo-300">Set</button>
-                  </div>
-                </td>
-                <td class="py-2.5 px-3">
-                  <div class="flex items-center gap-1">
-                    <button type="button" data-action="nudge" data-field="end" data-delta="-0.1" data-index="${idx}" title="-100ms" class="px-1.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-[10px] font-mono text-zinc-300">-</button>
-                    <input type="text" data-field="end" data-index="${idx}" value="${formatDisplayTime(cue.end)}" placeholder="00:00.000" class="w-24 px-2 py-1 rounded-lg bg-zinc-900 border border-zinc-800 focus:border-violet-500 font-mono text-xs text-emerald-200 text-center outline-none" />
-                    <button type="button" data-action="nudge" data-field="end" data-delta="0.1" data-index="${idx}" title="+100ms" class="px-1.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-[10px] font-mono text-zinc-300">+</button>
-                    <button type="button" data-action="snap" data-field="end" data-index="${idx}" title="Snap End to Playhead" class="px-1.5 py-1 rounded bg-emerald-500/20 hover:bg-emerald-500/40 border border-emerald-500/30 text-[10px] font-semibold text-emerald-300">Set</button>
-                  </div>
-                </td>
-                <td class="py-2.5 px-3">
-                  <input type="text" data-field="text" data-index="${idx}" value="${escapeHtml(cue.text)}" class="w-full px-2.5 py-1.5 rounded-lg bg-zinc-900/80 border border-zinc-800 focus:border-violet-500 text-sm text-zinc-100 outline-none" />
-                </td>
-                <td class="py-2.5 px-3 text-center">
-                  <button type="button" data-action="delete" data-index="${idx}" title="Delete line" class="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                </td>
-              </tr>
-            `;
-          })
-          .join('');
-
-        els.cueTableBody.innerHTML = rowsHtml;
-      }
-
-      function applyGlobalOffsetMs(offsetMs) {
-        if (!offsetMs || Number.isNaN(offsetMs)) return;
-        const deltaSec = offsetMs / 1000;
-        let shifted = 0;
-        const maxDur = state.duration || Infinity;
-
-        state.cues.forEach((cue) => {
-          if (cue.start !== null) {
-            cue.start = Number(clamp(cue.start + deltaSec, 0, maxDur).toFixed(3));
-            shifted++;
-          }
-          if (cue.end !== null) {
-            cue.end = Number(clamp(cue.end + deltaSec, 0, maxDur).toFixed(3));
-            if (cue.start !== null && cue.end <= cue.start) {
-              cue.end = Number(Math.min(maxDur, cue.start + 0.2).toFixed(3));
+          const playBtn = document.createElement('button');
+          playBtn.type = 'button';
+          playBtn.title = 'Jump audio to this line';
+          playBtn.className = 'w-7 h-7 rounded-lg bg-zinc-800 hover:bg-violet-600 text-zinc-200 hover:text-white text-xs flex items-center justify-center transition';
+          playBtn.textContent = '▶';
+          playBtn.addEventListener('click', () => {
+            if (cue.start !== null && state.audioBuffer) {
+              els.audioPlayer.currentTime = cue.start;
+              els.audioPlayer.play().catch(() => {});
+              updatePlaybackUI();
             }
-          }
+          });
+
+          const startInput = document.createElement('input');
+          startInput.type = 'text';
+          startInput.value = cue.start !== null ? formatShortTime(cue.start) : '';
+          startInput.placeholder = '00:00.000';
+          startInput.className = 'w-24 bg-zinc-900 border border-zinc-800 focus:border-violet-500 rounded-lg px-2 py-1 text-xs font-mono text-emerald-300 outline-none';
+          startInput.addEventListener('change', () => {
+            const val = parseTimeInput(startInput.value);
+            if (val !== null) {
+              cue.start = clamp(val, 0, state.duration || 36000);
+              startInput.value = formatShortTime(cue.start);
+              updateSrtOutput();
+              drawWaveform();
+            }
+          });
+
+          const snapStartBtn = document.createElement('button');
+          snapStartBtn.type = 'button';
+          snapStartBtn.title = 'Set Start to current playhead';
+          snapStartBtn.className = 'px-1.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-[10px] font-mono text-zinc-300 transition';
+          snapStartBtn.textContent = '↙';
+          snapStartBtn.addEventListener('click', () => {
+            cue.start = Number((els.audioPlayer.currentTime || 0).toFixed(3));
+            if (cue.end === null || cue.end <= cue.start) cue.end = Math.min(state.duration || 9999, cue.start + 2);
+            renderCueList();
+            updateSrtOutput();
+            drawWaveform();
+          });
+
+          const arrow = document.createElement('span');
+          arrow.className = 'text-zinc-600 text-xs';
+          arrow.textContent = '→';
+
+          const endInput = document.createElement('input');
+          endInput.type = 'text';
+          endInput.value = cue.end !== null ? formatShortTime(cue.end) : '';
+          endInput.placeholder = '00:02.000';
+          endInput.className = 'w-24 bg-zinc-900 border border-zinc-800 focus:border-violet-500 rounded-lg px-2 py-1 text-xs font-mono text-amber-300 outline-none';
+          endInput.addEventListener('change', () => {
+            const val = parseTimeInput(endInput.value);
+            if (val !== null) {
+              cue.end = clamp(val, 0, state.duration || 36000);
+              endInput.value = formatShortTime(cue.end);
+              updateSrtOutput();
+              drawWaveform();
+            }
+          });
+
+          const snapEndBtn = document.createElement('button');
+          snapEndBtn.type = 'button';
+          snapEndBtn.title = 'Set End to current playhead';
+          snapEndBtn.className = 'px-1.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-[10px] font-mono text-zinc-300 transition';
+          snapEndBtn.textContent = '↘';
+          snapEndBtn.addEventListener('click', () => {
+            cue.end = Number((els.audioPlayer.currentTime || 0).toFixed(3));
+            if (cue.start === null || cue.start >= cue.end) cue.start = Math.max(0, cue.end - 1.5);
+            renderCueList();
+            updateSrtOutput();
+            drawWaveform();
+          });
+
+          controls.append(num, playBtn, startInput, snapStartBtn, arrow, endInput, snapEndBtn);
+
+          // Right: Editable Lyric Input
+          const textInput = document.createElement('input');
+          textInput.type = 'text';
+          textInput.value = cue.text;
+          textInput.className = 'flex-1 bg-zinc-900/70 border border-zinc-800 focus:border-violet-500 rounded-lg px-3 py-1.5 text-xs sm:text-sm text-zinc-100 outline-none';
+          textInput.addEventListener('input', () => {
+            cue.text = textInput.value;
+            updateSrtOutput();
+          });
+
+          row.append(controls, textInput);
+          frag.appendChild(row);
         });
 
-        if (shifted === 0) {
-          showToast('No synced timestamps to shift yet.', 'warn');
-          return;
-        }
-        renderCueTable();
-        updateSrtPreview();
-        updatePlaybackUI();
-        showToast(`Shifted ${shifted} cues by ${offsetMs > 0 ? '+' : ''}${offsetMs}ms.`, 'success');
+        els.cueList.appendChild(frag);
       }
-
-      // ---------------------------------------------------------
-      // 11. SRT GENERATION & EXPORT
-      // ---------------------------------------------------------
 
       function buildSrtString() {
-        const synced = state.cues.filter((c) => c.start !== null && c.text.trim().length > 0);
-        if (synced.length === 0) return { text: '', count: 0 };
+        const synced = state.cues.filter((c) => c.start !== null && c.end !== null && c.text.trim().length > 0);
+        return synced
+          .map((c, i) => `${i + 1}\n${formatSrtTime(c.start)} --> ${formatSrtTime(c.end)}\n${c.text.trim()}\n`)
+          .join('\n');
+      }
 
-        const dur = state.duration || 0;
-        const blocks = synced.map((cue, idx) => {
-          const start = cue.start;
-          let end = cue.end;
-          if (end === null || end <= start) {
-            const nextCue = synced[idx + 1];
-            if (nextCue && nextCue.start > start) {
-              end = Math.max(start + 0.2, nextCue.start - 0.05);
-            } else {
-              end = dur > start ? Math.min(dur, start + 3.0) : start + 3.0;
-            }
-          }
-          return `${idx + 1}\n${formatSrtTime(start)} --> ${formatSrtTime(end)}\n${cue.text.trim()}`;
-        });
+      function updateSrtOutput() {
+        els.srtRawPreview.value = buildSrtString();
+      }
 
-        return {
-          text: blocks.join('\n\n') + '\n',
-          count: synced.length,
+      function switchSyncTab(tab) {
+        state.activeTab = tab;
+        const map = {
+          whisper: [els.tabWhisperBtn, els.panelWhisper],
+          tap: [els.tabTapBtn, els.panelTap],
+          other: [els.tabOtherBtn, els.panelOther],
         };
+        Object.entries(map).forEach(([key, [btn, panel]]) => {
+          const active = key === tab;
+          panel.classList.toggle('hidden', !active);
+          btn.className = active
+            ? 'px-3 py-2 rounded-lg text-xs font-semibold bg-violet-600 text-white transition'
+            : 'px-3 py-2 rounded-lg text-xs font-medium text-zinc-400 hover:text-white transition';
+        });
       }
 
-      function updateSrtPreview() {
-        const { text, count } = buildSrtString();
-        els.exportStatsPreview.textContent = `${count} synced cue${count === 1 ? '' : 's'}`;
-        if (count === 0) {
-          els.srtPreviewBox.textContent = 'Your generated .srt subtitles will appear here once you run AI Auto-Sync, Vocal-Band Estimate, or Tap-to-Sync...';
-        } else {
-          els.srtPreviewBox.textContent = text;
-        }
-      }
+      // =========================================================
+      // 10. EVENT LISTENERS & INIT
+      // =========================================================
+      els.audioFileInput.addEventListener('change', (e) => handleAudioFile(e.target.files?.[0]));
 
-      function copySrtToClipboard() {
-        const { text, count } = buildSrtString();
-        if (count === 0) {
-          showToast('No synced cues to copy yet.', 'warn');
-          return;
-        }
-        try {
-          const temp = document.createElement('textarea');
-          temp.value = text;
-          temp.setAttribute('readonly', '');
-          temp.style.position = 'fixed';
-          temp.style.opacity = '0';
-          document.body.appendChild(temp);
-          temp.select();
-          document.execCommand('copy');
-          document.body.removeChild(temp);
-          showToast(`Copied ${count} SRT cues to clipboard!`, 'success');
-        } catch (err) {
-          console.error('Copy error:', err);
-          showToast('Could not copy automatically. Select text in the preview box and press Ctrl/Cmd+C.', 'warn');
-        }
-      }
-
-      function downloadSrtFile() {
-        const { text, count } = buildSrtString();
-        if (count === 0) {
-          showToast('No synced cues to download yet.', 'warn');
-          return;
-        }
-        // Include UTF-8 BOM so Vietnamese diacritics render cleanly in all video editors
-        const blob = new Blob(['\uFEFF' + text], { type: 'text/plain;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${state.audioFileName}.srt`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        showToast(`Downloaded ${state.audioFileName}.srt (${count} cues)`, 'success');
-      }
-
-      // ---------------------------------------------------------
-      // 12. EVENT LISTENERS
-      // ---------------------------------------------------------
-
-      // Audio file upload & drag-drop
-      els.dropZone.addEventListener('click', () => els.audioFileInput.click());
-      els.changeAudioBtn.addEventListener('click', () => els.audioFileInput.click());
-      els.audioFileInput.addEventListener('change', (e) => {
-        if (e.target.files && e.target.files[0]) {
-          handleAudioFile(e.target.files[0]);
-          e.target.value = '';
-        }
+      // Drag & Drop Audio
+      ['dragenter', 'dragover'].forEach((ev) => {
+        els.audioDropzone.addEventListener(ev, (e) => {
+          e.preventDefault();
+          els.audioDropzone.classList.add('border-violet-500', 'bg-violet-500/5');
+        });
+      });
+      ['dragleave', 'drop'].forEach((ev) => {
+        els.audioDropzone.addEventListener(ev, (e) => {
+          e.preventDefault();
+          els.audioDropzone.classList.remove('border-violet-500', 'bg-violet-500/5');
+        });
+      });
+      els.audioDropzone.addEventListener('drop', (e) => {
+        const file = e.dataTransfer?.files?.[0];
+        if (file) handleAudioFile(file);
       });
 
-      els.dropZone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        els.dropZone.classList.add('border-violet-500', 'bg-violet-950/20');
-      });
-      els.dropZone.addEventListener('dragleave', () => {
-        els.dropZone.classList.remove('border-violet-500', 'bg-violet-950/20');
-      });
-      els.dropZone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        els.dropZone.classList.remove('border-violet-500', 'bg-violet-950/20');
-        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-          handleAudioFile(e.dataTransfer.files[0]);
-        }
-      });
+      // Waveform Scrubbing (Mouse + Touch)
+      els.waveformContainer.addEventListener('mousedown', (e) => { state.isDraggingWave = true; seekFromPointer(e.clientX); });
+      window.addEventListener('mousemove', (e) => { if (state.isDraggingWave) seekFromPointer(e.clientX); });
+      window.addEventListener('mouseup', () => { state.isDraggingWave = false; });
+      els.waveformContainer.addEventListener('touchstart', (e) => {
+        if (e.touches[0]) { state.isDraggingWave = true; seekFromPointer(e.touches[0].clientX); }
+      }, { passive: true });
+      els.waveformContainer.addEventListener('touchmove', (e) => {
+        if (state.isDraggingWave && e.touches[0]) seekFromPointer(e.touches[0].clientX);
+      }, { passive: true });
+      els.waveformContainer.addEventListener('touchend', () => { state.isDraggingWave = false; });
 
-      // Audio element state events
-      els.audioPlayer.addEventListener('play', updatePlayButtonVisuals);
-      els.audioPlayer.addEventListener('pause', updatePlayButtonVisuals);
-      els.audioPlayer.addEventListener('ended', () => {
-        updatePlayButtonVisuals();
-        if (state.activeStampingIndex >= 0) {
-          endCurrentLineForInstrumental();
-        }
+      // Audio Transport Controls
+      els.playPauseBtn.addEventListener('click', () => {
+        if (!state.audioBuffer) return;
+        if (els.audioPlayer.paused) els.audioPlayer.play().catch(() => {});
+        else els.audioPlayer.pause();
+        updatePlaybackUI();
       });
-
-      // Transport controls
-      els.playPauseBtn.addEventListener('click', togglePlayPause);
-      els.rewindBtn.addEventListener('click', () => {
+      els.rewind5Btn.addEventListener('click', () => {
         els.audioPlayer.currentTime = Math.max(0, (els.audioPlayer.currentTime || 0) - 5);
         updatePlaybackUI();
       });
-      els.forwardBtn.addEventListener('click', () => {
-        const dur = state.duration || els.audioPlayer.duration || 0;
-        els.audioPlayer.currentTime = Math.min(dur, (els.audioPlayer.currentTime || 0) + 5);
+      els.forward5Btn.addEventListener('click', () => {
+        els.audioPlayer.currentTime = Math.min(state.duration || 0, (els.audioPlayer.currentTime || 0) + 5);
         updatePlaybackUI();
       });
+      els.playbackSpeedSelect.addEventListener('change', () => {
+        els.audioPlayer.playbackRate = parseFloat(els.playbackSpeedSelect.value) || 1;
+      });
+      els.audioPlayer.addEventListener('play', updatePlaybackUI);
+      els.audioPlayer.addEventListener('pause', updatePlaybackUI);
+      els.audioPlayer.addEventListener('ended', updatePlaybackUI);
 
-      els.speedBtns.forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const speed = parseFloat(btn.dataset.speed) || 1.0;
-          state.playbackRate = speed;
-          els.audioPlayer.playbackRate = speed;
-          els.speedBtns.forEach((b) => {
-            const active = b === btn;
-            b.className = active
-              ? 'speed-btn px-2.5 py-1.5 rounded-lg text-xs font-mono font-semibold bg-indigo-600 text-white shadow transition'
-              : 'speed-btn px-2.5 py-1.5 rounded-lg text-xs font-mono font-medium text-zinc-400 hover:text-white transition';
-          });
-        });
-      });
-
-      // Waveform mouse & touch scrubbing
-      els.waveformWrapper.addEventListener('mousedown', (e) => {
-        state.isDraggingWaveform = true;
-        seekFromClientX(e.clientX);
-      });
-      window.addEventListener('mousemove', (e) => {
-        if (state.isDraggingWaveform) {
-          seekFromClientX(e.clientX);
-        }
-      });
-      window.addEventListener('mouseup', () => {
-        state.isDraggingWaveform = false;
-      });
-
-      els.waveformWrapper.addEventListener('mousemove', (e) => {
-        const dur = state.duration || 0;
-        if (!dur) return;
-        const rect = els.waveformWrapper.getBoundingClientRect();
-        const x = clamp(e.clientX - rect.left, 0, rect.width);
-        const hoverSec = (x / rect.width) * dur;
-        els.waveformHoverTime.textContent = formatDisplayTime(hoverSec);
-        els.waveformHoverTime.style.left = `${clamp(x - 36, 4, rect.width - 80)}px`;
-        els.waveformHoverTime.classList.remove('hidden');
-      });
-      els.waveformWrapper.addEventListener('mouseleave', () => {
-        els.waveformHoverTime.classList.add('hidden');
-      });
-
-      els.waveformWrapper.addEventListener('touchstart', (e) => {
-        if (e.touches && e.touches[0]) {
-          state.isDraggingWaveform = true;
-          seekFromClientX(e.touches[0].clientX);
-        }
-      }, { passive: true });
-      els.waveformWrapper.addEventListener('touchmove', (e) => {
-        if (state.isDraggingWaveform && e.touches && e.touches[0]) {
-          seekFromClientX(e.touches[0].clientX);
-        }
-      }, { passive: true });
-      els.waveformWrapper.addEventListener('touchend', () => {
-        state.isDraggingWaveform = false;
-      });
-
-      window.addEventListener('resize', resizeWaveformCanvas);
-
-      // Lyrics Cleaner buttons
-      els.loadLyricsBtn.addEventListener('click', loadCleanedLyrics);
+      // Lyrics Controls
+      els.loadLyricsBtn.addEventListener('click', loadLyricsIntoCues);
       els.clearLyricsBtn.addEventListener('click', () => {
         els.lyricsInput.value = '';
-        els.lyricsInput.focus();
+        state.cues = [];
+        state.tapCursor = 0;
+        els.statusLyricsBadge.textContent = '2. 0 Lines';
+        els.statusLyricsBadge.className = 'px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400';
+        renderCueList();
+        updateTapUI();
+        updateSrtOutput();
+        drawWaveform();
       });
 
-      // Mode switcher tabs
-      els.tabAiMode.addEventListener('click', () => switchSyncMode('ai'));
-      els.tabTapMode.addEventListener('click', () => switchSyncMode('tap'));
+      // Tabs & Sync Triggers
+      els.tabWhisperBtn.addEventListener('click', () => switchSyncTab('whisper'));
+      els.tabTapBtn.addEventListener('click', () => switchSyncTab('tap'));
+      els.tabOtherBtn.addEventListener('click', () => switchSyncTab('other'));
 
-      // AI & Offline Fallback buttons
-      els.runAiSyncBtn.addEventListener('click', runGeminiAiAutoSync);
+      els.runWhisperBtn.addEventListener('click', runFreeWhisperSync);
+      els.runGeminiBtn.addEventListener('click', runCloudGeminiSync);
       els.runVocalBandBtn.addEventListener('click', runVocalBandEstimate);
-      els.vocalThresholdSlider.addEventListener('input', () => {
-        els.vocalThresholdVal.textContent = parseFloat(els.vocalThresholdSlider.value).toFixed(2);
+
+      els.tapStampBtn.addEventListener('click', tapStampNextLine);
+      els.tapEndGapBtn.addEventListener('click', tapEndCurrentLine);
+      els.tapUndoBtn.addEventListener('click', tapUndoLast);
+      els.tapResetBtn.addEventListener('click', () => {
+        state.tapCursor = 0;
+        state.activeStampingIdx = -1;
+        updateTapUI();
+        showToast('Tap cursor reset to Line 1.', 'info');
       });
 
-      // Gemini API Key localStorage persistence & show/hide toggle
-      const STORAGE_API_KEY = 'suno_srt_gemini_api_key';
-      const STORAGE_MODEL_KEY = 'suno_srt_gemini_model';
-
-      try {
-        const savedKey = localStorage.getItem(STORAGE_API_KEY);
-        if (savedKey) {
-          els.geminiApiKeyInput.value = savedKey;
-          els.apiKeySavedBadge.classList.remove('hidden');
-        }
-        const savedModel = localStorage.getItem(STORAGE_MODEL_KEY);
-        if (
-          savedModel &&
-          (savedModel === 'gemini-3-flash-preview' ||
-            savedModel === 'gemini-2.5-flash' ||
-            savedModel === 'gemini-2.5-pro')
-        ) {
-          els.geminiModelSelect.value = savedModel;
-        }
-      } catch (_) {}
-
-      els.geminiApiKeyInput.addEventListener('input', () => {
-        const val = els.geminiApiKeyInput.value.trim();
-        try {
-          if (val) {
-            localStorage.setItem(STORAGE_API_KEY, val);
-            els.apiKeySavedBadge.classList.remove('hidden');
-          } else {
-            localStorage.removeItem(STORAGE_API_KEY);
-            els.apiKeySavedBadge.classList.add('hidden');
-          }
-        } catch (_) {}
-      });
-
-      els.geminiModelSelect.addEventListener('change', () => {
-        try {
-          localStorage.setItem(STORAGE_MODEL_KEY, els.geminiModelSelect.value);
-        } catch (_) {}
-      });
-
-      els.toggleApiKeyVisBtn.addEventListener('click', () => {
-        const isPassword = els.geminiApiKeyInput.type === 'password';
-        els.geminiApiKeyInput.type = isPassword ? 'text' : 'password';
-        els.eyeOpenIcon.classList.toggle('hidden', isPassword);
-        els.eyeClosedIcon.classList.toggle('hidden', !isPassword);
-      });
-
-      // Tap-to-Sync buttons
-      els.stampBtn.addEventListener('click', stampNextLine);
-      els.endLineBtn.addEventListener('click', endCurrentLineForInstrumental);
-      els.undoBtn.addEventListener('click', undoLastStamp);
-      els.resetSyncBtn.addEventListener('click', resetAllStamps);
-
-      // Global keyboard shortcuts (when not typing in inputs)
+      // Keyboard Shortcuts for Tap-to-Sync
       window.addEventListener('keydown', (e) => {
-        const tag = (e.target && e.target.tagName) ? e.target.tagName.toUpperCase() : '';
-        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+        const tag = (e.target?.tagName || '').toLowerCase();
+        if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+        if (state.activeTab !== 'tap') return;
 
         if (e.code === 'Space') {
           e.preventDefault();
-          if (state.syncMode === 'tap' && state.cues.length > 0) {
-            stampNextLine();
-          } else {
-            togglePlayPause();
-          }
-        } else if (e.key === 'e' || e.key === 'E') {
-          if (state.syncMode === 'tap') {
-            e.preventDefault();
-            endCurrentLineForInstrumental();
-          }
+          tapStampNextLine();
+        } else if (e.key.toLowerCase() === 'e') {
+          e.preventDefault();
+          tapEndCurrentLine();
         } else if (e.code === 'Backspace') {
-          if (state.syncMode === 'tap') {
-            e.preventDefault();
-            undoLastStamp();
-          }
-        } else if (e.code === 'ArrowLeft') {
           e.preventDefault();
-          els.audioPlayer.currentTime = Math.max(0, (els.audioPlayer.currentTime || 0) - 5);
-          updatePlaybackUI();
-        } else if (e.code === 'ArrowRight') {
-          e.preventDefault();
-          const dur = state.duration || els.audioPlayer.duration || 0;
-          els.audioPlayer.currentTime = Math.min(dur, (els.audioPlayer.currentTime || 0) + 5);
-          updatePlaybackUI();
+          tapUndoLast();
         }
       });
 
-      // Global offset controls
-      els.globalMinus100Btn.addEventListener('click', () => applyGlobalOffsetMs(-100));
-      els.globalPlus100Btn.addEventListener('click', () => applyGlobalOffsetMs(100));
-      els.applyCustomOffsetBtn.addEventListener('click', () => {
-        const ms = parseInt(els.customOffsetInput.value, 10);
-        if (!Number.isNaN(ms) && ms !== 0) {
-          applyGlobalOffsetMs(ms);
+      // Global ms Shift
+      els.applyShiftBtn.addEventListener('click', () => {
+        const deltaSec = (parseFloat(els.globalShiftInput.value) || 0) / 1000;
+        if (!deltaSec) return;
+        state.cues.forEach((c) => {
+          if (c.start !== null) c.start = clamp(Number((c.start + deltaSec).toFixed(3)), 0, state.duration || 36000);
+          if (c.end !== null) c.end = clamp(Number((c.end + deltaSec).toFixed(3)), 0, state.duration || 36000);
+        });
+        renderCueList();
+        updateSrtOutput();
+        drawWaveform();
+        showToast(`Shifted all timestamps by ${Math.round(deltaSec * 1000)}ms.`, 'success');
+      });
+
+      // Copy & Download SRT (UTF-8)
+      els.copySrtBtn.addEventListener('click', () => {
+        const srt = buildSrtString();
+        if (!srt) return showToast('No synced timestamps to copy yet.', 'warn');
+        const ta = document.createElement('textarea');
+        ta.value = srt;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          document.execCommand('copy');
+          showToast('Copied .SRT subtitles to clipboard!', 'success');
+        } catch {
+          showToast('Copy failed—expand the Raw .SRT preview to copy manually.', 'error');
+        } finally {
+          ta.remove();
         }
       });
 
-      // Delegated events for Cue Table (play, nudge, snap, delete, inline edits)
-      els.cueTableBody.addEventListener('click', (e) => {
-        const btn = e.target.closest('button[data-action]');
-        if (!btn) return;
-        const action = btn.dataset.action;
-        const idx = parseInt(btn.dataset.index, 10);
-        if (Number.isNaN(idx) || !state.cues[idx]) return;
-        const cue = state.cues[idx];
-        const maxDur = state.duration || Infinity;
-
-        if (action === 'play-cue') {
-          if (!state.audioUrl) return;
-          els.audioPlayer.currentTime = cue.start !== null ? cue.start : 0;
-          els.audioPlayer.play().catch(() => {});
-          updatePlaybackUI();
-        } else if (action === 'nudge') {
-          const field = btn.dataset.field;
-          const delta = parseFloat(btn.dataset.delta) || 0;
-          const base = cue[field] !== null ? cue[field] : (els.audioPlayer.currentTime || 0);
-          cue[field] = Number(clamp(base + delta, 0, maxDur).toFixed(3));
-          renderCueTable();
-          updateSrtPreview();
-          updatePlaybackUI();
-        } else if (action === 'snap') {
-          const field = btn.dataset.field;
-          cue[field] = Number((els.audioPlayer.currentTime || 0).toFixed(3));
-          renderCueTable();
-          updateSrtPreview();
-          updatePlaybackUI();
-        } else if (action === 'delete') {
-          state.cues.splice(idx, 1);
-          if (state.syncCursor > state.cues.length) state.syncCursor = state.cues.length;
-          state.activeStampingIndex = -1;
-          renderCueTable();
-          updateTapTeleprompter();
-          updateSrtPreview();
-          updatePlaybackUI();
-        }
+      els.downloadSrtBtn.addEventListener('click', () => {
+        const srt = buildSrtString();
+        if (!srt) return showToast('No synced timestamps to download yet.', 'warn');
+        const baseName = (state.audioFile?.name || 'suno_lyrics').replace(/\.[^.]+$/, '');
+        // Include UTF-8 BOM so Vietnamese characters render cleanly in all video editors
+        const blob = new Blob(['\uFEFF' + srt], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${baseName}.srt`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showToast(`Downloaded ${baseName}.srt (UTF-8)!`, 'success');
       });
 
-      els.cueTableBody.addEventListener('change', (e) => {
-        const input = e.target.closest('input[data-field]');
-        if (!input) return;
-        const idx = parseInt(input.dataset.index, 10);
-        const field = input.dataset.field;
-        if (Number.isNaN(idx) || !state.cues[idx]) return;
+      // Restore optional saved Gemini key
+      const savedKey = localStorage.getItem(STORAGE_GEMINI_KEY);
+      if (savedKey) els.geminiKeyInput.value = savedKey;
 
-        if (field === 'text') {
-          state.cues[idx].text = input.value;
-          updateTapTeleprompter();
-          updateSrtPreview();
-          updatePlaybackUI();
-        } else if (field === 'start' || field === 'end') {
-          const parsed = parseFlexibleTime(input.value);
-          state.cues[idx][field] = parsed !== null ? Number(clamp(parsed, 0, state.duration || Infinity).toFixed(3)) : null;
-          input.value = formatDisplayTime(state.cues[idx][field]);
-          updateSrtPreview();
-          updatePlaybackUI();
-        }
+      window.addEventListener('resize', resizeAndDrawWaveform);
+      window.addEventListener('load', () => {
+        resizeAndDrawWaveform();
+        requestAnimationFrame(animationTick);
       });
-
-      // Export buttons
-      els.copySrtBtn.addEventListener('click', copySrtToClipboard);
-      els.downloadSrtBtn.addEventListener('click', downloadSrtFile);
-
-      // Start smooth playback UI loop
-      requestAnimationFrame(playbackAnimationLoop);
     })();
   </script>
 </body>
